@@ -13,13 +13,17 @@ geospatial foundation. Repo: `~/cofa-forward`.
 ## Where things stand
 
 - **20 commits**; latest `10e9372`. Git repo is local (no remote).
-- **Tests:** 174 offline + 14 live-network pass. Lint/format clean (ruff).
+- **Tests:** 184 offline + 14 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest).
 - **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel → `127.0.0.1:8501`),
   protected by **Cloudflare Access** (allow `bhemingway@gmail.com`, team
   `bold-field-37ad`, 24h session). See the *Deployment* section below.
 - All 14 data-source adapters are live-tested, including IMERG (Earthdata token).
-  Remaining: PEAC outlook (HTML) + map polygon rendering / area-weighted aggregation.
+  Two more (WeatherNext, NVIDIA Earth-2) are credential-gated and wired in honestly.
+  Remaining: PEAC outlook (HTML) + boundary-polygon rendering on the map.
+- **Maps:** replaced Plotly `scattergeo` with Leaflet (folium) satellite basemaps
+  (Esri World Imagery + NASA GIBS MODIS/VIIRS/BlueMarble, keyless). See
+  `src/cofa_forward/visualization/leaflet_maps.py`.
 
 ## Commands
 
@@ -123,8 +127,12 @@ reference:
 
 `planned` (researched, not wired): PEAC seasonal outlook, CPC ENSO Diagnostic
 Discussion (partly via bulletin monitor), JTWC/NWS-Guam advisories (partly via
-bulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO, WeatherNext
-3 (`unavailable` — allowlist-gated). Full details in `docs/DATA_SOURCES.md`.
+bulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO.
+
+`requires_credentials` (adapter implemented, gated honestly):
+WeatherNext 3 (`weathernext.py` — GCS allowlist) and NVIDIA Earth-2
+(`nvidia_earth2.py` — no keyless free hosted API). Full details in
+`docs/DATA_SOURCES.md`.
 
 ## Layout
 
@@ -139,7 +147,7 @@ src/cofa_forward/
   cyclones/        tracks, proximity, climatology, enso_analysis, exposure
   impacts/         event_catalog, evidence
   intelligence/    indicators, synthesis, confidence, report_builder, verification
-  visualization/   maps (plotly scattergeo), charts, legends, layers
+  visualization/   leaflet_maps (folium satellite basemaps), charts, legends, layers
   ui/              app.py + sections/ (10 page modules) + components + state.py
 scripts/           12 CLI scripts
 tests/             unit/ + integration/ (network-marked) + fixtures/

@@ -106,13 +106,28 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 ## AI / global forecast models
 
 * **Google WeatherNext 3** — allowlist-gated (free Google account, ~5–7 day approval),
-  non-GRIB (Zarr/BigQuery), ensemble bucket Requester-Pays, real-time data under an
-  experimental ToU. **Not load-bearing**; apply and keep optional.
+  Zarr v3 / BigQuery / Earth Engine, 0.05°/0.1°/0.25°, hourly, 64-member, 15-day.
+  Real-time data under an experimental ToU; historical (≥1 h old) is CC BY 4.0.
+  **Adapter implemented** (`ingestion/weathernext.py`): reports `requires_credentials`
+  and reads Zarr via `gcsfs` once the allowlist is granted. Access form submitted
+  (see below).
+* **NVIDIA Earth-2 / FourCastNet / StormCast** — open downloadable weights (NGC/HF,
+  self-host on GPU via Modulus) or hosted NIM microservices (paid API key / DGX Cloud).
+  **No keyless free hosted weather API.** Adapter implemented and reports honestly.
 * **ECMWF AIFS open data** (`s3://ecmwf-forecasts`, CC BY 4.0, no account) — 0.25°,
   4×/day to 15 days, GRIB2. **Best free AI/global drop-in** (per-point via
   `ecmwf-opendata`).
 * **NOAA GFS/GEFS** (NOMADS / AWS NODD `s3://noaa-gfs-bdp-pds`) — public domain,
   0.25°, byte-range GRIB2 subsetting. **Free fallback.**
+
+### AI-model account status
+
+* **WeatherNext 3**: the access form requires (1) a Google account email, (2) a
+  Google Cloud account email to be allowlisted, (3) name/country/organisation. The
+  approval is 5–7 business days at Google's discretion. **Not yet granted.**
+* **NVIDIA**: a free `build.nvidia.com` key covers LLM/vision/embedding NIMs, **not**
+  the weather microservices (those need DGX Cloud). Signing up would not unblock a
+  hosted weather feed, so it is not pursued.
 
 ## Requested but not freely accessible
 
@@ -123,6 +138,21 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 * **NOAA US Drought Monitor (USDM)** — **US-only** (does not cover Palau/FSM/RMI).
   The app computes an internal precipitation-percentile **D0–D4** drought level
   instead, and uses CHIRPS/IMERG/ERA5 for drought indicators.
+
+## Maps & basemaps
+
+The original Plotly `scattergeo` map showed the FAS atolls as invisible dots on a
+blank ocean. Replaced with interactive Leaflet (folium) maps using **keyless
+satellite basemaps** so the islands are actually visible:
+
+* **Esri World Imagery** — high-res commercial-satellite mosaic (zoom 19); default.
+* **NASA GIBS** BlueMarble / MODIS Terra / MODIS Aqua / VIIRS — official NASA EOSDIS
+  daily true-colour (~250 m), no key. Tile-matrix-set names are layer-specific
+  (`GoogleMapsCompatible_Level8/9`).
+* **OpenStreetMap** — street fallback.
+
+Basemaps are chosen client-side via a Leaflet layer control; tiles load in the
+browser directly from GIBS/Esri (no server-side proxy, no credentials).
 
 ## Attribution & license notes
 

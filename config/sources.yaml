@@ -347,10 +347,22 @@ sources:
     license: "Real-time: experimental ToU; Historical: CC BY 4.0"
     geographic_coverage: "Global 0.05/0.1/0.25 deg"
     temporal_resolution: "hourly, 24 inits/day, 64 members, 15-day horizon"
-    auth: "requires GCP allowlist (free account; ~5-7 day approval)"
-    variables: "full forecast fields (Zarr/BigQuery, not GRIB)"
-    implementation_status: unavailable
-    notes: "Allowlist-gated, non-GRIB, ensemble bucket Requester-Pays. Apply and keep optional; ECMWF AIFS / GFS are the realistic free alternatives."
+    auth: "Google Cloud allowlist (free form; ~5-7 day approval)"
+    variables: "full forecast fields (Zarr v3 / BigQuery / Earth Engine)"
+    implementation_status: requires_credentials
+    notes: "Allowlist-gated GCS buckets (gs://weathernext3_spatial). Adapter implemented; reads Zarr via gcsfs once credentials + allowlist are present. Access form submitted (see docs). ECMWF AIFS / GFS are the working free alternatives in the meantime."
+
+  - id: nvidia-earth2
+    name: "NVIDIA Earth-2 / FourCastNet / StormCast"
+    publisher: "NVIDIA"
+    url: "https://build.nvidia.com/nvidia/fourcastnet"
+    license: "open weights (NGC/HF); hosted NIM = paid entitlement"
+    geographic_coverage: "Global 0.25 deg (FourCastNet); 3-km regional (StormCast/CorrDiff)"
+    temporal_resolution: "6-hourly to 15 days (FourCastNet)"
+    auth: "none for weight download; NVIDIA NIM API key (paid) for hosted inference"
+    variables: "2m temp, 10m wind, MSLP, TP, 500hPa geopotential"
+    implementation_status: requires_credentials
+    notes: "No keyless free hosted weather API. FourCastNet/StormCast are downloadable open weights (self-host on GPU via Modulus); hosted NIM weather microservices need a paid NVIDIA API key / DGX Cloud. Adapter implemented and honestly reports unavailable without a key."
 
   # --- Requested but NOT freely accessible (documented honestly) ---
   - id: windy

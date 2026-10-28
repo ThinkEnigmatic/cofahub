@@ -254,3 +254,44 @@ def get_model_comparison(lat: float, lon: float, variable: str = "temperature_2m
 
     adapter = OpenMeteoForecastAdapter(config=load_config(), cache=make_cache())
     return adapter.get_model_comparison(lat, lon, variable=variable)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_ai_model_status() -> list[dict]:
+    """Report the access status of AI global models (WeatherNext, NVIDIA Earth-2)."""
+    from ..ingestion.nvidia_earth2 import NvidiaEarth2Adapter
+    from ..ingestion.weathernext import WeatherNextAdapter
+
+    cfg = load_config()
+    results = []
+
+    wn = WeatherNextAdapter(config=cfg)
+    wn_avail = wn.check_availability()
+    results.append(
+        {
+            "name": "Google WeatherNext 3",
+            "access": "Google Cloud allowlist (form)",
+            "status": (
+                "available (credentials present)"
+                if wn_avail.get("available")
+                else "requires allowlist approval"
+            ),
+            "resolution": "0.05°/0.1°/0.25°, hourly, 64 members, 15-day",
+        }
+    )
+
+    nv = NvidiaEarth2Adapter(config=cfg)
+    nv_avail = nv.check_availability()
+    results.append(
+        {
+            "name": "NVIDIA Earth-2 (FourCastNet/StormCast)",
+            "access": "open weights (self-host) / NVIDIA NIM key (paid)",
+            "status": (
+                "available (API key present)"
+                if nv_avail.get("available")
+                else "no keyless free hosted API"
+            ),
+            "resolution": "0.25° (FourCastNet) / 3-km regional (StormCast)",
+        }
+    )
+    return results

@@ -7,8 +7,8 @@ import streamlit as st
 
 from ...climate.enso_state import enso_state_from_config
 from ...intelligence.synthesis import build_statements
-from ...visualization.maps import region_map
-from ..components.common import evidence_badge, page_header, render_plotly, sample_banner
+from ...visualization.leaflet_maps import region_map
+from ..components.common import evidence_badge, page_header, render_folium, sample_banner
 from ..state import get_all_indicators, get_live_enso, load_config, load_registry
 
 
@@ -28,7 +28,7 @@ def render() -> None:
 
     with left:
         st.subheader("Regional situation map")
-        render_plotly(region_map(registry, center=cfg.map_center), key="overview_map")
+        render_folium(region_map(registry, center=cfg.map_center), key="overview_map")
 
     with right:
         st.subheader("ENSO status")

@@ -23,11 +23,13 @@ from cofa_forward.ingestion.imerg import ImergAdapter  # noqa: E402
 from cofa_forward.ingestion.jma import JmaTyphoonAdapter  # noqa: E402
 from cofa_forward.ingestion.jtwc import JtwcAdapter  # noqa: E402
 from cofa_forward.ingestion.nmme import NmmeAdapter  # noqa: E402
+from cofa_forward.ingestion.nvidia_earth2 import NvidiaEarth2Adapter  # noqa: E402
 from cofa_forward.ingestion.nws_guam import NwsGuamAdapter  # noqa: E402
 from cofa_forward.ingestion.official_advisories import OfficialAdvisoriesAdapter  # noqa: E402
 from cofa_forward.ingestion.population import WorldPopAdapter  # noqa: E402
 from cofa_forward.ingestion.rainfall import OpenMeteoArchiveAdapter  # noqa: E402
 from cofa_forward.ingestion.weather import OpenMeteoForecastAdapter  # noqa: E402
+from cofa_forward.ingestion.weathernext import WeatherNextAdapter  # noqa: E402
 
 
 def main() -> int:
@@ -48,6 +50,8 @@ def main() -> int:
         OfficialAdvisoriesAdapter(),
         WorldPopAdapter(config=cfg),
         HistoricalImpactsAdapter(),
+        WeatherNextAdapter(config=cfg),
+        NvidiaEarth2Adapter(config=cfg),
     ]
     print(f"{'source':<24} {'available':<10} note")
     print("-" * 80)

@@ -89,5 +89,12 @@ def render_plotly(fig, key: str | None = None, use_container_width: bool = True)
     st.plotly_chart(fig, width=width, key=key)
 
 
+def render_folium(m, key: str | None = None, height: int = 520) -> None:
+    """Render a folium (Leaflet) map inside the app."""
+    from streamlit_folium import st_folium
+
+    st_folium(m, key=key, height=height, use_container_width=True)
+
+
 def empty_state(message: str) -> None:
     st.info(message, icon="ℹ️")

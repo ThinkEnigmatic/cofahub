@@ -9,15 +9,17 @@ import streamlit as st
 from ...ingestion.weather import OpenMeteoForecastAdapter
 from ...units import convert
 from ...visualization.charts import forecast_chart
-from ...visualization.maps import region_map
+from ...visualization.leaflet_maps import region_map
 from ..components.common import (
     live_badge,
     page_header,
+    render_folium,
     render_plotly,
     sample_banner,
     source_caption,
 )
 from ..state import (
+    get_ai_model_status,
     get_model_comparison,
     get_sample_forecast,
     load_config,
@@ -98,7 +100,7 @@ def render() -> None:
     left, right = st.columns([3, 2], gap="large")
 
     with left:
-        render_plotly(region_map(registry, center=cfg.map_center, title="FAS region"), key="wx_map")
+        render_folium(region_map(registry, center=cfg.map_center, title="FAS region"), key="wx_map")
 
     with right:
         st.subheader("Forecast for " + entity.name)
@@ -209,3 +211,29 @@ def render() -> None:
         "preference only (toggle in the sidebar). Live forecast is Open-Meteo model "
         "output, not official station observations."
     )
+
+    st.divider()
+
+    # ---- AI global models (WeatherNext / NVIDIA Earth-2) ---- #
+    st.subheader("AI global models")
+    ai_models = get_ai_model_status()
+    if ai_models:
+        rows = [
+            {
+                "Model": r["name"],
+                "Access": r["access"],
+                "Status": r["status"],
+                "Resolution": r["resolution"],
+            }
+            for r in ai_models
+        ]
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+        st.caption(
+            "WeatherNext 3 and NVIDIA Earth-2 (FourCastNet/StormCast) are AI global "
+            "forecast models. Both are credential/allowlist-gated — no keyless free "
+            "hosted API exists — so they are wired in and reported honestly, and will "
+            "populate the model comparison once access is approved. ECMWF AIFS, IFS, "
+            "GFS, ICON, and GEM (above) are the working alternatives."
+        )
+    else:
+        st.info("AI model status unavailable.", icon="ℹ️")

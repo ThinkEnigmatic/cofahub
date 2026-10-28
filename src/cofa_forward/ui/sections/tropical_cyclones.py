@@ -8,8 +8,8 @@ import streamlit as st
 from ...cyclones.climatology import seasonal_summary
 from ...cyclones.exposure import exposure_summary
 from ...cyclones.proximity import closest_approach
-from ...visualization.charts import track_map
-from ..components.common import page_header, render_plotly, sample_banner
+from ...visualization.leaflet_maps import track_map
+from ..components.common import page_header, render_folium, sample_banner
 from ..state import (
     get_active_storms,
     get_himawari_image,
@@ -155,7 +155,7 @@ def render() -> None:
         sample_banner()
         tracks = get_sample_tracks()
 
-    render_plotly(track_map(tracks, center=cfg.map_center, title="Storm tracks"), key="tc_map")
+    render_folium(track_map(tracks, center=cfg.map_center, title="Storm tracks"), key="tc_map")
 
     st.divider()
 

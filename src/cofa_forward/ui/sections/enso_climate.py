@@ -7,8 +7,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ...climate.enso_state import enso_state_from_config
-from ...visualization.maps import metric_map
-from ..components.common import page_header, render_plotly, sample_banner
+from ...visualization.leaflet_maps import metric_map
+from ..components.common import page_header, render_folium, render_plotly, sample_banner
 from ..state import (
     get_all_indicators,
     get_live_enso,
@@ -189,7 +189,7 @@ def render() -> None:
     anomaly_pct = {
         i["geo_id"]: i["anomaly_pct"] for i in indicators if i.get("anomaly_pct") is not None
     }
-    render_plotly(
+    render_folium(
         metric_map(
             registry,
             anomaly_pct,
