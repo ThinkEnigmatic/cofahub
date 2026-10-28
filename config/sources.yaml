@@ -130,8 +130,9 @@ sources:
     update_frequency: "Early ~4h, Late ~14h, Final ~3.5 months"
     auth: "requires Earthdata Login"
     variables: "precipitationCal, randomError, probabilityLiquidPrecipitation"
-    implementation_status: requires_credentials
-    notes: "Use `earthaccess` library. Note V07->V08 transition (V07 Final ends Sep 2025)."
+    implementation_status: implemented_but_not_verified
+    verification_date: "2026-10-28"
+    notes: "earthaccess adapter (ingestion/imerg.py) for daily point extraction; unit-tested with mocks, live verification needs Earthdata credentials (.netrc or earthaccess.login)."
 
   - id: chirps-v3
     name: "CHIRPS v3 precipitation (UCSB Climate Hazards Center)"

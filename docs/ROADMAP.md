@@ -37,7 +37,8 @@
 
 ## Next (prioritized)
 
-1. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
+1. **Verify IMERG live** — supply Earthdata credentials (`.netrc` or
+   `earthaccess.login`) to complete `implemented_and_tested` for the IMERG adapter.
 2. Palau geometry refinement / area-weighted aggregation / map polygon rendering.
 
 ## Deferred / not attempted
