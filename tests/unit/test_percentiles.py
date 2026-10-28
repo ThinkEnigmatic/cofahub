@@ -8,6 +8,7 @@ import pandas as pd
 
 from cofa_forward.drought.percentiles import (
     category_from_percentile,
+    drought_level,
     empirical_percentile,
     monthly_percentiles,
 )
@@ -56,3 +57,13 @@ def test_normal_score():
     assert math.isclose(percentile_to_normal_score(0.975), 1.96, abs_tol=0.01)
     assert math.isclose(percentile_to_normal_score(0.025), -1.96, abs_tol=0.01)
     assert pd.isna(percentile_to_normal_score(float("nan")))
+
+
+def test_drought_level():
+    assert drought_level(0.01) == "D4"
+    assert drought_level(0.03) == "D3"
+    assert drought_level(0.07) == "D2"
+    assert drought_level(0.15) == "D1"
+    assert drought_level(0.25) == "D0"
+    assert drought_level(0.5) is None  # not in drought
+    assert drought_level(float("nan")) is None

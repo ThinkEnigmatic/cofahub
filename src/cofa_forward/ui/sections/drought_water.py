@@ -7,7 +7,7 @@ import streamlit as st
 
 from ...climate.climatology import compute_location_climatology, compute_monthly_climatology
 from ...drought.alerts import evaluate_alerts
-from ...drought.percentiles import category_from_percentile, empirical_percentile
+from ...drought.percentiles import category_from_percentile, drought_level, empirical_percentile
 from ...drought.rainfall_metrics import rolling_totals
 from ...drought.spi import note as spi_note
 from ...visualization.charts import rainfall_timeseries, rolling_totals_chart
@@ -127,9 +127,16 @@ def render() -> None:
     )
     pct = latest.get("percentile")
     c3.metric("Rainfall percentile", f"{pct:.0%}" if pct is not None else "n/a")
-    c4.metric("Drought category", cat)
+    d_level = drought_level(pct)
+    c4.metric(
+        "Drought level (D0–D4)",
+        d_level if d_level else ("none" if pct is not None else "n/a"),
+        help="Precipitation-percentile approximation of the USDM D0–D4 scale. "
+        "The official US Drought Monitor is US-only; this is an internal FAS scale.",
+    )
     st.caption(
-        f"Baseline: {d['baseline_start']}–{d['baseline_end']} (valid: {clim['baseline_valid']})."
+        f"Baseline: {d['baseline_start']}–{d['baseline_end']} (valid: {clim['baseline_valid']}). "
+        f"Category: {cat}."
     )
 
     st.divider()

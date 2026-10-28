@@ -12,6 +12,8 @@ from ...visualization.charts import track_map
 from ..components.common import page_header, render_plotly, sample_banner
 from ..state import (
     get_active_storms,
+    get_himawari_image,
+    get_jtwc_warnings,
     get_real_tracks,
     get_sample_tracks,
     get_storm_details,
@@ -57,6 +59,50 @@ def render() -> None:
         st.caption(f"Source: JMA RSMC Tokyo ({active['retrieved_at']}).")
     else:
         st.info("Active-storm check unavailable (offline?). No storms are invented.", icon="🌀")
+
+    st.divider()
+
+    # ---- JTWC warnings (1-min wind + quadrant radii) ---- #
+    st.subheader("JTWC warnings (1-minute wind)")
+    if st.button("Check JTWC warnings"):
+        get_jtwc_warnings.clear()
+    jtwc = get_jtwc_warnings()
+    if jtwc.get("n_active"):
+        for w in jtwc["storms"]:
+            pos = w.get("position") or {}
+            st.markdown(
+                f"**{w['name']}** ({w['storm_type']}, warning {w['warning_number']}) — "
+                f"**{w.get('wind_kt')} kt** (1-min), gusts {w.get('gusts_kt')} kt, "
+                f"at {pos.get('lat', 0):.1f}°N {pos.get('lon', 0):.1f}°E, "
+                f"moving {w.get('movement_dir_deg')}° @ {w.get('movement_speed_kt')} kt · "
+                f"{len(w.get('forecasts', []))} forecast points."
+            )
+        st.caption(
+            "JTWC 1-minute sustained wind differs from JMA's 10-minute mean. "
+            "Quadrant wind radii (34/50/64 kt) are parsed and available."
+        )
+    else:
+        st.info("No active JTWC warnings at this time (or unavailable offline).", icon="🌀")
+
+    st.divider()
+
+    # ---- Satellite imagery (Himawari-9) ---- #
+    st.subheader("Satellite view — Himawari-9")
+    hima = get_himawari_image()
+    if hima.get("ok"):
+        st.image(
+            hima["image_url"],
+            caption=f"Himawari-9 full disk (composite), {hima['time']} UTC. "
+            "The Freely Associated States are in the western-Pacific portion "
+            "(upper-left of the disk).",
+            width=700,
+        )
+        st.caption(
+            "10-minute cadence; JMA/NICT Himawari real-time web. No storm tracks "
+            "are overlaid here yet."
+        )
+    else:
+        st.info("Satellite imagery unavailable (offline?).", icon="🛰️")
 
     st.divider()
 

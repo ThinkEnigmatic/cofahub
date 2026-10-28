@@ -13,12 +13,12 @@ geospatial foundation. Repo: `~/cofa-forward`.
 ## Where things stand
 
 - **20 commits**; latest `10e9372`. Git repo is local (no remote).
-- **Tests:** 162 offline + 11 live-network pass. Lint/format clean (ruff).
+- **Tests:** 171 offline + 13 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest).
 - **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel → `127.0.0.1:8501`),
   protected by **Cloudflare Access** (allow `bhemingway@gmail.com`, team
   `bold-field-37ad`, 24h session). See the *Deployment* section below.
-- All 11 data-source adapters are live-tested, including IMERG (Earthdata token).
+- All 13 data-source adapters are live-tested, including IMERG (Earthdata token).
   Remaining: PEAC outlook (HTML) + map polygon rendering / area-weighted aggregation.
 
 ## Commands
@@ -111,6 +111,8 @@ reference:
 | noaa-cpc-enso | enso.py | ONI `oni.ascii.txt`; phase via ≥5-season criterion |
 | noaa-ibtracs | ibtracs.py | WP-basin CSV (114 MB); WMO wind/pressure |
 | jma-rsmc-tokyo | jma.py | active storms `targetTc.json` → `specifications.json` |
+| jtwc-advisories | jtwc.py | ATCF text warnings: 1-min wind, quadrant radii, forecast |
+| jma-himawari | himawari.py | Himawari-9 full-disk visible composite (10-min) |
 | chirps-v3 | chirps.py | monthly COGs via rasterio `/vsicurl/` (land-masked) |
 | worldpop-population | population.py | ~1 km UN-adjusted grids; point/radius |
 | hdx-cod-ab | boundaries.py | FSM/RMI polygons via pyshp+rasterio; zonal pop |
@@ -128,7 +130,7 @@ bulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO, WeatherNe
 ```
 config/            app, geography (seed), sources, enso, drought, cyclones, alerts, bulletins
 src/cofa_forward/
-  ingestion/       base + 11 live adapters + bulletins monitor + stubs
+  ingestion/       base + 13 live adapters + bulletins monitor + stubs
   storage/         FileCache, SQLite Database (provenance/bulletins), parquet, provenance
   geography/       registry (points), spatial_attribution (haversine), aggregation
   climate/         enso_state, episodes, analogs, climatology

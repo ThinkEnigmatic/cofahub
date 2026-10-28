@@ -68,3 +68,28 @@ def category_from_percentile(p: float, categories: list[dict]) -> str:
         if lo <= p < hi:
             return c["label"]
     return "no data"
+
+
+def drought_level(p: float) -> str | None:
+    """Map an empirical percentile (0..1) to a D0–D4 drought category.
+
+    These thresholds mirror the US Drought Monitor's precipitation-percentile
+    bands (D0 abnormally dry … D4 exceptional). **This is a
+    precipitation-percentile approximation, NOT the official US Drought Monitor**
+    — which is US-only and blends many indicators (SPI, soil moisture,
+    streamflow). The FAS is outside the USDM; use this as an internal
+    precipitation-drought scale only.
+    """
+    if pd.isna(p):
+        return None
+    if p < 0.02:
+        return "D4"
+    if p < 0.05:
+        return "D3"
+    if p < 0.10:
+        return "D2"
+    if p < 0.20:
+        return "D1"
+    if p < 0.30:
+        return "D0"
+    return None

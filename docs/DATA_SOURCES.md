@@ -47,11 +47,18 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 * **JMA RSMC Tokyo** JSON (`targetTc.json`, `specifications.json`, `forecast.json`,
   `pastTracks.json`) — authoritative active-storm source. **Implemented.**
 * **JTWC** text warnings (`tgftp.nws.noaa.gov/data/raw/wt/wtpn3x.pgtw..txt`) — 1-min
-  wind + quadrant radii. *Planned* (plain-text regex).
+  wind + quadrant radii + forecast track. **Implemented** (full ATCF-text parser).
 * **NWS Guam / PEAC** (`wtpq3x.pgum.*`, `api.weather.gov/alerts`) — FAS island-specific
   watches/warnings. *Planned.*
 * ⚠️ Wind-speed averaging differs by agency (JMA 10-min vs JTWC/NWS 1-min). Always
   carry the agency + averaging period with any wind value.
+
+## Satellite imagery
+
+* **Himawari-9** (JMA/NICT real-time web) — full-disk visible composite, 10-min
+  cadence. **Implemented** (latest full-disk tile shown on the Tropical Cyclones
+  page). IR bands and region-zoom tiles are a follow-up.
+* GOES / Sentinel / VIIRS — planned (heavier, not yet wired).
 
 ## Precipitation & drought
 
@@ -101,6 +108,16 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
   `ecmwf-opendata`).
 * **NOAA GFS/GEFS** (NOMADS / AWS NODD `s3://noaa-gfs-bdp-pds`) — public domain,
   0.25°, byte-range GRIB2 subsetting. **Free fallback.**
+
+## Requested but not freely accessible
+
+* **Windy** — commercial API only (`api.windy.com`); no free tier. Equivalent model
+  data (ECMWF/GFS/ICON/GEM) is already integrated via Open-Meteo multi-model.
+* **Weather Underground** — the free API was discontinued (2023); commercial only.
+* **Meteoconsult** — no public free API, limited Pacific coverage.
+* **NOAA US Drought Monitor (USDM)** — **US-only** (does not cover Palau/FSM/RMI).
+  The app computes an internal precipitation-percentile **D0–D4** drought level
+  instead, and uses CHIRPS/IMERG/ERA5 for drought indicators.
 
 ## Attribution & license notes
 

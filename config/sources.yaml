@@ -101,9 +101,26 @@ sources:
     temporal_resolution: "6-hourly warnings + 5-day forecast"
     update_frequency: "6-hourly"
     auth: "none"
-    variables: "1-min sustained wind, quadrant wind radii (34/50/64 kt), MSLP, forecast"
-    implementation_status: planned
-    notes: "Plain-text warnings on the NWS mirror; regex-parse. Not yet implemented."
+    variables: "1-min sustained wind, quadrant wind radii (34/50/64 kt), MSLP, forecast track"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "ATCF-style text warnings parsed into structured data (position, 1-min wind, radii, forecast). Complements JMA (10-min wind)."
+
+  - id: jma-himawari
+    name: "JMA Himawari-9 geostationary satellite imagery"
+    publisher: "JMA / NICT"
+    url: "https://himawari8.nict.go.jp/"
+    api: "https://himawari8.nict.go.jp/img/D531106/1d/1100/{date}/{time}_0_0.png"
+    license: "JMA/NICT terms (attribution)"
+    geographic_coverage: "Full disk (80E–160W; FAS in western-Pacific portion)"
+    spatial_resolution: "~0.5–2 km (full-disk composite; higher-zoom tiles available)"
+    temporal_resolution: "10-minute cadence"
+    update_frequency: "every 10 minutes"
+    auth: "none"
+    variables: "visible composite imagery"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Full-disk composite shown in the app (Tropical Cyclones page). IR bands and region zoom tiles are a follow-up."
 
   - id: nws-guam
     name: "NWS Guam / PEAC (FAS watches & warnings)"
@@ -333,3 +350,44 @@ sources:
     variables: "full forecast fields (Zarr/BigQuery, not GRIB)"
     implementation_status: unavailable
     notes: "Allowlist-gated, non-GRIB, ensemble bucket Requester-Pays. Apply and keep optional; ECMWF AIFS / GFS are the realistic free alternatives."
+
+  # --- Requested but NOT freely accessible (documented honestly) ---
+  - id: windy
+    name: "Windy"
+    publisher: "Windy.com"
+    url: "https://www.windy.com/"
+    license: "Commercial API"
+    geographic_coverage: "Global"
+    auth: "requires paid API key (api.windy.com); no free tier"
+    implementation_status: unavailable
+    notes: "No free public API. Model data (ECMWF/GFS/ICON/GEM) already integrated via Open-Meteo multi-model."
+
+  - id: wunderground
+    name: "Weather Underground"
+    publisher: "Weather Underground (IBM/The Weather Company)"
+    url: "https://www.wunderground.com/"
+    license: "Commercial"
+    geographic_coverage: "Global"
+    auth: "free API discontinued (2023)"
+    implementation_status: unavailable
+    notes: "The free WU API was shut down. Use Open-Meteo / GFS / METAR alternatives instead."
+
+  - id: meteoconsult
+    name: "Meteoconsult (MétéoConsult)"
+    publisher: "Meteoconsult / La Chaîne Météo"
+    url: "https://www.meteoconsult.fr/"
+    license: "Commercial"
+    geographic_coverage: "Primarily Europe"
+    auth: "no public free API"
+    implementation_status: unavailable
+    notes: "No public free API and minimal Pacific coverage. Meteoblue has a free non-commercial API if a European NWP alternative is wanted."
+
+  - id: noaa-drought-monitor
+    name: "NOAA US Drought Monitor (USDM)"
+    publisher: "NOAA/NDMC/USDA"
+    url: "https://droughtmonitor.unl.edu/"
+    license: "Public domain"
+    geographic_coverage: "US + territories only — does NOT cover Palau/FSM/RMI"
+    auth: "none"
+    implementation_status: unavailable
+    notes: "USDM is US-only. The app instead computes a precipitation-percentile D0–D4 drought level (internal FAS scale) and uses CHIRPS/IMERG/ERA5 for drought indicators. USGS western-Pacific product (P1RXUMV3) covers FSM/RMI (planned)."

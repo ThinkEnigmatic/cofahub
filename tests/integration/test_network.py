@@ -81,3 +81,27 @@ def test_live_imerg_daily():
     assert r["ok"], f"live IMERG failed: {r.get('error')}"
     assert r["n_days"] == 3
     assert r["series"].notna().all()
+
+
+def test_live_jtwc_warning():
+    from cofa_forward.ingestion.jtwc import JtwcAdapter
+
+    adapter = JtwcAdapter()
+    r = adapter.get_active_warnings()
+    assert r["ok"], f"live JTWC failed: {r.get('errors')}"
+    # If there are active storms, the parse must have produced identities.
+    for w in r["storms"]:
+        assert w.get("storm_id")
+        assert w.get("name")
+        assert w.get("position") is not None
+
+
+def test_live_himawari_image():
+    import requests
+
+    from cofa_forward.ingestion.himawari import HimawariAdapter
+
+    r = HimawariAdapter().latest_full_disk()
+    assert r["ok"]
+    resp = requests.head(r["image_url"], timeout=20)
+    assert resp.status_code == 200, f"Himawari tile returned {resp.status_code}"

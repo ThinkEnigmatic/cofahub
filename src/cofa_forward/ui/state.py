@@ -139,6 +139,23 @@ def get_active_storms() -> dict:
     return adapter.active_storms()
 
 
+@st.cache_data(ttl=600, show_spinner=False)
+def get_jtwc_warnings() -> dict:
+    """Fetch current JTWC tropical cyclone warnings (1-min wind + radii)."""
+    from ..ingestion.jtwc import JtwcAdapter
+
+    adapter = JtwcAdapter(cache=make_cache())
+    return adapter.get_active_warnings()
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def get_himawari_image(width: int = 550) -> dict:
+    """Latest Himawari-9 full-disk satellite image (cached 10 min)."""
+    from ..ingestion.himawari import HimawariAdapter
+
+    return HimawariAdapter().latest_full_disk(width=width)
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_storm_details(tc_id: str) -> dict:
     from ..ingestion.jma import JmaTyphoonAdapter
