@@ -1,4 +1,4 @@
-.PHONY: install test lint format network run init report sources
+.PHONY: install test lint format network run init report sources monitor
 
 install:
 	uv sync
@@ -27,3 +27,6 @@ report:
 
 sources:
 	uv run python scripts/check_sources.py
+
+monitor:
+	uv run python scripts/monitor_bulletins.py

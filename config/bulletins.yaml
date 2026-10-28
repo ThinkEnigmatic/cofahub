@@ -1,0 +1,25 @@
+# COFA FORWARD — bulletin / advisory monitoring sources
+# These are public text/JSON/HTML bulletins. The monitor polls them, detects new
+# or updated content (by content hash), parses a structured summary, stores a raw
+# snapshot, and surfaces updates. None of these require authentication.
+# kind values: wmo_text (NWS/JTWC text products), jma_info (JMA JSON), cpc_enso_html.
+sources:
+  - id: nws-guam-tcp
+    name: "NWS Guam Tropical Cyclone Public Advisory"
+    url: "https://tgftp.nws.noaa.gov/data/raw/wt/wtpq31.pgum.tcp.pq1.txt"
+    kind: "wmo_text"
+
+  - id: jtwc-warning
+    name: "JTWC Tropical Cyclone Warning"
+    url: "https://tgftp.nws.noaa.gov/data/raw/wt/wtpn31.pgtw..txt"
+    kind: "wmo_text"
+
+  - id: jma-typhoon-info
+    name: "JMA Typhoon Information (general bulletins)"
+    url: "https://www.jma.go.jp/bosai/information/data/typhoon.json"
+    kind: "jma_info"
+
+  - id: cpc-enso-discussion
+    name: "CPC ENSO Diagnostic Discussion"
+    url: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.html"
+    kind: "cpc_enso_html"

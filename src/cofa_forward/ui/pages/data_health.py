@@ -23,6 +23,12 @@ def render() -> None:
     cfg = load_config()
     page_header("Data Sources & System Health", "Provider status, ingestion history, provenance")
 
+    try:
+        db = make_db()
+    except Exception as exc:  # pragma: no cover - defensive
+        db = None
+        st.warning(f"Could not open metadata DB: {exc}")
+
     st.subheader("Application")
     st.write(f"- Version: **{__version__}**")
     st.write(f"- Geographic registry status: **{cfg.geography_status}** (seed, approximate)")
@@ -55,20 +61,51 @@ def render() -> None:
     st.divider()
 
     st.subheader("Ingestion history")
-    try:
-        db = make_db()
+    history = []
+    if db is not None:
         history = db.query(
             "SELECT source_id, status, message, retrieved_at FROM ingestion_history "
             "ORDER BY id DESC LIMIT 25"
         )
-    except Exception as exc:  # pragma: no cover - defensive
-        history = []
-        st.warning(f"Could not read ingestion history: {exc}")
 
     if history:
         st.dataframe(pd.DataFrame(history), width="stretch", hide_index=True)
     else:
         st.info("No ingestion has been recorded yet (no live fetches performed).", icon="ℹ️")
+
+    st.divider()
+
+    st.subheader("Bulletins & alerts (monitor)")
+    st.write(
+        "Polls public bulletins (NWS Guam, JTWC, JMA, CPC ENSO) for new or updated "
+        "content, parses a summary, stores a raw snapshot, and logs each update."
+    )
+    if st.button("Run bulletin monitor now"):
+        from ...ingestion.bulletins import BulletinMonitor
+        from ...storage.cache import FileCache
+
+        with st.spinner("Polling bulletin sources…"):
+            monitor = BulletinMonitor(
+                cfg, cache=FileCache(cfg.data_dir("cache"), cfg.cache_ttl_seconds), db=db
+            )
+            updates = monitor.check_all()
+        if updates:
+            for u in updates:
+                st.success(
+                    f"Updated: {u['name']} ({u['retrieved_at']}) — {u['summary']}", icon="📣"
+                )
+        else:
+            st.info("No new or updated bulletins detected.", icon="✅")
+
+    recent = db.recent_bulletins(20) if db is not None else []
+    if recent:
+        st.dataframe(
+            pd.DataFrame(recent)[["source_id", "name", "retrieved_at", "summary"]],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.caption("No bulletin updates recorded yet — run the monitor (or schedule it).")
 
     st.divider()
 

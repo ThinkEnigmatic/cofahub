@@ -179,6 +179,13 @@ class Config:
         return [AlertThreshold(**a) for a in raw]
 
     # ------------------------------------------------------------------ #
+    # Bulletins
+    # ------------------------------------------------------------------ #
+    def bulletin_sources(self) -> list[dict[str, Any]]:
+        data = _load_yaml(self.config_dir / "bulletins.yaml")
+        return data.get("sources", [])
+
+    # ------------------------------------------------------------------ #
     # Environment / secrets
     # ------------------------------------------------------------------ #
     @staticmethod

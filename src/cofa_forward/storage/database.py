@@ -60,8 +60,30 @@ CREATE TABLE IF NOT EXISTS documents (
     citation TEXT
 );
 
+CREATE TABLE IF NOT EXISTS bulletins (
+    source_id TEXT PRIMARY KEY,
+    name TEXT,
+    retrieved_at TEXT,
+    content_hash TEXT,
+    summary TEXT,
+    raw_path TEXT,
+    updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS bulletin_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id TEXT,
+    name TEXT,
+    retrieved_at TEXT,
+    content_hash TEXT,
+    summary TEXT,
+    raw_path TEXT,
+    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_prov_dataset ON provenance(dataset_id);
 CREATE INDEX IF NOT EXISTS idx_ingest_source ON ingestion_history(source_id);
+CREATE INDEX IF NOT EXISTS idx_bulletin_updates ON bulletin_updates(created_at);
 """
 
 
@@ -139,6 +161,50 @@ class Database:
             "VALUES (?, ?, ?, ?, ?)",
             (source_id, status, message, retrieved_at, valid_time),
         )
+
+    def get_bulletin_hash(self, source_id: str) -> str | None:
+        rows = self.query("SELECT content_hash FROM bulletins WHERE source_id = ?", (source_id,))
+        return rows[0]["content_hash"] if rows else None
+
+    def upsert_bulletin(
+        self,
+        source_id: str,
+        name: str,
+        retrieved_at: str,
+        content_hash: str,
+        summary: str,
+        raw_path: str,
+    ) -> None:
+        sql = (
+            "INSERT INTO bulletins "
+            "(source_id, name, retrieved_at, content_hash, summary, raw_path) "
+            "VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(source_id) DO UPDATE SET "
+            "name=excluded.name, retrieved_at=excluded.retrieved_at, "
+            "content_hash=excluded.content_hash, summary=excluded.summary, "
+            "raw_path=excluded.raw_path, "
+            "updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now')"
+        )
+        self.execute(sql, (source_id, name, retrieved_at, content_hash, summary, raw_path))
+
+    def insert_bulletin_update(
+        self,
+        source_id: str,
+        name: str,
+        retrieved_at: str,
+        content_hash: str,
+        summary: str,
+        raw_path: str,
+    ) -> None:
+        sql = (
+            "INSERT INTO bulletin_updates "
+            "(source_id, name, retrieved_at, content_hash, summary, raw_path) "
+            "VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        self.execute(sql, (source_id, name, retrieved_at, content_hash, summary, raw_path))
+
+    def recent_bulletins(self, limit: int = 50) -> list[dict[str, Any]]:
+        return self.query("SELECT * FROM bulletin_updates ORDER BY id DESC LIMIT ?", (limit,))
 
     def close(self) -> None:
         self._conn.close()

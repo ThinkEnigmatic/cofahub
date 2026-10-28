@@ -25,8 +25,9 @@ spi:
 
 freshwater:
   # Framework for freshwater vulnerability. Inputs that are NOT available must
-  # NOT be fabricated into a composite score. v0.1.0 reports meteorological
-  # drought indicators only and lists missing information.
+  # NOT be fabricated into a composite score. Meteorological indicators and a
+  # clearly-labeled modeled water-balance forecast are computed; actual shortage
+  # is never inferred from rainfall alone.
   available_inputs: []
   missing_inputs:
     - "Freshwater lens characteristics"
@@ -36,3 +37,16 @@ freshwater:
     - "Documented historical water shortages (structured)"
     - "Local water advisories"
   note: "Do not infer actual freshwater shortage from a rainfall anomaly alone."
+  water_balance:
+    # Documented PLANNING DEFAULTS for the modeled water-need forecast. These are
+    # NOT measured site data — see docs/SCIENTIFIC_METHODS.md. Override per entity
+    # in per_entity below when real catchment/storage/desalination data exists.
+    per_capita_lpd: 100.0            # litres/person/day (WHO basic domestic access ~50-100)
+    per_person_catchment_m2: 10.0    # assumed effective roof catchment per person
+    collection_efficiency: 0.8       # fraction of rainfall collected
+    storage_l: null                  # assumed storage (null -> 0, conservative)
+    note: >
+      Modeled estimate using documented planning defaults. Actual catchment,
+      storage, desalination, and abstraction data are MISSING for all seed
+      locations and are listed rather than fabricated.
+    per_entity: {}                   # e.g. {"PAL-KOR": {"per_capita_lpd": 120, "storage_l": 50000}}

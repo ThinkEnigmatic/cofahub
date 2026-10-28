@@ -75,3 +75,31 @@ Meteorological drought, hydrological stress, reported shortage, and modeled
 future risk are separate concepts. A composite score is not computed unless all
 required inputs exist; otherwise meteorological indicators are shown and missing
 inputs are listed explicitly.
+
+## Water-need forecast (modeled water balance)
+
+A deterministic water-balance model estimates, per island/atoll, whether forecast
+rainfall over the next N days meets the population's water demand:
+
+* daily demand (L) = population × `per_capita_lpd`
+* catchment area (m²) = population × `per_person_catchment_m2`
+* daily supply (L) = forecast precip (mm) × catchment (m²) × efficiency
+  (1 mm over 1 m² = 1 L)
+* required rainfall (mm) = total demand / (catchment × efficiency)
+* balance (mm) = forecast rainfall − required rainfall (negative → projected deficit)
+
+Defaults (`config/drought.yaml → freshwater.water_balance`): 100 L/person/day,
+10 m²/person catchment, 0.8 collection efficiency, storage assumed 0
+(conservative). These are **documented planning defaults, not measured site
+data**; actual catchment, storage, desalination, and abstraction data are listed
+as missing. The output is a **modeled rainfall-driven deficit/surplus**, never a
+claim of actual water shortage.
+
+## Bulletin monitoring
+
+Authoritative sources that publish regular public bulletins (rather than stable
+APIs) are polled by `ingestion/bulletins.py`: content is fetched, hashed, and —
+on change — parsed into a structured summary, snapshotted to `data/raw/bulletins/`,
+and logged as an update. Parsers cover NWS/JTWC WMO text products (header, agency,
+issue time, headline), JMA typhoon bulletins, and the CPC ENSO Diagnostic
+Discussion (the official ENSO alert status). See `docs/DATA_SOURCES.md`.

@@ -26,6 +26,7 @@ from cofa_forward.ui.pages import (  # noqa: E402
     overview,
     reports,
     tropical_cyclones,
+    water_need,
     weather,
 )
 
@@ -43,6 +44,7 @@ PAGES = {
     "Weather Operations": weather.render,
     "ENSO & Climate": enso_climate.render,
     "Drought & Water": drought_water.render,
+    "Water Need Forecast": water_need.render,
     "Tropical Cyclones": tropical_cyclones.render,
     "Historical Impacts": historical_impacts.render,
     "Island Profiles": island_profiles.render,

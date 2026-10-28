@@ -7,6 +7,7 @@ re-synthesizes data on every interaction.
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from ..climate.climatology import compute_location_climatology  # noqa: F401 (re-export convenience)
@@ -144,3 +145,19 @@ def get_storm_details(tc_id: str) -> dict:
 
     adapter = JmaTyphoonAdapter(cache=make_cache())
     return adapter.storm_details(tc_id)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 16) -> dict:
+    """Fetch the daily forecast precipitation (mm) series for a location."""
+    from ..ingestion.weather import OpenMeteoForecastAdapter
+
+    adapter = OpenMeteoForecastAdapter(config=load_config(), cache=make_cache())
+    r = adapter.get_forecast(lat, lon, forecast_days=days)
+    if not r.get("ok") or r["daily"].empty:
+        return {"ok": False, "error": r.get("error"), "series": pd.Series(dtype=float)}
+    return {
+        "ok": True,
+        "series": r["daily"]["precipitation_sum"],
+        "retrieved_at": r["retrieved_at"],
+    }

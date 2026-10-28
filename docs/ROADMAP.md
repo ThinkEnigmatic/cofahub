@@ -15,6 +15,14 @@
   gamma-fit SPI (MLE + zero-precipitation handling), both tested.
 * **Data-source research** — 5 extensive research passes; all remaining sources
   verified and cataloged (see docs/DATA_SOURCES.md).
+* **Water-need forecast (micro level)** — deterministic modeled water balance per
+  island/atoll: population → demand → required rainfall vs forecast → projected
+  deficit/surplus, with documented planning-default assumptions and a new
+  "Water Need Forecast" page.
+* **Bulletin monitor** — polls public bulletins (NWS Guam, JTWC, JMA, CPC ENSO),
+  detects new/updated content by hash, parses structured summaries (incl. the
+  official CPC ENSO alert status), snapshots raw text, and logs updates to the
+  dataset dynamically (CLI + UI feed + scheduling doc).
 
 ## Next (prioritized)
 

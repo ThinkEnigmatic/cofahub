@@ -22,6 +22,7 @@ PAGES = [
     "Weather Operations",
     "ENSO & Climate",
     "Drought & Water",
+    "Water Need Forecast",
     "Tropical Cyclones",
     "Historical Impacts",
     "Island Profiles",
