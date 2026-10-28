@@ -1,0 +1,267 @@
+# COFA FORWARD — geographic registry (SEED DATA)
+# ---------------------------------------------------------------------------
+# These coordinates are APPROXIMATE seed locations, drawn from public gazetteer
+# knowledge, NOT authoritative boundaries. They are sufficient to drive the map
+# and to attribute coarse-grid model data to representative points, but they do
+# NOT constitute a validated geographic inventory.
+#
+# NEVER treat these as precise atoll-scale boundaries or surveyed coordinates.
+# The registry is designed so a complete, validated FAS island/atoll inventory
+# can replace this file later WITHOUT changing core application code.
+# ---------------------------------------------------------------------------
+schema_version: 1
+status: "seed"   # distinguishes this from a complete, validated inventory
+entities:
+  # ---- Countries ----
+  - geo_id: PAL
+    name: "Palau"
+    entity_type: country
+    country_code: PW
+    parent_geo_id: null
+    latitude: 7.5149
+    longitude: 134.5825
+    population: 18000
+    population_year: 2022
+    population_source: "seed_approximate"
+    area_km2: 459
+    data_coverage: "moderate"
+    notes: "Country. Coordinates approximate centroid; area/ population approximate."
+
+  - geo_id: FSM
+    name: "Federated States of Micronesia"
+    entity_type: country
+    country_code: FM
+    parent_geo_id: null
+    latitude: 6.8874
+    longitude: 158.2150
+    population: 105000
+    population_year: 2022
+    population_source: "seed_approximate"
+    area_km2: 702
+    data_coverage: "moderate"
+    notes: "Country. Four states (Yap, Chuuk, Pohnpei, Kosrae)."
+
+  - geo_id: RMI
+    name: "Republic of the Marshall Islands"
+    entity_type: country
+    country_code: MH
+    parent_geo_id: null
+    latitude: 7.1165
+    longitude: 171.1850
+    population: 42000
+    population_year: 2022
+    population_source: "seed_approximate"
+    area_km2: 181
+    data_coverage: "moderate"
+    notes: "Country. Composed of atolls; low-lying coral islands."
+
+  # ---- FSM states ----
+  - geo_id: FSM-YAP
+    name: "Yap"
+    entity_type: state
+    country_code: FM
+    parent_geo_id: FSM
+    latitude: 9.5160
+    longitude: 138.1300
+    population: 11000
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "FSM state."
+
+  - geo_id: FSM-CHUUK
+    name: "Chuuk"
+    entity_type: state
+    country_code: FM
+    parent_geo_id: FSM
+    latitude: 7.4470
+    longitude: 151.8490
+    population: 48000
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "FSM state."
+
+  - geo_id: FSM-POH
+    name: "Pohnpei"
+    entity_type: state
+    country_code: FM
+    parent_geo_id: FSM
+    latitude: 6.9640
+    longitude: 158.2080
+    population: 36000
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "FSM state."
+
+  - geo_id: FSM-KOS
+    name: "Kosrae"
+    entity_type: state
+    country_code: FM
+    parent_geo_id: FSM
+    latitude: 5.3250
+    longitude: 163.0000
+    population: 6600
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "FSM state."
+
+  # ---- Palau islands / monitoring locations ----
+  - geo_id: PAL-KOR
+    name: "Koror"
+    entity_type: island
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 7.3420
+    longitude: 134.4780
+    population: 11000
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "Largest population center."
+
+  - geo_id: PAL-BAB
+    name: "Babeldaob"
+    entity_type: island
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 7.5000
+    longitude: 134.5500
+    population: 6000
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "Largest island by area."
+
+  - geo_id: PAL-MEL
+    name: "Melekeok"
+    entity_type: monitoring_location
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 7.5000
+    longitude: 134.6240
+    population: 300
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "Capital (Ngerulmud area)."
+
+  - geo_id: PAL-PEL
+    name: "Peleliu"
+    entity_type: island
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 7.0100
+    longitude: 134.2500
+    population: 500
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southern island."
+
+  - geo_id: PAL-ANG
+    name: "Angaur"
+    entity_type: island
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 6.9000
+    longitude: 134.1300
+    population: 100
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southernmost state."
+
+  - geo_id: PAL-KAY
+    name: "Kayangel"
+    entity_type: atoll
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 8.0800
+    longitude: 134.7200
+    population: 50
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  # ---- RMI atolls / monitoring locations ----
+  - geo_id: RMI-MAJ
+    name: "Majuro"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.1160
+    longitude: 171.1850
+    population: 28000
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "Capital atoll."
+
+  - geo_id: RMI-KWA
+    name: "Kwajalein"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.7200
+    longitude: 167.7300
+    population: 11000
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "moderate"
+    notes: "Large atoll; includes Ebeye."
+
+  - geo_id: RMI-EBE
+    name: "Ebeye"
+    entity_type: monitoring_location
+    country_code: MH
+    parent_geo_id: RMI-KWA
+    latitude: 8.7800
+    longitude: 167.7400
+    population: 9500
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Densely populated islet within Kwajalein."
+
+  - geo_id: RMI-JAL
+    name: "Jaluit"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 5.9200
+    longitude: 169.6300
+    population: 1800
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southern atoll."
+
+  - geo_id: RMI-WOT
+    name: "Wotje"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.4500
+    longitude: 170.0200
+    population: 900
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-ARN
+    name: "Arno"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.0700
+    longitude: 171.5500
+    population: 1700
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Atoll east of Majuro."

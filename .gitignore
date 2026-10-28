@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Data (never commit large datasets or raw source data)
+data/raw/
+data/interim/
+data/processed/
+data/cache/
+data/*.db
+data/*.db-*
+data/samples/*.parquet
+data/samples/*.csv
+data/samples/*.nc
+data/samples/*.zarr
+!data/samples/.gitkeep
+
+# Runtime logs
+logs/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

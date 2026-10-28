@@ -1,0 +1,41 @@
+# COFA FORWARD — application configuration
+app:
+  name: "COFA FORWARD"
+  subtitle: "Weather Operations & Anticipatory Climate Intelligence"
+  version: "0.1.0"
+  region: "Freely Associated States"
+  map_center: { lat: 6.5, lon: 152.0 }
+  map_zoom: 4
+  timezone: "Pacific/Chuuk"
+  default_units: "metric"           # presentation default; metric is the scientific standard
+  allow_imperial: true
+
+data:
+  root: "data"
+  dirs:
+    raw: "data/raw"
+    interim: "data/interim"
+    processed: "data/processed"
+    samples: "data/samples"
+    cache: "data/cache"
+  cache_ttl_seconds: 900            # 15 min default for cached remote fetches
+  provenance_db: "data/catalog.db"
+
+server:
+  host: "127.0.0.1"                 # bind to localhost only (do not expose publicly by default)
+  port: 8501
+
+llm:
+  enabled: false                    # deterministic report fallback is the default
+  endpoint: null
+  model: null
+  api_key_env: "COFA_LLM_API_KEY"
+
+logging:
+  level: "INFO"
+  file: "logs/cofa-forward.log"
+
+scientific:
+  baseline_min_years: 15            # minimum years to compute a climatological anomaly
+  rolling_windows_months: [1, 3, 6, 12]
+  # metric<->imperial conversion factors (explicit, tested)

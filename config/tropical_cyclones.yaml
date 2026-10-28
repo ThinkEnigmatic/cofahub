@@ -1,0 +1,19 @@
+# COFA FORWARD — tropical cyclone configuration
+tropical_cyclones:
+  season:
+    # Western North Pacific basin season (approximate; regional differences apply)
+    start_month: 6
+    end_month: 12
+    note: "Official basin/regional season definitions vary; use agency guidance."
+  subregions:
+    - { id: "palau", name: "Palau", geo_ids: ["PAL"] }
+    - { id: "fsm_west", name: "FSM — Yap", geo_ids: ["FSM-YAP"] }
+    - { id: "fsm_central", name: "FSM — Chuuk", geo_ids: ["FSM-CHUUK"] }
+    - { id: "fsm_east", name: "FSM — Pohnpei/Kosrae", geo_ids: ["FSM-POH", "FSM-KOS"] }
+    - { id: "rmi", name: "RMI", geo_ids: ["RMI"] }
+  proximity:
+    # exposure radius used for "closest approach" summaries (km)
+    approach_thresholds_km: [100, 200, 300]
+  note: "Historical track ingestion (IBTrACS) is Phase 5. No active-storm data is
+         invented; when no confirmed storms are available the UI states the actual
+         data coverage and retrieval time."

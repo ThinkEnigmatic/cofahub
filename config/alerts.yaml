@@ -1,0 +1,43 @@
+# COFA FORWARD — analyst-defined alert thresholds
+# Each threshold is evaluated by drought/alerts.py. These are INTERNAL analyst
+# triggers, NOT official government warnings. Editable here or (later) via the UI.
+alerts:
+  - id: drought-3m-p10
+    name: "3-month rainfall below 10th percentile"
+    indicator: "rolling_rainfall_3m_percentile"
+    geographic_scope: "all"
+    comparison_baseline: "1991-2020"
+    threshold: { operator: "lt", value: 0.10 }
+    persistence_months: 1
+    forecast_horizon: null
+    data_source: "open-meteo-archive"
+    confidence_requirement: "baseline_valid"
+    responsible: "analyst"
+    created: "2026-10-28"
+    note: "Internal watch level. Not an official drought declaration."
+  - id: drought-6m-p20
+    name: "6-month rainfall below 20th percentile"
+    indicator: "rolling_rainfall_6m_percentile"
+    geographic_scope: "all"
+    comparison_baseline: "1991-2020"
+    threshold: { operator: "lt", value: 0.20 }
+    persistence_months: 1
+    forecast_horizon: null
+    data_source: "open-meteo-archive"
+    confidence_requirement: "baseline_valid"
+    responsible: "analyst"
+    created: "2026-10-28"
+    note: "Internal watch level."
+  - id: rain-24h-heavy
+    name: "24h rainfall exceeds 100 mm"
+    indicator: "daily_precipitation_mm"
+    geographic_scope: "all"
+    comparison_baseline: null
+    threshold: { operator: "gt", value: 100.0 }
+    persistence_months: 0
+    forecast_horizon: "24h"
+    data_source: "open-meteo-forecast"
+    confidence_requirement: "any"
+    responsible: "analyst"
+    created: "2026-10-28"
+    note: "Heavy-rain watch for short-range forecast."

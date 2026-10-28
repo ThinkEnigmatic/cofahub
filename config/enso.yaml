@@ -1,0 +1,103 @@
+# COFA FORWARD — ENSO configuration
+# Current-state classification MUST come from an authoritative source. Until the
+# NOAA CPC ONI adapter is implemented (Phase 3), current state is UNAVAILABLE —
+# we do not infer a phase from an old report or a model guess.
+current_state:
+  status: "unavailable"
+  phase: null
+  as_of: null
+  source: null
+  note: "No authoritative ENSO source is configured yet. CPC ONI ingestion is planned (Phase 3)."
+
+oni_thresholds:
+  # NOAA CPC Oceanic Nino Index (3-month running mean of Nino 3.4 SST anomaly).
+  el_nino: 0.5
+  la_nina: -0.5
+  window_months: 3
+  base_period: "1991-2020"
+
+# Historical ENSO episode catalog (SEED — approximate ONI-based windows).
+# Dates are candidate periods for reconstruction, NOT verified exact start/peak/
+# end dates. They must be validated against NOAA CPC ONI records before use in
+# production analysis. intensity is an approximate qualitative label.
+episodes:
+  - id: 1982-83
+    phase: el_nino
+    start: "1982-04-01"
+    peak: "1982-12-15"
+    end: "1983-06-30"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  - id: 1997-98
+    phase: el_nino
+    start: "1997-05-01"
+    peak: "1997-11-15"
+    end: "1998-05-31"
+    intensity: "very_strong"
+    verification_status: "seed_approximate"
+  - id: 2009-10
+    phase: el_nino
+    start: "2009-06-01"
+    peak: "2009-12-15"
+    end: "2010-04-30"
+    intensity: "moderate"
+    verification_status: "seed_approximate"
+  - id: 2015-16
+    phase: el_nino
+    start: "2015-03-01"
+    peak: "2015-12-15"
+    end: "2016-05-31"
+    intensity: "very_strong"
+    verification_status: "seed_approximate"
+  - id: 2023-24
+    phase: el_nino
+    start: "2023-06-01"
+    peak: "2023-12-15"
+    end: "2024-05-31"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  # La Nina episodes (for ENSO-conditioned comparisons)
+  - id: 1988-89
+    phase: la_nina
+    start: "1988-05-01"
+    peak: "1988-12-15"
+    end: "1989-05-31"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  - id: 1998-2001
+    phase: la_nina
+    start: "1998-07-01"
+    peak: "1999-12-15"
+    end: "2001-03-31"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  - id: 2007-08
+    phase: la_nina
+    start: "2007-08-01"
+    peak: "2008-01-15"
+    end: "2008-06-30"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  - id: 2010-12
+    phase: la_nina
+    start: "2010-07-01"
+    peak: "2010-12-15"
+    end: "2012-04-30"
+    intensity: "strong"
+    verification_status: "seed_approximate"
+  - id: 2020-23
+    phase: la_nina
+    start: "2020-08-01"
+    peak: "2021-01-15"
+    end: "2023-03-31"
+    intensity: "moderate"
+    verification_status: "seed_approximate"
+  # Evolving episode — status UNCONFIRMED; do not present as an official ENSO event.
+  - id: 2026-27
+    phase: "unknown"
+    start: null
+    peak: null
+    end: null
+    intensity: null
+    verification_status: "unconfirmed_evolving"
+    note: "Candidate evolving episode; no official classification recorded in this config."

@@ -1,0 +1,129 @@
+# COFA FORWARD — data source catalog
+# Status values (per spec): implemented_and_tested, implemented_but_not_verified,
+# requires_credentials, requires_manual_import, planned, unavailable
+sources:
+  - id: open-meteo-forecast
+    name: "Open-Meteo Forecast API"
+    publisher: "Open-Meteo (CC BY 4.0 for data; API free tier)"
+    url: "https://open-meteo.com/"
+    api: "https://api.open-meteo.com/v1/forecast"
+    license: "Data CC BY 4.0 (attribution required)"
+    geographic_coverage: "Global; covers Palau, FSM, RMI points"
+    spatial_resolution: "~11 km model grid (best-match point extraction)"
+    temporal_resolution: "hourly + daily; 16-day horizon"
+    update_frequency: "Multiple runs per day"
+    auth: "none"
+    variables: "temperature_2m, precipitation, rain, wind_speed_10m, wind_direction_10m, relative_humidity_2m, surface_pressure, cloud_cover, etc."
+    limitations: "Model output (ECMWF/GFS blend), not official station observations. Coarse grid over small atolls."
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Primary live forecast integration. No API key required."
+
+  - id: open-meteo-archive
+    name: "Open-Meteo Historical Weather API (ERA5-based)"
+    publisher: "Open-Meteo / ECMWF ERA5"
+    url: "https://open-meteo.com/en/docs/historical-weather-api"
+    api: "https://archive-api.open-meteo.com/v1/archive"
+    license: "ERA5 data (CC BY 4.0 via CDS; attribution required)"
+    geographic_coverage: "Global"
+    spatial_resolution: "~25 km reanalysis grid"
+    temporal_resolution: "Daily (sub-daily available)"
+    update_frequency: "Static archive back to 1940"
+    auth: "none"
+    variables: "precipitation_sum, temperature_2m_mean, etc."
+    limitations: "Reanalysis, not station data. 25 km grid is coarse for atolls."
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Basis for historical rainfall climatology and anomalies (Phase 3)."
+
+  - id: noaa-cpc-enso
+    name: "NOAA CPC ENSO Diagnostic Discussion / ONI"
+    publisher: "NOAA Climate Prediction Center"
+    url: "https://www.cpc.ncep.noaa.gov/"
+    api: "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
+    license: "U.S. Government public domain"
+    geographic_coverage: "Global (ENSO indices)"
+    spatial_resolution: "n/a (index)"
+    temporal_resolution: "Monthly ONI; monthly/seasonal discussions"
+    update_frequency: "Monthly (ONI), periodic (discussions)"
+    auth: "none"
+    variables: "Oceanic Nino Index, ENSO phase, forecast probabilities"
+    limitations: "Not yet wired into the app (Phase 3)."
+    implementation_status: planned
+    verification_date: "2026-10-28"
+    notes: "Authoritative ENSO classification source. Current ENSO status shown as unavailable until this is implemented."
+
+  - id: noaa-ibtracs
+    name: "IBTrACS (International Best Track Archive for Climate Stewardship)"
+    publisher: "NOAA/NCEI"
+    url: "https://www.ncei.noaa.gov/products/international-best-track-archive"
+    license: "Public / per data-holder terms"
+    geographic_coverage: "Global tropical cyclone basins"
+    spatial_resolution: "Point track (6-hourly, some 3-hourly)"
+    temporal_resolution: "Historical best tracks"
+    update_frequency: "Annual + real-time holdings"
+    auth: "none"
+    variables: "Storm position, intensity (wind), pressure, basin, agency"
+    limitations: "Not yet wired into the app (Phase 5)."
+    implementation_status: planned
+    verification_date: "2026-10-28"
+
+  - id: nasa-gpm-imerg
+    name: "NASA GPM IMERG precipitation"
+    publisher: "NASA"
+    url: "https://gpm.nasa.gov/data/imerg"
+    license: "Public / NASA data policy"
+    geographic_coverage: "Global 60N-60S"
+    spatial_resolution: "0.1 deg (~11 km)"
+    temporal_resolution: "30-min / daily"
+    update_frequency: "Near-real-time + research"
+    auth: "requires Earthdata login for some products"
+    variables: "Precipitation rate/accumulation"
+    limitations: "Requires Earthdata authentication; heavy raster data."
+    implementation_status: planned
+    verification_date: "2026-10-28"
+
+  - id: google-weathernext3
+    name: "Google WeatherNext 3"
+    publisher: "Google"
+    url: "https://developers.google.com/weathernext/guides/access-forecast"
+    license: "Access-controlled"
+    geographic_coverage: "Global (model)"
+    spatial_resolution: "High-resolution ML model"
+    temporal_resolution: "Sub-daily forecast"
+    update_frequency: "Per access terms"
+    auth: "requires GCP + access approval"
+    variables: "Full forecast fields"
+    limitations: "Not accessible without approval. Adapter kept modular; not required for startup."
+    implementation_status: unavailable
+    verification_date: "2026-10-28"
+
+  - id: usgs-westpacific-drought
+    name: "USGS Drought Monitoring and 7-Day Precipitation Forecasting, Western Pacific Nations (2000-2026)"
+    publisher: "USGS"
+    url: "https://doi.org/10.5066/P1RXUMV3"
+    license: "U.S. Government public domain (verify)"
+    geographic_coverage: "Western Pacific nations (coverage per-country to verify)"
+    spatial_resolution: "To verify"
+    temporal_resolution: "Daily 7-day precip; drought indicators"
+    update_frequency: "To verify"
+    auth: "none (verify access mechanism)"
+    variables: "Drought index, 7-day precipitation forecast"
+    limitations: "Access mechanism and per-country coverage NOT yet verified."
+    implementation_status: planned
+    verification_date: "2026-10-28"
+
+  - id: worldpop-population
+    name: "WorldPop population grids"
+    publisher: "WorldPop / University of Southampton"
+    url: "https://www.worldpop.org/"
+    license: "CC BY 4.0 (attribution)"
+    geographic_coverage: "Global (subset FAS)"
+    spatial_resolution: "~100 m to 1 km"
+    temporal_resolution: "Annual estimates"
+    update_frequency: "Periodic"
+    auth: "none"
+    variables: "Population counts"
+    limitations: "Not yet integrated (Phase 6/7 exposure overlays)."
+    implementation_status: planned
+    verification_date: "2026-10-28"
