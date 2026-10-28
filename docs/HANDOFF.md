@@ -12,11 +12,11 @@ geospatial foundation. Repo: `~/cofa-forward`.
 
 ## Where things stand
 
-- **14 commits**; latest `3f4c5fa`. Git repo is local (no remote).
-- **Tests:** 162 offline + 10 live-network pass. Lint/format clean (ruff).
+- **14 commits**; latest `f84395f`. Git repo is local (no remote).
+- **Tests:** 162 offline + 11 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest). Live at `http://127.0.0.1:8501`.
-- Phases 0–7 of the original build prompt are substantially complete; the only
-  remaining item is IMERG live-verification (needs Earthdata credentials).
+- All 11 data-source adapters are live-tested, including IMERG (Earthdata token).
+  Remaining: PEAC outlook (HTML) + map polygon rendering / area-weighted aggregation.
 
 ## Commands
 
@@ -85,10 +85,7 @@ reference:
 | hdx-cod-ab | boundaries.py | FSM/RMI polygons via pyshp+rasterio; zonal pop |
 | geoboundaries | boundaries.py | Palau ADM1 (16 states, ODbL/OSM) via GeoJSON |
 | noaa-nmme | nmme.py | 6-model seasonal ENSMEAN (xarray + netCDF4) |
-
-`implemented_but_not_verified` (adapter + mocks, needs credentials):
-
-| nasa-gpm-imerg | imerg.py | earthaccess daily point extraction (Earthdata login) |
+| nasa-gpm-imerg | imerg.py | daily point extraction (earthaccess; needs token + EULA) |
 
 `planned` (researched, not wired): PEAC seasonal outlook, CPC ENSO Diagnostic
 Discussion (partly via bulletin monitor), JTWC/NWS-Guam advisories (partly via
@@ -100,7 +97,7 @@ bulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO, WeatherNe
 ```
 config/            app, geography (seed), sources, enso, drought, cyclones, alerts, bulletins
 src/cofa_forward/
-  ingestion/       base + 10 live adapters + bulletins monitor + IMERG (needs creds) + stubs
+  ingestion/       base + 11 live adapters + bulletins monitor + stubs
   storage/         FileCache, SQLite Database (provenance/bulletins), parquet, provenance
   geography/       registry (points), spatial_attribution (haversine), aggregation
   climate/         enso_state, episodes, analogs, climatology
@@ -146,13 +143,9 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Roadmap (next iteration)
 
-1. **Complete IMERG** — token auth + CMR search are verified; the remaining step is
-   a **one-time GPM IMERG EULA acceptance** (browser) at
-   `https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ`
-   (the token is stored at `~/.config/cofa-forward/earthdata_token`, 0600).
-2. **PEAC seasonal outlook** — HTML scrape (weather.gov/peac); the rainfall
+1. **PEAC seasonal outlook** — HTML scrape (weather.gov/peac); the rainfall
    outlook appeared stale (SON-2024) in research, so add a freshness guard.
-3. Polish: render boundary polygons on the map; area-weighted aggregation.
+2. Polish: render boundary polygons on the map; area-weighted aggregation.
 
 ## Gotchas
 

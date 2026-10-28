@@ -70,3 +70,14 @@ def test_live_ibtracs_fas_tracks():
     assert r["ok"], f"live IBTrACS failed: {r.get('error')}"
     assert r["n_storms"] > 0
     assert r["n_points"] > 0
+
+
+def test_live_imerg_daily():
+    from cofa_forward.ingestion.imerg import ImergAdapter
+
+    adapter = ImergAdapter()
+    # V07 Final daily extends through ~Sep 2025; use a safe historical window.
+    r = adapter.get_recent_daily(7.34, 134.48, "2025-06-01", "2025-06-03")
+    assert r["ok"], f"live IMERG failed: {r.get('error')}"
+    assert r["n_days"] == 3
+    assert r["series"].notna().all()

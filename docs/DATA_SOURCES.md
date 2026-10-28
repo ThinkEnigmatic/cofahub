@@ -60,9 +60,9 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
   **Land-masked** → sub-pixel islands use a documented max-valid-pixel heuristic; ERA5
   is preferred for ocean-adjacent atolls.
 * **NASA GPM IMERG** (GES DISC) — global incl. ocean, 0.1°, sub-daily.
-  **Implemented but not verified** (`earthaccess` adapter `ingestion/imerg.py` for
-  daily point extraction; needs Earthdata credentials — `.netrc` or
-  `earthaccess.login`). For historical climatology, CHIRPS/ERA5 are more practical.
+  **Implemented & tested** (`earthaccess` adapter `ingestion/imerg.py` for daily
+  point extraction; live-verified with an Earthdata bearer token). Requires
+  `EARTHDATA_TOKEN` (or `.netrc`) + a one-time GPM IMERG EULA acceptance.
   Note V07→V08 transition (V07 Final ends Sep 2025).
 * **PERSIANN-CDR** (NOAA NCEI) — 0.25° daily, 1983–present, no login.
 * **GPCC** (DWD) — gauge-only land; essentially no FAS gauges → *not recommended*.

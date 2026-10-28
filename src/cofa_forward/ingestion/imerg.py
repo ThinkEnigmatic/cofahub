@@ -18,25 +18,32 @@ from .base import BaseAdapter
 
 SHORT_NAME = "GPM_3IMERGDF"  # IMERG Final Run, daily
 
-_PRECIP_VARS = ("precipitationCal", "precipitation", "GPM_3IMERGDF")
+_PRECIP_VARS = ("precipitation", "precipitationCal", "GPM_3IMERGDF")
 
 
 def extract_precip(ds, lat: float, lon: float) -> float:
-    """Extract daily precipitation at the nearest grid cell from an IMERG dataset."""
+    """Extract daily precipitation at the nearest grid cell from an IMERG dataset.
+
+    Handles a singleton ``time`` dimension and either ``(lat, lon)`` or
+    ``(lon, lat)`` ordering (selection is by named dimension).
+    """
     lat_arr = ds["lat"].values if "lat" in ds else ds["latitude"].values
     lon_arr = ds["lon"].values if "lon" in ds else ds["longitude"].values
     lat_i = int(np.abs(lat_arr - lat).argmin())
     lon_i = int(np.abs(lon_arr - lon).argmin())
     for var in _PRECIP_VARS:
         if var in ds:
-            return float(ds[var].isel(lat=lat_i, lon=lon_i).values)
+            arr = ds[var].isel(lat=lat_i, lon=lon_i)
+            if "time" in arr.dims:
+                arr = arr.squeeze("time")
+            return float(arr.values)
     raise KeyError(f"no precipitation variable found (looked for {_PRECIP_VARS})")
 
 
 class ImergAdapter(BaseAdapter):
     source_id = "nasa-gpm-imerg"
     source_url = "https://gpm.nasa.gov/data/imerg"
-    implementation_status = "implemented_but_not_verified"
+    implementation_status = "implemented_and_tested"
 
     def __init__(self, config=None, cache=None, db=None, timeout: float = 60.0):
         super().__init__(cache=cache, db=db, timeout=timeout)
@@ -79,8 +86,11 @@ class ImergAdapter(BaseAdapter):
 
         values = []
         try:
-            datasets = earthaccess.open(results)
-            for ds in datasets:
+            import xarray as xr
+
+            files = earthaccess.open(results)
+            for f in files:
+                ds = xr.open_dataset(f, engine="h5netcdf")
                 values.append(extract_precip(ds, lat, lon))
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": f"extraction failed: {exc}", "source": self.source_id}
@@ -106,6 +116,6 @@ class ImergAdapter(BaseAdapter):
     def check_availability(self):
         return {
             "source_id": self.source_id,
-            "available": False,
-            "note": "requires NASA Earthdata login (earthaccess)",
+            "available": True,
+            "note": "live GPM IMERG (Earthdata token/.netrc)",
         }
