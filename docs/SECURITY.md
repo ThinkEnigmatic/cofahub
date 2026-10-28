@@ -32,14 +32,21 @@ Deployed at **https://cofaforward.benigmatic.com** via a Cloudflare Tunnel:
   (0600) and is read only via `EARTHDATA_TOKEN`; it is **not** in the app image or
   the repository.
 
-### ⚠️ Not yet authenticated
+### Access control (password gate — stopgap)
 
-The app is currently **public** (no Cloudflare Access). It is read-only weather
-data with no admin actions or credentials exposed, but to restrict it to the
-operator, apply a **Cloudflare Access** policy for `cofaforward.benigmatic.com`
-(allowed identity: `bhemingway@gmail.com`), mirroring `ben.benigmatic.com`.
-This requires a valid Cloudflare API token with Access:Edit + Zone:Edit (the one
-at `~/.config/benigmatic/cloudflare_api_token` was invalid/expired at last check).
+The app is protected by a **single shared password** at the application level:
+
+* Password read from `~/.config/cofa-forward/app_password` (0600) when
+  `COFA_REQUIRE_AUTH=1` is set (the deployed launchd service sets it). The login
+  compares with `hmac.compare_digest` (constant-time).
+* Local/dev runs (no env var) skip the gate.
+
+⚠️ This is a stopgap, not multi-user auth. To restrict to the operator with SSO,
+apply a **Cloudflare Access** policy for `cofaforward.benigmatic.com` (allowed
+identity: `bhemingway@gmail.com`), mirroring `ben.benigmatic.com`. This requires
+a valid Cloudflare API token with Access:Apps+Policies:Edit + Zone:DNS:Edit — the
+token at `~/.config/benigmatic/cloudflare_api_token` was invalid/expired at last
+check (returns "Invalid API Token").
 
 ### Manage
 

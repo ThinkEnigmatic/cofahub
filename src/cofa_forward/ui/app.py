@@ -5,6 +5,8 @@ Run with:  uv run streamlit run src/cofa_forward/ui/app.py
 
 from __future__ import annotations
 
+import hmac
+import os
 import sys
 from pathlib import Path
 
@@ -38,6 +40,37 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ---- Optional access gate (single shared password) ------------------------- #
+# Active only when COFA_REQUIRE_AUTH=1 (set by the deployed launchd service).
+# The password is read from ~/.config/cofa-forward/app_password (0600). This is a
+# stopgap until Cloudflare Access is applied; it is NOT multi-user auth.
+_PW_FILE = Path.home() / ".config" / "cofa-forward" / "app_password"
+
+
+def _require_password() -> str | None:
+    if os.environ.get("COFA_REQUIRE_AUTH") != "1":
+        return None
+    if _PW_FILE.exists():
+        return _PW_FILE.read_text(encoding="utf-8").strip()
+    return None
+
+
+_REQUIRED_PW = _require_password()
+if _REQUIRED_PW:
+    if "cofa_authed" not in st.session_state:
+        st.session_state["cofa_authed"] = False
+    if not st.session_state["cofa_authed"]:
+        st.title("🌏 COFA FORWARD")
+        st.caption("Weather Operations & Anticipatory Climate Intelligence")
+        pw = st.text_input("Password", type="password", key="cofa_pw")
+        if st.button("Sign in", type="primary"):
+            if hmac.compare_digest(pw, _REQUIRED_PW):
+                st.session_state["cofa_authed"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password.")
+        st.stop()
 
 PAGES = {
     "Overview": overview.render,
