@@ -27,18 +27,16 @@
   detects new/updated content by hash, parses structured summaries (incl. the
   official CPC ENSO alert status), snapshots raw text, and logs updates to the
   dataset dynamically (CLI + UI feed + scheduling doc).
-* **Administrative boundaries (HDX COD-AB)** — FSM + RMI polygons loaded via
-  pyshp + rasterio (no GDAL/geopandas); accurate zonal WorldPop population per
-  atoll/state wired into Island Profiles (fixes the point+radius undercount).
+* **Administrative boundaries** — FSM/RMI via HDX COD-AB (pyshp+rasterio) and
+  Palau via geoBoundaries (GeoJSON); accurate zonal WorldPop population wired
+  into Island Profiles (fixes the point+radius undercount for all 3 countries).
 * **NMME seasonal forecasts** — 6-model ensemble (xarray + netCDF4), wired into
   the ENSO & Climate page as a multi-model precipitation outlook.
 
 ## Next (prioritized)
 
-1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
-   (⚠️ Cloudflare-blocked; needs browser). Palau has no COD-AB; currently point-based.
-2. **ECMWF AIFS / GFS** model comparison (GRIB via `cfgrib`/`eccodes`).
-3. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
+1. **ECMWF AIFS / GFS** model comparison (GRIB via `cfgrib`/`eccodes`).
+2. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
 
 ## Deferred / not attempted
 

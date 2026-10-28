@@ -280,7 +280,22 @@ sources:
     variables: "administrative boundaries (SHP), P-coded"
     implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
-    notes: "Loaded via pyshp + rasterio (no GDAL/geopandas). Enables accurate zonal WorldPop population. Palau boundaries: SPC Pacific Data Hub (planned)."
+    notes: "Loaded via pyshp + rasterio (no GDAL/geopandas). Enables accurate zonal WorldPop population. Palau: see geoboundaries source (no COD-AB)."
+
+  - id: geoboundaries
+    name: "geoBoundaries administrative boundaries (Palau ADM1)"
+    publisher: "William & Mary geoLab (OpenStreetMap-derived)"
+    url: "https://www.geoboundaries.org/"
+    api: "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/PLW/ADM1/geoBoundaries-PLW-ADM1.geojson"
+    license: "ODbL 1.0 (OSM-derived)"
+    geographic_coverage: "Palau ADM1 (16 states)"
+    spatial_resolution: "ADM1 polygons"
+    temporal_resolution: "static (2017)"
+    auth: "none"
+    variables: "administrative boundaries (GeoJSON)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Parsed with stdlib json. Used for Palau zonal population (Palau has no COD-AB)."
 
   - id: copernicus-dem
     name: "Copernicus DEM GLO-30/GLO-90 (terrain)"

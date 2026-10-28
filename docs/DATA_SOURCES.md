@@ -80,8 +80,8 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 * **HDX COD-AB boundaries** — FSM (`cod-ab-fsm`) and RMI (`cod-ab-mhl`), CC BY-IGO,
   reviewed Oct 2024. **Implemented** (loaded via `pyshp` + `rasterio`, no GDAL/
   geopandas) — enables accurate zonal WorldPop population per atoll/state.
-  **Palau has no COD-AB** → use SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
-  (a documented follow-up; Palau remains point-based).
+  **Palau** (no COD-AB) uses **geoBoundaries ADM1** (16 states, ODbL/OSM), parsed
+  from GeoJSON — also implemented.
 * **Copernicus DEM GLO-30/GLO-90** (AWS Open Data, no login) — DSM terrain.
 * **GEBCO** (CC BY 4.0) — 15 arc-sec topography+bathymetry (atoll coastal exposure).
 * **SRTM GL1** (30 m) — via OpenTopography S3 or Earthdata (login).

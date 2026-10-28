@@ -11,6 +11,7 @@ from rasterio.transform import from_origin
 
 from cofa_forward.ingestion.boundaries import (
     parse_admin_shp,
+    parse_geojson,
     zonal_population,
 )
 
@@ -87,3 +88,23 @@ def test_zonal_population_ignores_nodata(tmp_path):
     val = zonal_population(center, p)
     assert val > 0
     assert val <= 45.0
+
+
+def test_parse_geojson():
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "properties": {"shapeName": "Koror", "shapeISO": "PW-150"},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[134.4, 7.3], [134.5, 7.3], [134.5, 7.4], [134.4, 7.3]]],
+                },
+            }
+        ],
+    }
+    records = parse_geojson(geojson)
+    assert len(records) == 1
+    assert records[0]["name"] == "Koror"
+    assert records[0]["pcode"] == "PW-150"
+    assert records[0]["geometry"]["type"] == "Polygon"

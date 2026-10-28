@@ -193,12 +193,12 @@ def get_worldpop_population(
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_zonal_population(geo_id: str, name: str, country_code: str) -> dict:
-    """WorldPop population within the actual administrative boundary (FSM/RMI)."""
+    """WorldPop population within the actual administrative boundary (FSM/RMI/PW)."""
     from ..ingestion.boundaries import BoundariesAdapter, match_by_name, zonal_population
     from ..ingestion.population import WorldPopAdapter
 
-    if country_code.upper() not in ("FM", "MH"):
-        return {"ok": False, "error": "no COD-AB boundaries for this country (Palau)"}
+    if country_code.upper() not in ("FM", "MH", "PW"):
+        return {"ok": False, "error": f"no boundaries for country {country_code}"}
     try:
         iso3 = WorldPopAdapter.iso3(country_code)
         ba = BoundariesAdapter(config=load_config())

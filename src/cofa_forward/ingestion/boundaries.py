@@ -17,6 +17,7 @@ simplification is documented.
 
 from __future__ import annotations
 
+import json
 import zipfile
 from pathlib import Path
 
@@ -27,7 +28,12 @@ import shapefile
 from .base import BaseAdapter
 from .population import NODATA
 
-# Verified download URLs (2026-10-28). Palau: no COD-AB (documented follow-up).
+# Verified download URLs (2026-10-28). Palau has no COD-AB; use geoBoundaries
+# (ODbL, sourced from OSM) via GitHub raw. Palau's ADM1 = 16 states.
+PLW_GEOJSON_URL = (
+    "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/"
+    "releaseData/gbOpen/PLW/ADM1/geoBoundaries-PLW-ADM1.geojson"
+)
 COD_AB_DOWNLOADS = {
     "MHL": (
         "https://data.humdata.org/dataset/c215706c-9c22-43ca-8d36-9de4726eb9e0/"
@@ -122,6 +128,22 @@ def match_by_name(name: str, records: list[dict]) -> dict | None:
     return None
 
 
+def parse_geojson(geojson: dict) -> list[dict]:
+    """Parse a geoBoundaries FeatureCollection into ``{name, pcode, geometry}`` records."""
+    out = []
+    for f in geojson.get("features", []):
+        props = f.get("properties", {})
+        out.append(
+            {
+                "name": props.get("shapeName"),
+                "pcode": props.get("shapeISO"),
+                "level": 1,
+                "geometry": f.get("geometry"),
+            }
+        )
+    return out
+
+
 class BoundariesAdapter(BaseAdapter):
     source_id = "hdx-cod-ab"
     source_url = "https://data.humdata.org/dataset/cod-ab-fsm"
@@ -156,7 +178,22 @@ class BoundariesAdapter(BaseAdapter):
 
     def get_admin(self, iso3: str, level: int = 1) -> list[dict]:
         """Return the parsed admin records (name, pcode, geometry) for a level."""
+        iso3 = iso3.upper()
+        if iso3 == "PLW":
+            return self._get_palau_admin1()
         return parse_admin_shp(self.admin_path(iso3, level), level)
+
+    def _get_palau_admin1(self) -> list[dict]:
+        dest = self.raw_dir / "plw" / "geoBoundaries-PLW-ADM1.geojson"
+        if not dest.exists():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            resp = self.session.get(PLW_GEOJSON_URL, stream=True, timeout=self.timeout)
+            resp.raise_for_status()
+            with open(dest, "wb") as fh:
+                for chunk in resp.iter_content(256 * 1024):
+                    fh.write(chunk)
+        with open(dest, encoding="utf-8") as fh:
+            return parse_geojson(json.load(fh))
 
     def check_availability(self):
         return {"source_id": self.source_id, "available": True, "note": "HDX COD-AB (FSM/RMI)"}

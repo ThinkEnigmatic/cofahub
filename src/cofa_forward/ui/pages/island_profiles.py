@@ -54,8 +54,7 @@ def render() -> None:
     with right:
         st.markdown("**Population exposure (WorldPop)**")
         if e.population:
-            # Prefer the accurate zonal (boundary) sum for FSM/RMI; fall back to
-            # the point+radius approximation for Palau (no COD-AB).
+            # Prefer the accurate zonal (boundary) sum for all three countries.
             zonal = get_zonal_population(e.geo_id, e.name, e.country_code)
             if zonal.get("ok") and zonal.get("population") == zonal.get("population"):
                 st.metric(
@@ -63,9 +62,9 @@ def render() -> None:
                     f"{zonal['population']:,.0f}",
                 )
                 st.caption(
-                    "UN-adjusted 2020 (~1 km grid) summed within the HDX COD-AB "
-                    "administrative boundary. Differs from the census total above "
-                    "(UN-adjusted, 1-km resolution)."
+                    "UN-adjusted 2020 (~1 km grid) summed within the administrative "
+                    "boundary (HDX COD-AB for FSM/RMI; geoBoundaries for Palau). "
+                    "Differs from the census total above (UN-adjusted, 1-km resolution)."
                 )
             else:
                 wp = get_worldpop_population(e.geo_id, e.country_code, e.latitude, e.longitude)
@@ -76,16 +75,16 @@ def render() -> None:
                     )
                     st.caption(
                         "UN-adjusted 2020 (~1 km grid) near the reference point. "
-                        "Palau has no COD-AB boundary; this point+radius estimate "
-                        "undercounts long/irregular atolls."
+                        "No matching administrative boundary; this point+radius "
+                        "estimate undercounts long/irregular atolls."
                     )
                 else:
                     st.caption("WorldPop population unavailable (offline or no land pixels).")
         st.markdown("**Geometry source**")
         st.info(
-            "Point location from the seed registry. FSM/RMI use HDX COD-AB "
-            "administrative polygons for population; Palau remains point-based "
-            "(no COD-AB). Coarse-grid model values are regional estimates."
+            "Point location from the seed registry. Administrative polygons are "
+            "used for population: HDX COD-AB (FSM/RMI, CC BY-IGO) and geoBoundaries "
+            "(Palau, ODbL/OSM). Coarse-grid model values are regional estimates."
         )
 
     st.divider()
