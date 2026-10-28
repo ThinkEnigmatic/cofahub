@@ -24,6 +24,16 @@ geospatial foundation. Repo: `~/cofa-forward`.
 - **Maps:** replaced Plotly `scattergeo` with Leaflet (folium) satellite basemaps
   (Esri World Imagery + NASA GIBS MODIS/VIIRS/BlueMarble, keyless). See
   `src/cofa_forward/visualization/leaflet_maps.py`.
+- **WeatherNext access requested (2026-10-29):** submitted the Google DeepMind
+  access form for `hemingwayglobal77@gmail.com` (name "Ben Hemingway", residence
+  Philippines, org N/A, sector Other/General/Research/Weather, use case Weather
+  Prediction & Forecasting, WeatherNext 3 GCS Zarr selected, both license terms
+  accepted). Approval expected ~5–7 business days at Google's discretion.
+- **Google Cloud account:** `hemingwayglobal77@gmail.com` has an active GCP
+  account (default project `project-2d5cb632-e1b6-46b7-b98`, free trial pending
+  prepayment — not required for the allowlist). Once WeatherNext approves, read
+  Zarr via `gcsfs` with ADC (`GOOGLE_APPLICATION_CREDENTIALS`) or
+  `gcloud auth application-default login`.
 
 ## Commands
 
