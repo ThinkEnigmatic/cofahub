@@ -109,3 +109,38 @@ def get_live_enso() -> dict:
 
     adapter = CpcOniAdapter(cache=make_cache())
     return adapter.get_oni()
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_real_rainfall(geo_id: str, lat: float, lon: float, start: str = "1991-01-01") -> dict:
+    """Fetch real daily rainfall (ERA5 via Open-Meteo) for a location, cached 24h."""
+    from ..ingestion.rainfall import OpenMeteoArchiveAdapter
+
+    adapter = OpenMeteoArchiveAdapter(config=load_config(), cache=make_cache())
+    return adapter.get_rainfall(lat, lon, start, "2024-12-31")
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_real_tracks() -> dict:
+    """Fetch real IBTrACS WP-basin tracks filtered to the FAS bounding box."""
+    from ..ingestion.ibtracs import FAS_BBOX, IbtracsAdapter
+
+    adapter = IbtracsAdapter(cache=make_cache())
+    return adapter.get_tracks(bbox=FAS_BBOX)
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_active_storms() -> dict:
+    """Fetch current western North Pacific tropical cyclones from JMA."""
+    from ..ingestion.jma import JmaTyphoonAdapter
+
+    adapter = JmaTyphoonAdapter(cache=make_cache())
+    return adapter.active_storms()
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_storm_details(tc_id: str) -> dict:
+    from ..ingestion.jma import JmaTyphoonAdapter
+
+    adapter = JmaTyphoonAdapter(cache=make_cache())
+    return adapter.storm_details(tc_id)

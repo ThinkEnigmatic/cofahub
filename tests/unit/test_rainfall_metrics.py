@@ -54,3 +54,12 @@ def test_rolling_spanning_missing_month_is_nan():
 def test_requires_datetime_index():
     with pytest.raises(TypeError):
         monthly_totals(pd.Series([1.0, 2.0]))
+
+
+def test_monthly_totals_tz_aware_index():
+    # tz-aware daily series must produce the same monthly totals (no tz warning).
+    idx = pd.date_range("2020-01-01", "2020-03-31", freq="D", tz="UTC")
+    daily = pd.Series([1.0] * len(idx), index=idx)
+    monthly = monthly_totals(daily)
+    assert math.isclose(monthly.iloc[0], 31.0)
+    assert math.isclose(monthly.iloc[2], 31.0)

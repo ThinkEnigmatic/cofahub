@@ -5,13 +5,19 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from ...climate.climatology import compute_location_climatology
 from ...drought.alerts import evaluate_alerts
 from ...drought.percentiles import category_from_percentile, empirical_percentile
 from ...drought.rainfall_metrics import rolling_totals
 from ...drought.spi import note as spi_note
 from ...visualization.charts import rainfall_timeseries, rolling_totals_chart
 from ..components.common import page_header, render_plotly, sample_banner
-from ..state import get_location_climatology, get_sample_rainfall, load_config, load_registry
+from ..state import (
+    get_real_rainfall,
+    get_sample_rainfall,
+    load_config,
+    load_registry,
+)
 
 
 def render() -> None:
@@ -19,16 +25,47 @@ def render() -> None:
     registry = load_registry()
     page_header("Drought & Water", "Rainfall deficits, percentiles, and freshwater context")
 
-    sample_banner()
     d = cfg.drought
 
     names = {e.geo_id: e.name for e in registry.all()}
     geo_id = st.selectbox(
         "Location", options=list(names.keys()), format_func=lambda g: f"{names[g]} ({g})"
     )
+    entity = registry.by_id(geo_id)
 
-    daily = get_sample_rainfall(geo_id)
-    clim = get_location_climatology(geo_id)
+    # ---- Data source selection ---- #
+    use_real = st.toggle(
+        "Use real rainfall (ERA5 via Open-Meteo)",
+        value=False,
+        help="Fetch ~34 years of daily ERA5 reanalysis rainfall for this location. "
+        "Cached for 24h; falls back to labeled sample data on failure.",
+    )
+    real_result = None
+    if use_real:
+        with st.spinner("Fetching ERA5 rainfall…"):
+            real_result = get_real_rainfall(geo_id, entity.latitude, entity.longitude)
+        if real_result.get("ok"):
+            daily = real_result["series"]
+            st.success(
+                f"Real ERA5 rainfall: {real_result['n_days']} days "
+                f"({real_result['n_missing']} missing), retrieved {real_result['retrieved_at']}.",
+                icon="🟢",
+            )
+            st.caption(
+                "~25 km reanalysis — regional model estimate; individual-atoll "
+                "conditions may differ."
+            )
+        else:
+            st.error(f"Real rainfall fetch failed ({real_result.get('error')}); using sample data.")
+            sample_banner()
+            daily = get_sample_rainfall(geo_id)
+    else:
+        sample_banner()
+        daily = get_sample_rainfall(geo_id)
+
+    clim = compute_location_climatology(
+        daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+    )
     monthly = clim["monthly"]
     rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
 
@@ -60,13 +97,13 @@ def render() -> None:
     # ---- Charts ---- #
     st.subheader("Monthly rainfall vs climatology")
     render_plotly(
-        rainfall_timeseries(monthly, clim["climatology"], title="Monthly rainfall (sample)"),
+        rainfall_timeseries(monthly, clim["climatology"], title="Monthly rainfall"),
         key="drought_monthly",
     )
 
     st.subheader("Rolling rainfall totals")
     render_plotly(
-        rolling_totals_chart(rolling, title="Rolling N-month totals (sample)"),
+        rolling_totals_chart(rolling, title="Rolling N-month totals"),
         key="drought_rolling",
     )
 
@@ -76,8 +113,9 @@ def render() -> None:
     st.subheader("Analyst alert thresholds")
     thresholds = cfg.alert_thresholds()
 
-    # Compute a couple of real indicators from the sample series to evaluate against.
-    last_daily = float(daily.iloc[-1])
+    # Compute a couple of indicators from the selected series to evaluate against.
+    last_daily = daily.dropna()
+    last_daily = float(last_daily.iloc[-1]) if len(last_daily) else float("nan")
     rolling3 = rolling["rain_3m_mm"].dropna()
     rolling6 = rolling["rain_6m_mm"].dropna()
     pct3 = (
@@ -110,7 +148,7 @@ def render() -> None:
     st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     st.caption(
         "These are INTERNAL analyst watch levels, not official government warnings. "
-        "Values are computed from the synthetic sample series."
+        "Values are computed from the selected data source (real ERA5 or labeled sample)."
     )
 
     st.divider()

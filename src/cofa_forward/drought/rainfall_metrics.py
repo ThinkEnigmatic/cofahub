@@ -32,6 +32,9 @@ def monthly_totals(daily: pd.Series, min_days_frac: float = 0.8) -> pd.Series:
         raise ValueError("min_days_frac must be in (0, 1]")
 
     df = pd.DataFrame({"precip": daily})
+    if df.index.tz is not None:
+        # group by calendar month (timezone is irrelevant for monthly sums)
+        df.index = df.index.tz_localize(None)
     df["ym"] = df.index.to_period("M")
     grp = df.groupby("ym")["precip"]
     total = grp.sum(min_count=1)
