@@ -12,14 +12,12 @@ geospatial foundation. Repo: `~/cofa-forward`.
 
 ## Where things stand
 
-- **14 commits**; latest `f84395f`. Git repo is local (no remote).
+- **20 commits**; latest `10e9372`. Git repo is local (no remote).
 - **Tests:** 162 offline + 11 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest).
-- **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel →
-  `127.0.0.1:8501`), protected by **Cloudflare Access** (allow
-  `bhemingway@gmail.com`, team `bold-field-37ad`). Services
-  `com.ben.cofaforward-dashboard` + reuse of `com.ben.benigmatic-tunnel`.
-  See docs/SECURITY.md.
+- **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel → `127.0.0.1:8501`),
+  protected by **Cloudflare Access** (allow `bhemingway@gmail.com`, team
+  `bold-field-37ad`, 24h session). See the *Deployment* section below.
 - All 11 data-source adapters are live-tested, including IMERG (Earthdata token).
   Remaining: PEAC outlook (HTML) + map polygon rendering / area-weighted aggregation.
 
@@ -28,29 +26,57 @@ geospatial foundation. Repo: `~/cofa-forward`.
 ```bash
 cd ~/cofa-forward
 
-# tests (use .venv/bin/python directly — uv is currently broken, see below)
-.venv/bin/python -m pytest -m "not network" -q     # offline (151)
-.venv/bin/python -m pytest -m network -q           # live (7, needs internet)
+# tests (uv works now — see Environment note)
+uv run pytest -m "not network" -q     # offline (162)
+uv run pytest -m network -q           # live (11, needs internet + EARTHDATA_TOKEN)
 
 # lint / format
-.venv/bin/ruff check . ; .venv/bin/ruff format .
+uv run ruff check . ; uv run ruff format .
 
-# launch (works via .venv directly)
-.venv/bin/streamlit run src/cofa_forward/ui/app.py   # -> http://127.0.0.1:8501
+# launch (local dev — no auth)
+uv run streamlit run src/cofa_forward/ui/app.py   # -> http://127.0.0.1:8501
 
-# page-render smoke test (AppTest; slow if DNS is down — times out on live fetches)
-.venv/bin/python scripts/verify_pages.py
+# page-render smoke test (AppTest; slow if DNS is down)
+uv run python scripts/verify_pages.py
 
 # CLI
-.venv/bin/python scripts/ingest_weather.py --geo PAL-KOR
-.venv/bin/python scripts/ingest_enso.py
-.venv/bin/python scripts/ingest_ibtracs.py
-.venv/bin/python scripts/ingest_jma.py
-.venv/bin/python scripts/ingest_chirps.py --geo PAL-KOR
-.venv/bin/python scripts/monitor_bulletins.py
-.venv/bin/python scripts/check_sources.py
-.venv/bin/python scripts/generate_report.py
+uv run python scripts/ingest_weather.py --geo PAL-KOR
+uv run python scripts/ingest_enso.py
+uv run python scripts/ingest_ibtracs.py
+uv run python scripts/ingest_jma.py
+uv run python scripts/ingest_chirps.py --geo PAL-KOR
+uv run python scripts/monitor_bulletins.py
+uv run python scripts/check_sources.py
+uv run python scripts/generate_report.py
 ```
+
+## Deployment (cofaforward.benigmatic.com)
+
+| Layer | What |
+|---|---|
+| App | `com.ben.cofaforward-dashboard` — Streamlit on `127.0.0.1:8501` |
+| Tunnel | `cofaforward.benigmatic.com → http://127.0.0.1:8501` in `~/.cloudflared/benigmatic.yml` (tunnel `9e0be391…`, service `com.ben.benigmatic-tunnel`) |
+| DNS | CNAME `cofaforward` → tunnel (via `cloudflared tunnel route dns`) |
+| Auth | **Cloudflare Access** app `COFA Forward`, policy `owner` (allow `bhemingway@gmail.com`), team `bold-field-37ad` |
+
+Manage:
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.ben.cofaforward-dashboard   # restart app
+launchctl kickstart -k gui/$(id -u)/com.ben.benigmatic-tunnel        # reload tunnel (after config edits)
+tail -f ~/cofa-forward/logs/streamlit.log                            # app logs
+tail -f ~/Library/Logs/benigmatic-tunnel.log                         # tunnel logs
+```
+
+### Secrets (all 0600, git-ignored — never commit)
+
+* `~/.config/benigmatic/cloudflare_api_token` — Cloudflare API token (Access +
+  Zone DNS; valid, rotated 2026-10-28).
+* `~/.config/benigmatic/cloudflare_account_id` — `474e8a119e7b90e59fc0215b745b1634`.
+* `~/.config/cofa-forward/earthdata_token` — NASA Earthdata bearer token (IMERG),
+  read via `EARTHDATA_TOKEN`.
+* `~/.config/cofa-forward/app_password` — optional app-level password gate
+  (currently DISABLED; enable by setting `COFA_REQUIRE_AUTH=1` in the launchd plist).
 
 ## ⚠️ Environment note (RESOLVED 2026-10-28)
 
@@ -142,7 +168,8 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 ## Cached data on disk (gitignored, already present)
 
 - `data/raw/worldpop/{mhl,fsm,plw}_2020.tif` (WorldPop 1 km grids)
-- `data/raw/boundaries/{mhl,fsm}/` (extracted HDX COD-AB SHP)
+- `data/raw/boundaries/{mhl,fsm,plw}/` (extracted HDX COD-AB SHP + Palau geoBoundaries GeoJSON)
+- `data/raw/nmme/` (NMME ensemble-mean NetCDF, cached per cycle)
 - `data/raw/bulletins/` (monitor snapshots)
 - `data/catalog.db` (SQLite: provenance, ingestion history, bulletins)
 
