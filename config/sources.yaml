@@ -132,7 +132,7 @@ sources:
     variables: "precipitationCal, randomError, probabilityLiquidPrecipitation"
     implementation_status: implemented_but_not_verified
     verification_date: "2026-10-28"
-    notes: "earthaccess adapter (ingestion/imerg.py) for daily point extraction; unit-tested with mocks, live verification needs Earthdata credentials (.netrc or earthaccess.login)."
+    notes: "earthaccess adapter (ingestion/imerg.py) for daily point extraction; token auth + CMR search verified live. GES DISC data download requires a one-time GPM IMERG EULA acceptance (browser): https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ. Set EARTHDATA_TOKEN env var (or ~/.netrc)."
 
   - id: chirps-v3
     name: "CHIRPS v3 precipitation (UCSB Climate Hazards Center)"

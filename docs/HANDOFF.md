@@ -146,8 +146,10 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Roadmap (next iteration)
 
-1. **Verify IMERG live** — supply Earthdata credentials (`.netrc` or
-   `earthaccess.login`) to complete `implemented_and_tested` for `imerg.py`.
+1. **Complete IMERG** — token auth + CMR search are verified; the remaining step is
+   a **one-time GPM IMERG EULA acceptance** (browser) at
+   `https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ`
+   (the token is stored at `~/.config/cofa-forward/earthdata_token`, 0600).
 2. **PEAC seasonal outlook** — HTML scrape (weather.gov/peac); the rainfall
    outlook appeared stale (SON-2024) in research, so add a freshness guard.
 3. Polish: render boundary polygons on the map; area-weighted aggregation.

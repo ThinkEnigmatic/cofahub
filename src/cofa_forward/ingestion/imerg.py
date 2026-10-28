@@ -41,8 +41,12 @@ class ImergAdapter(BaseAdapter):
     def __init__(self, config=None, cache=None, db=None, timeout: float = 60.0):
         super().__init__(cache=cache, db=db, timeout=timeout)
 
-    def login(self, strategy: str = "netrc"):
-        """Authenticate with NASA Earthdata. Returns the auth session."""
+    def login(self, strategy: str = "all"):
+        """Authenticate with NASA Earthdata. Returns the auth session.
+
+        Supports the EDL bearer token via the ``EARTHDATA_TOKEN`` environment
+        variable (the "environment" strategy) or ``~/.netrc`` / interactive.
+        """
         import earthaccess
 
         return earthaccess.login(strategy=strategy)
@@ -50,13 +54,15 @@ class ImergAdapter(BaseAdapter):
     def get_recent_daily(self, lat: float, lon: float, start: str, end: str) -> dict:
         """Fetch daily IMERG precipitation at a point over [start, end].
 
-        Downloads the (global) daily granules for the requested days via
-        earthaccess and extracts the nearest grid cell. Requires prior
-        ``earthaccess.login`` (or ``.netrc`` credentials).
+        Requires authentication (``EARTHDATA_TOKEN`` or ``~/.netrc``) AND a one-time
+        acceptance of the GPM IMERG End User License Agreement (EULA) via the
+        browser at https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ
+        (the API returns HTTP 403 "EULA Acceptance Failure" until accepted).
         """
         import earthaccess
 
         try:
+            earthaccess.login(strategy="all")
             results = earthaccess.search_data(
                 short_name=SHORT_NAME,
                 temporal=(start, end),
