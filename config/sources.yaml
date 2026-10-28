@@ -141,12 +141,13 @@ sources:
     license: "CC BY 4.0 (v2 was CC0)"
     geographic_coverage: "60N-60S (land-masked; tiny atolls may be sparse)"
     spatial_resolution: "0.05 deg (~5.5 km)"
-    temporal_resolution: "daily/pentad/dekad/monthly/annual"
+    temporal_resolution: "monthly (daily/pentad/dekad also available), 1981-present"
     update_frequency: "preliminary every ~5 days; final monthly"
     auth: "none"
     variables: "precip (mm)"
-    implementation_status: planned
-    notes: "Best free/no-login precipitation source. Point extraction needs rasterio/xarray."
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Point extraction via COG range requests (rasterio /vsicurl). Land-masked; sub-pixel islands use a documented max-valid-pixel heuristic. ERA5 preferred for ocean-adjacent atolls."
 
   - id: persiann-cdr
     name: "PERSIANN-CDR precipitation (NOAA CDR)"

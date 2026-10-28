@@ -12,6 +12,7 @@ dependencies = [
     "requests>=2.32",
     "pydantic>=2.8",
     "pyyaml>=6.0",
+    "rasterio>=1.4.4",
 ]
 
 [dependency-groups]

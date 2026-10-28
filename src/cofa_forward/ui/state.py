@@ -161,3 +161,16 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
         "series": r["daily"]["precipitation_sum"],
         "retrieved_at": r["retrieved_at"],
     }
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_chirps_monthly(geo_id: str, lat: float, lon: float) -> dict:
+    """Fetch the CHIRPS v3 monthly rainfall series for a location (cached 24h).
+
+    Issues one HTTP range request per month — slow on first call (~1-2 min for a
+    full baseline). Land-masked product; see the adapter docs.
+    """
+    from ..ingestion.chirps import ChirpsAdapter
+
+    adapter = ChirpsAdapter()
+    return adapter.get_monthly_series(lat, lon, "1991-01-01", "2024-12-31")

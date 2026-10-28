@@ -19,12 +19,28 @@ def compute_location_climatology(
     baseline_end: str,
     min_years: int,
 ) -> dict[str, Any]:
-    """Compute a climatological summary dict for one location.
-
-    Returns climatology (per-month mean), the latest valid month's total,
-    anomaly (mm and %), and percentile, plus a baseline-validity flag.
-    """
+    """Compute a climatological summary dict for one location from daily rainfall."""
     monthly = rainfall_metrics.monthly_totals(daily, min_days_frac=0.8)
+    return _from_monthly(monthly, baseline_start, baseline_end, min_years)
+
+
+def compute_monthly_climatology(
+    monthly: pd.Series,
+    baseline_start: str,
+    baseline_end: str,
+    min_years: int,
+) -> dict[str, Any]:
+    """Compute a climatological summary from an already-monthly rainfall series."""
+    return _from_monthly(monthly, baseline_start, baseline_end, min_years)
+
+
+def _from_monthly(
+    monthly: pd.Series,
+    baseline_start: str,
+    baseline_end: str,
+    min_years: int,
+) -> dict[str, Any]:
+    """Shared climatological summary for a monthly rainfall series."""
     climatology = anomalies.monthly_climatology(monthly, baseline_start, baseline_end)
     valid = anomalies.baseline_is_valid(monthly, baseline_start, baseline_end, min_years)
 

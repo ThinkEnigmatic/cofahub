@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from ...climate.climatology import compute_location_climatology
+from ...climate.climatology import compute_location_climatology, compute_monthly_climatology
 from ...drought.alerts import evaluate_alerts
 from ...drought.percentiles import category_from_percentile, empirical_percentile
 from ...drought.rainfall_metrics import rolling_totals
@@ -13,6 +13,7 @@ from ...drought.spi import note as spi_note
 from ...visualization.charts import rainfall_timeseries, rolling_totals_chart
 from ..components.common import page_header, render_plotly, sample_banner
 from ..state import (
+    get_chirps_monthly,
     get_real_rainfall,
     get_sample_rainfall,
     load_config,
@@ -34,20 +35,20 @@ def render() -> None:
     entity = registry.by_id(geo_id)
 
     # ---- Data source selection ---- #
-    use_real = st.toggle(
-        "Use real rainfall (ERA5 via Open-Meteo)",
-        value=False,
-        help="Fetch ~34 years of daily ERA5 reanalysis rainfall for this location. "
-        "Cached for 24h; falls back to labeled sample data on failure.",
+    source = st.radio(
+        "Rainfall data source",
+        ["Sample (synthetic)", "ERA5 (Open-Meteo)", "CHIRPS v3 (satellite)"],
+        index=0,
+        horizontal=True,
     )
-    real_result = None
-    if use_real:
+
+    if source == "ERA5 (Open-Meteo)":
         with st.spinner("Fetching ERA5 rainfall…"):
             real_result = get_real_rainfall(geo_id, entity.latitude, entity.longitude)
         if real_result.get("ok"):
             daily = real_result["series"]
             st.success(
-                f"Real ERA5 rainfall: {real_result['n_days']} days "
+                f"ERA5 rainfall: {real_result['n_days']} days "
                 f"({real_result['n_missing']} missing), retrieved {real_result['retrieved_at']}.",
                 icon="🟢",
             )
@@ -55,19 +56,58 @@ def render() -> None:
                 "~25 km reanalysis — regional model estimate; individual-atoll "
                 "conditions may differ."
             )
+            clim = compute_location_climatology(
+                daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+            )
+            monthly = clim["monthly"]
+            rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
         else:
-            st.error(f"Real rainfall fetch failed ({real_result.get('error')}); using sample data.")
+            st.error(f"ERA5 fetch failed ({real_result.get('error')}); using sample data.")
             sample_banner()
             daily = get_sample_rainfall(geo_id)
+            clim = compute_location_climatology(
+                daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+            )
+            monthly = clim["monthly"]
+            rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
+    elif source == "CHIRPS v3 (satellite)":
+        with st.spinner("Fetching CHIRPS v3 monthly rainfall (this can take ~1–2 min)…"):
+            chirps = get_chirps_monthly(geo_id, entity.latitude, entity.longitude)
+        if chirps.get("ok") and len(chirps["series"].dropna()) > 0:
+            st.success(
+                f"CHIRPS v3 rainfall: {chirps['n_months']} months "
+                f"({chirps['n_missing']} masked/missing).",
+                icon="🟢",
+            )
+            st.caption(
+                "0.05° satellite estimate, land-masked. Sub-pixel islands use the "
+                "max-valid-pixel heuristic; ERA5 is preferred for ocean-adjacent atolls."
+            )
+            monthly = chirps["series"]
+            clim = compute_monthly_climatology(
+                monthly, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+            )
+            daily = None
+            rolling = pd.DataFrame(
+                {f"rain_{w}m_mm": monthly.rolling(w, min_periods=w).sum() for w in (1, 3, 6, 12)}
+            )
+        else:
+            st.error("CHIRPS fetch failed or returned no land pixels; using sample data.")
+            sample_banner()
+            daily = get_sample_rainfall(geo_id)
+            clim = compute_location_climatology(
+                daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+            )
+            monthly = clim["monthly"]
+            rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
     else:
         sample_banner()
         daily = get_sample_rainfall(geo_id)
-
-    clim = compute_location_climatology(
-        daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
-    )
-    monthly = clim["monthly"]
-    rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
+        clim = compute_location_climatology(
+            daily, d["baseline_start"], d["baseline_end"], d["baseline_min_years"]
+        )
+        monthly = clim["monthly"]
+        rolling = rolling_totals(daily, windows=(1, 3, 6, 12), min_days_frac=0.8)
 
     latest = clim["latest"]
     cat = (
@@ -114,8 +154,11 @@ def render() -> None:
     thresholds = cfg.alert_thresholds()
 
     # Compute a couple of indicators from the selected series to evaluate against.
-    last_daily = daily.dropna()
-    last_daily = float(last_daily.iloc[-1]) if len(last_daily) else float("nan")
+    if daily is not None:
+        last_vals = daily.dropna()
+        last_daily = float(last_vals.iloc[-1]) if len(last_vals) else float("nan")
+    else:
+        last_daily = float("nan")  # monthly series: no daily precip indicator
     rolling3 = rolling["rain_3m_mm"].dropna()
     rolling6 = rolling["rain_6m_mm"].dropna()
     pct3 = (
@@ -148,7 +191,7 @@ def render() -> None:
     st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     st.caption(
         "These are INTERNAL analyst watch levels, not official government warnings. "
-        "Values are computed from the selected data source (real ERA5 or labeled sample)."
+        "Values are computed from the selected data source."
     )
 
     st.divider()

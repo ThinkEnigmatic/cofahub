@@ -16,10 +16,11 @@ exposure/terrain, and AI-forecast access).
 | **NOAA CPC Oceanic Niño Index** | `cpc.ncep.noaa.gov/data/indices/oni.ascii.txt` | none | authoritative ENSO index; phase derived via CPC ≥5-season criterion |
 | **IBTrACS v04r01 (WP basin)** | `ncei.noaa.gov/.../csv/ibtracs.WP.list.v04r01.csv` | none | historical tracks, 1842–present (114 MB CSV) |
 | **JMA RSMC Tokyo (active storms)** | `jma.go.jp/bosai/typhoon/data/targetTc.json` → `specifications.json` | none | position, 10-min wind, pressure, 5-day forecast + probability circles |
+| **CHIRPS v3 (precipitation)** | `data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/` | none | monthly COGs, 0.05°, point extraction via rasterio range requests |
 
 Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 `ingest_ibtracs.py`, `ingest_jma.py`, `check_sources.py`. Live tests:
-`uv run pytest -m network` (5 tests, all passing).
+`uv run pytest -m network` (6 tests, all passing).
 
 ## ENSO & seasonal climate
 
@@ -53,9 +54,10 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 
 ## Precipitation & drought
 
-* **CHIRPS v3** (`data.chc.ucsb.edu/products/CHIRPS/v3.0/`) — **best free/no-login**
-  precipitation (0.05°, 60N–60S, CC BY 4.0). Land-masked → tiny atolls may be sparse.
-  *Planned* (point extraction needs rasterio/xarray).
+* **CHIRPS v3** (`data.chc.ucsb.edu/products/CHIRPS/v3.0/`) — **implemented** (point
+  extraction from monthly COGs via rasterio range requests). 0.05°, 60N–60S, CC BY 4.0.
+  **Land-masked** → sub-pixel islands use a documented max-valid-pixel heuristic; ERA5
+  is preferred for ocean-adjacent atolls.
 * **NASA GPM IMERG** (GES DISC) — global incl. ocean, 0.1°, sub-daily. **Requires
   Earthdata Login** (`earthaccess`). Note V07→V08 transition (V07 Final ends Sep 2025).
 * **PERSIANN-CDR** (NOAA NCEI) — 0.25° daily, 1983–present, no login.
