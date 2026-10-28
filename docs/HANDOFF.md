@@ -137,7 +137,7 @@ src/cofa_forward/
   impacts/         event_catalog, evidence
   intelligence/    indicators, synthesis, confidence, report_builder, verification
   visualization/   maps (plotly scattergeo), charts, legends, layers
-  ui/              app.py + 10 pages + components + state.py (cached loaders)
+  ui/              app.py + sections/ (10 page modules) + components + state.py
 scripts/           12 CLI scripts
 tests/             unit/ + integration/ (network-marked) + fixtures/
 data/              raw/ (worldpop, boundaries, bulletins) · processed/ · samples/ · cache/ · catalog.db
@@ -181,6 +181,12 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Gotchas
 
+- **Page modules MUST NOT live in a directory named `pages/`.** Streamlit
+  1.66 auto-detects `pages/` next to the main script as a *multipage* app and
+  `exec`s each file standalone, breaking relative imports (`ImportError:
+  attempted relative import with no known parent package`) — the shell renders
+  but no data loads. They live in `ui/sections/` for this reason. (`AppTest`
+  won't catch this; only a real `streamlit run` browser does.)
 - `scripts/verify_pages.py` (AppTest) times out when DNS is down because live
   fetches retry slowly; it passed cleanly (10/10) when network was up.
 - IBTrACS CSV is ~114 MB; the network test downloads it (marked `network`).
