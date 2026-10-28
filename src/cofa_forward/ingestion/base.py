@@ -7,6 +7,7 @@ and report failures. One provider failing must never crash the application.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -64,19 +65,22 @@ class BaseAdapter:
         self.session = requests.Session()
 
     # ------------------------------------------------------------------ #
-    def fetch_json(
+    def _request(
         self,
         url: str,
         params: dict[str, Any] | None = None,
         timeout: float | None = None,
-    ) -> FetchResult:
-        """Fetch JSON with retry/backoff/timeout and optional caching."""
+    ) -> tuple[bool, str, str | None, str, bool]:
+        """Fetch the raw text of a URL with retry/backoff/timeout and caching.
+
+        Returns ``(ok, text, error, retrieved_at, from_cache)``.
+        """
         params = params or {}
         key = cache_key(url, params)
         if self.cache is not None:
-            cached = self.cache.get_json(key)
+            cached = self.cache.get(key)
             if cached is not None:
-                return FetchResult(True, self.source_id, url, data=cached, from_cache=True)
+                return True, cached.decode("utf-8"), None, format_iso(now_utc()), True
 
         timeout = timeout or self.timeout
         last_err: str | None = None
@@ -92,21 +96,18 @@ class BaseAdapter:
                     break  # do not retry client errors
                 else:
                     resp.raise_for_status()
-                    data = resp.json()
+                    text = resp.text
                     if self.cache is not None:
-                        self.cache.set_json(key, data)
+                        self.cache.set(key, text.encode("utf-8"))
                     if self.db is not None:
                         self.db.record_ingestion(
                             self.source_id, "ok", retrieved_at=format_iso(now_utc())
                         )
-                    return FetchResult(True, self.source_id, url, data=data)
+                    return True, text, None, format_iso(now_utc()), False
             except (requests.Timeout, requests.ConnectionError) as exc:
                 last_err = f"network error: {exc.__class__.__name__}"
             except requests.HTTPError as exc:
                 last_err = f"HTTP error: {exc}"
-                break
-            except ValueError as exc:
-                last_err = f"invalid JSON: {exc}"
                 break
 
             if attempt < self.retries:
@@ -124,7 +125,41 @@ class BaseAdapter:
             self.db.record_ingestion(
                 self.source_id, "error", last_err or "unknown", retrieved_at=format_iso(now_utc())
             )
-        return FetchResult(False, self.source_id, url, error=last_err)
+        return False, "", last_err, format_iso(now_utc()), False
+
+    def fetch_json(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> FetchResult:
+        """Fetch and parse JSON with retry/backoff/timeout and caching."""
+        ok, text, err, retrieved_at, from_cache = self._request(url, params, timeout)
+        if not ok:
+            return FetchResult(False, self.source_id, url, error=err, retrieved_at=retrieved_at)
+        try:
+            data = json.loads(text)
+        except ValueError as exc:
+            return FetchResult(
+                False, self.source_id, url, error=f"invalid JSON: {exc}", retrieved_at=retrieved_at
+            )
+        return FetchResult(
+            True, self.source_id, url, data=data, retrieved_at=retrieved_at, from_cache=from_cache
+        )
+
+    def fetch_text(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        timeout: float | None = None,
+    ) -> FetchResult:
+        """Fetch raw text with retry/backoff/timeout and caching."""
+        ok, text, err, retrieved_at, from_cache = self._request(url, params, timeout)
+        if not ok:
+            return FetchResult(False, self.source_id, url, error=err, retrieved_at=retrieved_at)
+        return FetchResult(
+            True, self.source_id, url, data=text, retrieved_at=retrieved_at, from_cache=from_cache
+        )
 
     # ------------------------------------------------------------------ #
     def check_availability(self) -> dict[str, Any]:

@@ -16,6 +16,7 @@ from cofa_forward.config import get_config  # noqa: E402
 from cofa_forward.ingestion.enso import CpcOniAdapter  # noqa: E402
 from cofa_forward.ingestion.historical_impacts import HistoricalImpactsAdapter  # noqa: E402
 from cofa_forward.ingestion.ibtracs import IbtracsAdapter  # noqa: E402
+from cofa_forward.ingestion.jma import JmaTyphoonAdapter  # noqa: E402
 from cofa_forward.ingestion.official_advisories import OfficialAdvisoriesAdapter  # noqa: E402
 from cofa_forward.ingestion.population import PopulationAdapter  # noqa: E402
 from cofa_forward.ingestion.rainfall import OpenMeteoArchiveAdapter  # noqa: E402
@@ -29,6 +30,7 @@ def main() -> int:
         OpenMeteoArchiveAdapter(config=cfg),
         CpcOniAdapter(),
         IbtracsAdapter(),
+        JmaTyphoonAdapter(),
         OfficialAdvisoriesAdapter(),
         PopulationAdapter(),
         HistoricalImpactsAdapter(),

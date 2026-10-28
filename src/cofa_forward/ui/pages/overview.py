@@ -9,7 +9,7 @@ from ...climate.enso_state import enso_state_from_config
 from ...intelligence.synthesis import build_statements
 from ...visualization.maps import region_map
 from ..components.common import evidence_badge, page_header, render_plotly, sample_banner
-from ..state import get_all_indicators, load_config, load_registry
+from ..state import get_all_indicators, get_live_enso, load_config, load_registry
 
 
 def render() -> None:
@@ -32,16 +32,25 @@ def render() -> None:
 
     with right:
         st.subheader("ENSO status")
-        if enso.is_available:
+        live_enso = get_live_enso()
+        if live_enso.get("ok"):
+            latest = live_enso["latest"]
+            st.success(
+                f"ONI {latest['season']} {latest['year']}: {latest['anom']:+.2f} °C "
+                f"(derived: {live_enso['phase']})",
+                icon="🟢",
+            )
+            st.caption(f"NOAA CPC ONI, retrieved {live_enso['retrieved_at']}.")
+        elif enso.is_available:
             st.success(f"{enso.phase} (as of {enso.as_of})", icon="🟢")
             st.caption(f"Source: {enso.source}")
         else:
-            st.info("Unavailable — no authoritative ENSO source configured", icon="ℹ️")
-            st.caption("CPC ONI ingestion is planned (Phase 3). No phase is assumed.")
+            st.info("Unavailable — live ONI fetch failed and no ENSO source configured", icon="ℹ️")
+            st.caption("No phase is assumed.")
 
         st.subheader("Tropical cyclone activity")
         st.info("No confirmed active storms in available data", icon="🌀")
-        st.caption("Sample historical tracks only; no official track source is wired in yet.")
+        st.caption("JMA active-storm integration is available on Tropical Cyclones / via scripts.")
 
         st.subheader("Active weather alerts")
         st.info("No official alerts are integrated", icon="🚨")

@@ -1,13 +1,13 @@
 # COFA FORWARD — ENSO configuration
-# Current-state classification MUST come from an authoritative source. Until the
-# NOAA CPC ONI adapter is implemented (Phase 3), current state is UNAVAILABLE —
-# we do not infer a phase from an old report or a model guess.
+# The CPC ONI adapter (ingestion/enso.py) is the authoritative live source; the
+# app fetches it on demand (cached 1h) and derives a phase via the CPC >=5-season
+# criterion. This static block is only a fallback when offline.
 current_state:
   status: "unavailable"
   phase: null
   as_of: null
-  source: null
-  note: "No authoritative ENSO source is configured yet. CPC ONI ingestion is planned (Phase 3)."
+  source: "noaa-cpc-enso (adapter)"
+  note: "Live CPC ONI is fetched by the app/CLI. This static block is the offline fallback."
 
 oni_thresholds:
   # NOAA CPC Oceanic Nino Index (3-month running mean of Nino 3.4 SST anomaly).

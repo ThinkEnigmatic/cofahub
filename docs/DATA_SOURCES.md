@@ -3,50 +3,101 @@
 Status values: `implemented_and_tested`, `implemented_but_not_verified`,
 `requires_credentials`, `requires_manual_import`, `planned`, `unavailable`.
 A source is marked `implemented_and_tested` only after a successful integration
-test.
+test. This catalog was refreshed with extensive online research on 2026-10-28
+(five independent research passes over ENSO, cyclones, precipitation/drought,
+exposure/terrain, and AI-forecast access).
 
-| Source | Publisher | URL | Status | Verified |
-| --- | --- | --- | --- | --- |
-| Open-Meteo Forecast API | Open-Meteo | https://open-meteo.com/ | ✅ implemented_and_tested | 2026-10-28 |
-| Open-Meteo Historical Weather (ERA5) | Open-Meteo / ECMWF | https://open-meteo.com/en/docs/historical-weather-api | ✅ implemented_and_tested | 2026-10-28 |
-| NOAA CPC ENSO (ONI / Diagnostic Discussion) | NOAA CPC | https://www.cpc.ncep.noaa.gov/ | 🗓️ planned | — |
-| IBTrACS (best tracks) | NOAA/NCEI | https://www.ncei.noaa.gov/products/international-best-track-archive | 🗓️ planned | — |
-| NASA GPM IMERG | NASA | https://gpm.nasa.gov/data/imerg | 🗓️ planned (needs Earthdata login) | — |
-| Google WeatherNext 3 | Google | https://developers.google.com/weathernext/guides/access-forecast | 🚫 unavailable (needs approval) | — |
-| USGS Western Pacific drought (DOI 10.5066/P1RXUMV3) | USGS | https://doi.org/10.5066/P1RXUMV3 | 🗓️ planned (coverage unverified) | — |
-| WorldPop population | WorldPop | https://www.worldpop.org/ | 🗓️ planned | — |
+## Implemented & tested (live adapters)
 
-## Verified integrations
+| Source | Endpoint | Auth | Notes |
+| --- | --- | --- | --- |
+| **Open-Meteo Forecast** | `api.open-meteo.com/v1/forecast` | none | current + hourly + daily, 16-day horizon, ~11 km |
+| **Open-Meteo Historical (ERA5)** | `archive-api.open-meteo.com/v1/archive` | none | daily precipitation, ~25 km |
+| **NOAA CPC Oceanic Niño Index** | `cpc.ncep.noaa.gov/data/indices/oni.ascii.txt` | none | authoritative ENSO index; phase derived via CPC ≥5-season criterion |
+| **IBTrACS v04r01 (WP basin)** | `ncei.noaa.gov/.../csv/ibtracs.WP.list.v04r01.csv` | none | historical tracks, 1842–present (114 MB CSV) |
+| **JMA RSMC Tokyo (active storms)** | `jma.go.jp/bosai/typhoon/data/targetTc.json` → `specifications.json` | none | position, 10-min wind, pressure, 5-day forecast + probability circles |
 
-### Open-Meteo Forecast (`implemented_and_tested`)
-* **Endpoint:** `https://api.open-meteo.com/v1/forecast` (no key; free tier).
-* **Variables:** temperature_2m, relative_humidity_2m, precipitation, weather_code,
-  wind_speed_10m, wind_direction_10m, surface_pressure (current + hourly + daily).
-* **Horizon:** up to 16 days; **resolution:** ~11 km model grid.
-* **License:** data CC BY 4.0 (attribution required).
-* **Verified:** live `test_network.py::test_live_forecast` and
-  `scripts/ingest_weather.py` (Koror current conditions fetched and validated).
+Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
+`ingest_ibtracs.py`, `ingest_jma.py`, `check_sources.py`. Live tests:
+`uv run pytest -m network` (5 tests, all passing).
 
-### Open-Meteo Historical Weather / ERA5 (`implemented_and_tested`)
-* **Endpoint:** `https://archive-api.open-meteo.com/v1/archive`.
-* **Variables:** daily precipitation_sum (basis for climatology/anomalies).
-* **Resolution:** ~25 km ERA5 reanalysis (coarser than the forecast grid).
-* **Verified:** live `test_network.py::test_live_archive_rainfall`.
+## ENSO & seasonal climate
 
-## Not yet wired in (planned)
+* **CPC ONI** (`oni.ascii.txt`) — the canonical index. Free, no auth, plain ASCII,
+  monthly, 1950–present. **Implemented.**
+* **CPC ENSO Diagnostic Discussion** (`enso_advisory/ensodisc.html`) — the official
+  status statement (Watch/Advisory) + probabilistic outlook. Narrative HTML, monthly
+  (~2nd Thursday). *Planned* (regex-scrape alert status + synopsis).
+* **PEAC** (`weather.gov/peac/`) — FAS-specific seasonal rainfall outlook
+  (14 stations incl. Koror/Yap/Chuuk/Pohnpei/Kosrae/Kwajalein/Majuro), monthly.
+  HTML tables; *note: fetched page still showed SON-2024 → add a freshness guard*.
+* **NMME** (`ftp.cpc.ncep.noaa.gov/International/nmme/netcdf/`) — gridded 1° seasonal
+  forecasts (NetCDF), monthly inits, 2011–present. *Planned* (xarray). IRI Data
+  Library now requires login; CPC FTP + AWS `s3://noaa-nmme-pds` are open.
+* **IRI ENSO plume** — *no longer serves numeric data* (figure only since ~Sep 2026).
+  Not a viable numeric dependency.
 
-* **NOAA CPC ONI** — authoritative ENSO classification. Until implemented, the
-  app reports ENSO status as *unavailable* (no phase is assumed). Target:
-  `https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt`.
-* **IBTrACS** — historical tropical cyclone tracks (Phase 5). Sample tracks are
-  used until then.
-* **Official advisories / watches / warnings** — no source is wired in; none are
-  fabricated.
-* **IMERG, WorldPop, USGS drought, WeatherNext 3** — see ROADMAP.
+## Tropical cyclones
+
+* **IBTrACS v04r01** (`WP` basin CSV/NetCDF) — multi-agency best tracks.
+  **Implemented.** WMO wind/pressure = responsible agency (JMA 10-min for WP);
+  per-agency `USA_WIND`/`TOKYO_WIND` retained so averaging periods stay explicit.
+* **JMA RSMC Tokyo** JSON (`targetTc.json`, `specifications.json`, `forecast.json`,
+  `pastTracks.json`) — authoritative active-storm source. **Implemented.**
+* **JTWC** text warnings (`tgftp.nws.noaa.gov/data/raw/wt/wtpn3x.pgtw..txt`) — 1-min
+  wind + quadrant radii. *Planned* (plain-text regex).
+* **NWS Guam / PEAC** (`wtpq3x.pgum.*`, `api.weather.gov/alerts`) — FAS island-specific
+  watches/warnings. *Planned.*
+* ⚠️ Wind-speed averaging differs by agency (JMA 10-min vs JTWC/NWS 1-min). Always
+  carry the agency + averaging period with any wind value.
+
+## Precipitation & drought
+
+* **CHIRPS v3** (`data.chc.ucsb.edu/products/CHIRPS/v3.0/`) — **best free/no-login**
+  precipitation (0.05°, 60N–60S, CC BY 4.0). Land-masked → tiny atolls may be sparse.
+  *Planned* (point extraction needs rasterio/xarray).
+* **NASA GPM IMERG** (GES DISC) — global incl. ocean, 0.1°, sub-daily. **Requires
+  Earthdata Login** (`earthaccess`). Note V07→V08 transition (V07 Final ends Sep 2025).
+* **PERSIANN-CDR** (NOAA NCEI) — 0.25° daily, 1983–present, no login.
+* **GPCC** (DWD) — gauge-only land; essentially no FAS gauges → *not recommended*.
+* **USGS P1RXUMV3** (western-Pacific drought + 7-day GFS forecast) — covers **FSM,
+  RMI, Nauru, Solomon — Palau NOT included**. ScienceBase blocks non-browser GET.
+  Reuse its R scripts to replicate the IMERG-Early-Run + GFS pipeline for Palau.
+* **SPEIbase / SPEI monitor** — global land 0.5°/1° (ODbL); many FAS atolls fall
+  between cells. Better to compute SPI/SPEI ourselves from CHIRPS/IMERG (SPI is
+  already implemented in `drought/spi.py`).
+
+## Population, boundaries, terrain, infrastructure
+
+* **WorldPop** (`data.worldpop.org/.../Global_2000_2020_1km/`) — CC BY 4.0, ~100 m and
+  ~1 km, 2000–2020, covers PLW/FSM/MHL, no login. **Best exposure population raster.**
+  (WOPR does *not* cover these countries.)
+* **GPWv4** (SEDAC) — ~1 km, requires Earthdata Login; census-consistent cross-check.
+* **HDX COD-AB boundaries** — FSM (`cod-ab-fsm`) and RMI (`cod-ab-mhl`), CC BY-IGO,
+  reviewed Oct 2024. **Palau has no COD-AB** → use SPC Pacific Data Hub
+  `2015_plw_phc_admin_boundaries`.
+* **Copernicus DEM GLO-30/GLO-90** (AWS Open Data, no login) — DSM terrain.
+* **GEBCO** (CC BY 4.0) — 15 arc-sec topography+bathymetry (atoll coastal exposure).
+* **SRTM GL1** (30 m) — via OpenTopography S3 or Earthdata (login).
+* **OSM / Geofabrik / HOT** (ODbL) — the only open infrastructure/POI layer; coverage
+  is uneven (Koror/Majuro/Pohnpei well mapped, outer atolls thin).
+
+## AI / global forecast models
+
+* **Google WeatherNext 3** — allowlist-gated (free Google account, ~5–7 day approval),
+  non-GRIB (Zarr/BigQuery), ensemble bucket Requester-Pays, real-time data under an
+  experimental ToU. **Not load-bearing**; apply and keep optional.
+* **ECMWF AIFS open data** (`s3://ecmwf-forecasts`, CC BY 4.0, no account) — 0.25°,
+  4×/day to 15 days, GRIB2. **Best free AI/global drop-in** (per-point via
+  `ecmwf-opendata`).
+* **NOAA GFS/GEFS** (NOMADS / AWS NODD `s3://noaa-gfs-bdp-pds`) — public domain,
+  0.25°, byte-range GRIB2 subsetting. **Free fallback.**
 
 ## Attribution & license notes
 
-Open-Meteo data is CC BY 4.0 (attribution). NOAA/NCEI/USGS/NASA products are U.S.
-Government public domain (verify per product). Reanalysis (ERA5) is CC BY 4.0 via
-the Copernicus Climate Data Store. WeatherNext 3 requires access approval and is
-not accessible by default.
+Open-Meteo (CC BY 4.0), ERA5 (CC BY 4.0 via CDS), CHIRPS v3 (CC BY 4.0), WorldPop
+(CC BY 4.0), GPWv4 (CC BY 4.0), GEBCO (CC BY 4.0), AIFS (CC BY 4.0). NOAA/NCEP/NCEI,
+USGS, NASA, JTWC, NWS, JMA observational data are public-domain/observational.
+SPEIbase is ODbL 1.0; HDX COD-AB is CC BY-IGO; OSM/Geofabrik/HOT are ODbL.
+WeatherNext 3 real-time data is under a restrictive experimental ToU (historical is
+CC BY 4.0). Always confirm each source's terms before redistribution.

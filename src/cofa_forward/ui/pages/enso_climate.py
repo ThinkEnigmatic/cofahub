@@ -8,7 +8,7 @@ import streamlit as st
 from ...climate.enso_state import enso_state_from_config
 from ...visualization.maps import metric_map
 from ..components.common import page_header, render_plotly, sample_banner
-from ..state import get_all_indicators, load_config, load_registry
+from ..state import get_all_indicators, get_live_enso, load_config, load_registry
 
 
 def render() -> None:
@@ -22,18 +22,39 @@ def render() -> None:
     col1, col2 = st.columns(2, gap="large")
     with col1:
         st.subheader("Current ENSO status")
-        if enso.is_available:
+        if st.button("Refresh live ENSO (CPC ONI)", use_container_width=True):
+            get_live_enso.clear()
+        live = get_live_enso()
+        if live.get("ok"):
+            latest = live["latest"]
+            st.success(
+                f"ONI {latest['season']} {latest['year']}: **{latest['anom']:+.2f} °C** "
+                f"(derived phase: **{live['phase']}**)",
+                icon="🟢",
+            )
+            st.caption(
+                f"Source: NOAA CPC ONI ({latest['date']}); retrieved {live['retrieved_at']}. "
+                f"Phase derived from the ≥5-consecutive-season criterion — the official "
+                f"status statement is the CPC Diagnostic Discussion."
+            )
+        elif enso.is_available:
             st.success(f"{enso.phase} (as of {enso.as_of})", icon="🟢")
             st.caption(f"Source: {enso.source}")
         else:
-            st.info("Unavailable — no authoritative ENSO source configured", icon="ℹ️")
-            st.caption("CPC ONI ingestion is planned (Phase 3). No phase is assumed.")
+            st.info(
+                f"Live ONI fetch failed: {live.get('error', 'no data')}. "
+                "No authoritative ENSO source configured.",
+                icon="ℹ️",
+            )
+            st.caption("CPC ONI is the primary source; the fetch above should succeed when online.")
         st.markdown(
             f"**ONI thresholds (NOAA CPC):** El Niño ≥ {thresholds.get('el_nino')} °C, "
             f"La Niña ≤ {thresholds.get('la_nina')} °C (3-month running mean of Niño-3.4 "
             f"anomaly, {thresholds.get('base_period')} baseline)."
         )
-        st.caption("Official outlook timestamp: not available (no source wired in).")
+        st.caption(
+            "Official outlook timestamp: from the CPC Diagnostic Discussion (not parsed here)."
+        )
 
     with col2:
         st.subheader("Seasonal outlook")

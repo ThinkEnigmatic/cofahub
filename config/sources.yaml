@@ -1,129 +1,315 @@
 # COFA FORWARD — data source catalog
 # Status values (per spec): implemented_and_tested, implemented_but_not_verified,
 # requires_credentials, requires_manual_import, planned, unavailable
+# Verified via extensive online research 2026-10-28 (see docs/DATA_SOURCES.md).
 sources:
   - id: open-meteo-forecast
     name: "Open-Meteo Forecast API"
-    publisher: "Open-Meteo (CC BY 4.0 for data; API free tier)"
+    publisher: "Open-Meteo"
     url: "https://open-meteo.com/"
     api: "https://api.open-meteo.com/v1/forecast"
-    license: "Data CC BY 4.0 (attribution required)"
+    license: "Data CC BY 4.0"
     geographic_coverage: "Global; covers Palau, FSM, RMI points"
-    spatial_resolution: "~11 km model grid (best-match point extraction)"
+    spatial_resolution: "~11 km model grid"
     temporal_resolution: "hourly + daily; 16-day horizon"
     update_frequency: "Multiple runs per day"
     auth: "none"
-    variables: "temperature_2m, precipitation, rain, wind_speed_10m, wind_direction_10m, relative_humidity_2m, surface_pressure, cloud_cover, etc."
-    limitations: "Model output (ECMWF/GFS blend), not official station observations. Coarse grid over small atolls."
+    variables: "temperature_2m, precipitation, wind_speed_10m, wind_direction_10m, relative_humidity_2m, surface_pressure, ..."
     implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
-    notes: "Primary live forecast integration. No API key required."
 
   - id: open-meteo-archive
     name: "Open-Meteo Historical Weather API (ERA5-based)"
     publisher: "Open-Meteo / ECMWF ERA5"
     url: "https://open-meteo.com/en/docs/historical-weather-api"
     api: "https://archive-api.open-meteo.com/v1/archive"
-    license: "ERA5 data (CC BY 4.0 via CDS; attribution required)"
+    license: "ERA5 data CC BY 4.0"
     geographic_coverage: "Global"
     spatial_resolution: "~25 km reanalysis grid"
     temporal_resolution: "Daily (sub-daily available)"
-    update_frequency: "Static archive back to 1940"
     auth: "none"
-    variables: "precipitation_sum, temperature_2m_mean, etc."
-    limitations: "Reanalysis, not station data. 25 km grid is coarse for atolls."
+    variables: "precipitation_sum, temperature_2m_mean"
     implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
-    notes: "Basis for historical rainfall climatology and anomalies (Phase 3)."
 
   - id: noaa-cpc-enso
-    name: "NOAA CPC ENSO Diagnostic Discussion / ONI"
+    name: "NOAA CPC Oceanic Niño Index (ONI)"
     publisher: "NOAA Climate Prediction Center"
-    url: "https://www.cpc.ncep.noaa.gov/"
+    url: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php"
     api: "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
     license: "U.S. Government public domain"
-    geographic_coverage: "Global (ENSO indices)"
+    geographic_coverage: "Niño-3.4 index (basin-scale; no per-island data)"
     spatial_resolution: "n/a (index)"
-    temporal_resolution: "Monthly ONI; monthly/seasonal discussions"
-    update_frequency: "Monthly (ONI), periodic (discussions)"
+    temporal_resolution: "Monthly (3-month overlapping seasons), 1950-present"
+    update_frequency: "Monthly"
     auth: "none"
-    variables: "Oceanic Nino Index, ENSO phase, forecast probabilities"
-    limitations: "Not yet wired into the app (Phase 3)."
-    implementation_status: planned
+    variables: "ONI SST anomaly (the canonical ENSO index)"
+    implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
-    notes: "Authoritative ENSO classification source. Current ENSO status shown as unavailable until this is implemented."
+    notes: "Authoritative machine-readable ENSO index. Phase label is derived via the CPC >=5-season criterion; the official status statement is the Diagnostic Discussion."
+
+  - id: noaa-cpc-enso-discussion
+    name: "NOAA CPC ENSO Diagnostic Discussion"
+    publisher: "NOAA Climate Prediction Center"
+    url: "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.html"
+    license: "U.S. Government public domain"
+    geographic_coverage: "Global ENSO state + official probabilistic outlook"
+    temporal_resolution: "Monthly (2nd Thursday)"
+    auth: "none"
+    variables: "ENSO Alert System status, Niño indices, synopsis, outlook probabilities"
+    implementation_status: planned
+    notes: "Narrative/HTML (no structured file); scrape alert status + synopsis. Not yet implemented."
 
   - id: noaa-ibtracs
-    name: "IBTrACS (International Best Track Archive for Climate Stewardship)"
+    name: "IBTrACS v04r01 (International Best Track Archive)"
     publisher: "NOAA/NCEI"
     url: "https://www.ncei.noaa.gov/products/international-best-track-archive"
-    license: "Public / per data-holder terms"
-    geographic_coverage: "Global tropical cyclone basins"
-    spatial_resolution: "Point track (6-hourly, some 3-hourly)"
-    temporal_resolution: "Historical best tracks"
-    update_frequency: "Annual + real-time holdings"
+    api: "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.WP.list.v04r01.csv"
+    license: "Public (cite DOI 10.25921/82ty-9e16)"
+    geographic_coverage: "Western North Pacific basin (covers Palau/FSM/RMI)"
+    spatial_resolution: "Point track (6-hourly synoptic)"
+    temporal_resolution: "1842-present"
+    update_frequency: "3x/week"
     auth: "none"
-    variables: "Storm position, intensity (wind), pressure, basin, agency"
-    limitations: "Not yet wired into the app (Phase 5)."
-    implementation_status: planned
+    variables: "position, WMO wind/pressure (JMA 10-min for WP), per-agency wind (USA/Tokyo), radii"
+    implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
 
-  - id: nasa-gpm-imerg
-    name: "NASA GPM IMERG precipitation"
-    publisher: "NASA"
-    url: "https://gpm.nasa.gov/data/imerg"
-    license: "Public / NASA data policy"
-    geographic_coverage: "Global 60N-60S"
-    spatial_resolution: "0.1 deg (~11 km)"
-    temporal_resolution: "30-min / daily"
-    update_frequency: "Near-real-time + research"
-    auth: "requires Earthdata login for some products"
-    variables: "Precipitation rate/accumulation"
-    limitations: "Requires Earthdata authentication; heavy raster data."
-    implementation_status: planned
+  - id: jma-rsmc-tokyo
+    name: "JMA RSMC Tokyo-Typhoon Center (active storms)"
+    publisher: "Japan Meteorological Agency"
+    url: "https://www.jma.go.jp/bosai/map.html"
+    api: "https://www.jma.go.jp/bosai/typhoon/data/targetTc.json"
+    license: "JMA legal notice (observational data)"
+    geographic_coverage: "Western North Pacific (RSMC Tokyo AOR; covers all FAS)"
+    spatial_resolution: "Point (position + 70% probability circles)"
+    temporal_resolution: "Advisories every 3h; 5-day forecast"
+    update_frequency: "Every 3h"
+    auth: "none"
+    variables: "position, central pressure, 10-min sustained wind, gusts, 30/50-kt radii, forecast track + probability circles"
+    implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
+    notes: "Authoritative active-storm source (WMO RSMC). JSON endpoints, no auth."
+
+  - id: jtwc-advisories
+    name: "JTWC tropical cyclone warnings"
+    publisher: "Joint Typhoon Warning Center (via NWS text mirror)"
+    url: "https://www.metoc.navy.mil/jtwc/jtwc.html"
+    api: "https://tgftp.nws.noaa.gov/data/raw/wt/wtpn31.pgtw..txt"
+    license: "U.S. Government public domain"
+    geographic_coverage: "NW Pacific (covers FAS)"
+    temporal_resolution: "6-hourly warnings + 5-day forecast"
+    update_frequency: "6-hourly"
+    auth: "none"
+    variables: "1-min sustained wind, quadrant wind radii (34/50/64 kt), MSLP, forecast"
+    implementation_status: planned
+    notes: "Plain-text warnings on the NWS mirror; regex-parse. Not yet implemented."
+
+  - id: nws-guam
+    name: "NWS Guam / PEAC (FAS watches & warnings)"
+    publisher: "NOAA NWS Pacific Region"
+    url: "https://www.weather.gov/gum/"
+    api: "https://tgftp.nws.noaa.gov/data/raw/wt/wtpq31.pgum.tcp.pq1.txt"
+    license: "U.S. Government public domain"
+    geographic_coverage: "Marianas + Micronesia (Palau, FSM, RMI island-specific)"
+    temporal_resolution: "Advisory/local statement"
+    update_frequency: ">=6-hourly"
+    auth: "none"
+    variables: "island-level watch/warning status and impacts"
+    implementation_status: planned
+    notes: "Only source that turns JTWC/JMA guidance into FAS island-specific actions."
+
+  - id: nasa-gpm-imerg
+    name: "NASA GPM IMERG precipitation (Final/Late/Early)"
+    publisher: "NASA GES DISC"
+    url: "https://gpm.nasa.gov/data/imerg"
+    license: "NASA open data"
+    geographic_coverage: "60N-60S (covers FAS, over ocean + land)"
+    spatial_resolution: "0.1 deg (~11 km)"
+    temporal_resolution: "30-min / daily / monthly; 2000-present"
+    update_frequency: "Early ~4h, Late ~14h, Final ~3.5 months"
+    auth: "requires Earthdata Login"
+    variables: "precipitationCal, randomError, probabilityLiquidPrecipitation"
+    implementation_status: requires_credentials
+    notes: "Use `earthaccess` library. Note V07->V08 transition (V07 Final ends Sep 2025)."
+
+  - id: chirps-v3
+    name: "CHIRPS v3 precipitation (UCSB Climate Hazards Center)"
+    publisher: "UC Santa Barbara"
+    url: "https://www.chc.ucsb.edu/data/chirps3"
+    api: "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/"
+    license: "CC BY 4.0 (v2 was CC0)"
+    geographic_coverage: "60N-60S (land-masked; tiny atolls may be sparse)"
+    spatial_resolution: "0.05 deg (~5.5 km)"
+    temporal_resolution: "daily/pentad/dekad/monthly/annual"
+    update_frequency: "preliminary every ~5 days; final monthly"
+    auth: "none"
+    variables: "precip (mm)"
+    implementation_status: planned
+    notes: "Best free/no-login precipitation source. Point extraction needs rasterio/xarray."
+
+  - id: persiann-cdr
+    name: "PERSIANN-CDR precipitation (NOAA CDR)"
+    publisher: "NOAA NCEI / UC Irvine CHRS"
+    url: "https://www.ncei.noaa.gov/products/climate-data-records/precipitation-persiann"
+    license: "U.S. Government open data"
+    geographic_coverage: "60S-60N (covers FAS)"
+    spatial_resolution: "0.25 deg daily (CDR); 0.04 deg 3-hourly (CCS-CDR)"
+    temporal_resolution: "1983-present"
+    auth: "none (NCEI); registration for CHRS bulk"
+    variables: "precipitation"
+    implementation_status: planned
+
+  - id: gpcc-monthly
+    name: "GPCC monthly gauge precipitation"
+    publisher: "DWD (Deutscher Wetterdienst)"
+    url: "https://opendata.dwd.de/climate_environment/GPCC/"
+    license: "DWD terms (attribution)"
+    geographic_coverage: "Land only — essentially no gauges on FAS islands (not recommended)"
+    spatial_resolution: "0.25/0.5/1.0/2.5 deg"
+    temporal_resolution: "monthly, 1891-present"
+    auth: "none"
+    variables: "precip, numgauge"
+    implementation_status: planned
+    notes: "Not a primary FAS source (no local gauges)."
+
+  - id: speibase
+    name: "SPEIbase (global standardized precipitation-evapotranspiration index)"
+    publisher: "CSIC"
+    url: "https://spei.csic.es/database.html"
+    api: "https://spei.csic.es/spei_database"
+    license: "ODbL 1.0"
+    geographic_coverage: "Global land 0.5 deg — many FAS atolls fall between cells (NaN)"
+    temporal_resolution: "monthly, SPEI 1-48 months, 1901-present"
+    auth: "none"
+    variables: "SPEI"
+    implementation_status: planned
+    notes: "Coarse; better to compute SPI/SPEI ourselves from CHIRPS/IMERG."
+
+  - id: noaa-nmme
+    name: "NMME seasonal forecasts (multi-model ensemble)"
+    publisher: "NOAA/NCEP + partners"
+    url: "https://www.ncei.noaa.gov/products/weather-climate-models/north-american-multi-model"
+    api: "https://ftp.cpc.ncep.noaa.gov/International/nmme/netcdf/"
+    license: "NOAA open data"
+    geographic_coverage: "Global 1 deg (FAS falls within grid cells)"
+    temporal_resolution: "monthly inits, 12-month horizon, 2011-present"
+    update_frequency: "monthly"
+    auth: "none (CPC FTP); IRI Data Library now needs login"
+    variables: "precip, tasmax/tasmin, winds, slp (NetCDF)"
+    implementation_status: planned
+    notes: "Primary machine-readable seasonal forecast source (NetCDF via xarray)."
+
+  - id: ecmwf-aifs
+    name: "ECMWF AIFS open data (AI forecast)"
+    publisher: "ECMWF"
+    url: "https://www.ecmwf.int/en/forecasts/datasets/open-data"
+    api: "s3://ecmwf-forecasts (no account: --no-sign-request)"
+    license: "CC BY 4.0 + ECMWF terms"
+    geographic_coverage: "Global 0.25 deg (covers FAS)"
+    temporal_resolution: "4 runs/day, 6-hourly to 360h (15 days)"
+    update_frequency: "4x/day"
+    auth: "none"
+    variables: "2m temp/dewpoint, 10m wind, total precipitation, MSLP, pressure levels (GRIB2)"
+    implementation_status: planned
+    notes: "Best free AI/global model drop-in (GRIB2). See docs."
+
+  - id: noaa-gfs
+    name: "NOAA GFS / GEFS (NOMADS / AWS NODD)"
+    publisher: "NOAA/NCEP"
+    url: "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod"
+    api: "s3://noaa-gfs-bdp-pds"
+    license: "Public domain"
+    geographic_coverage: "Global 0.25 deg"
+    temporal_resolution: "4/day, 3-hourly to +384h"
+    auth: "none"
+    variables: "full GRIB2 forecast fields"
+    implementation_status: planned
+
+  - id: usgs-westpacific-drought
+    name: "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026)"
+    publisher: "USGS EROS"
+    url: "https://doi.org/10.5066/P1RXUMV3"
+    license: "U.S. Government public domain"
+    geographic_coverage: "9 sites across FSM, RMI, Nauru, Solomon Islands — PALAU NOT INCLUDED"
+    spatial_resolution: "site-level (9 points)"
+    temporal_resolution: "monthly drought index + 7-day GFS forecast"
+    auth: "none (ScienceBase; blocks non-browser GET)"
+    variables: "monthly precip, quintile rainfall index, PEAC thresholds, 7-day GFS forecast"
+    implementation_status: planned
+    notes: "Reuse its R scripts to replicate the IMERG-Early-Run + GFS pipeline for Palau."
+
+  - id: worldpop-population
+    name: "WorldPop population grids (Unconstrained individual countries)"
+    publisher: "University of Southampton"
+    url: "https://www.worldpop.org/"
+    api: "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km/"
+    license: "CC BY 4.0"
+    geographic_coverage: "Global 2000-2020 (covers PLW/FSM/MHL at ~100m and ~1km)"
+    spatial_resolution: "~100 m and ~1 km"
+    temporal_resolution: "2000-2020 (5-yearly)"
+    auth: "none"
+    variables: "population count, age/sex"
+    implementation_status: planned
+    notes: "Best exposure-overlay population raster. WOPR does NOT cover these countries."
+
+  - id: gpwv4-population
+    name: "GPWv4 population (SEDAC)"
+    publisher: "NASA SEDAC / CIESIN"
+    url: "https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population-count-rev11/data-download"
+    license: "CC BY 4.0"
+    geographic_coverage: "Global (covers FAS)"
+    spatial_resolution: "~1 km"
+    temporal_resolution: "2000-2020"
+    auth: "requires Earthdata Login"
+    variables: "population count, density"
+    implementation_status: requires_credentials
+
+  - id: hdx-cod-ab
+    name: "HDX Common Operational Dataset administrative boundaries"
+    publisher: "OCHA / ITOS / SPC"
+    url: "https://data.humdata.org/dataset/cod-ab-fsm"
+    license: "CC BY-IGO (CC BY 3.0 IGO)"
+    geographic_coverage: "FSM (4 states, 75 municipalities) and RMI (25 atolls, 153 EAs). Palau: no COD-AB."
+    spatial_resolution: "ADM0-2 polygons"
+    temporal_resolution: "static (reviewed Oct 2024)"
+    auth: "none"
+    variables: "administrative boundaries (SHP/GeoJSON), P-coded"
+    implementation_status: planned
+    notes: "Palau boundaries: SPC Pacific Data Hub 2015 census (pacificdata.org)."
+
+  - id: copernicus-dem
+    name: "Copernicus DEM GLO-30/GLO-90 (terrain)"
+    publisher: "Copernicus / Sinergise (AWS Open Data)"
+    url: "https://registry.opendata.aws/copernicus-dem/"
+    license: "Copernicus DEM licence (free for public)"
+    geographic_coverage: "GLO-90 worldwide (covers FAS); GLO-30 limited (verify tiles)"
+    spatial_resolution: "30 m / 90 m (DSM)"
+    auth: "none"
+    variables: "surface elevation"
+    implementation_status: planned
+
+  - id: gebco-bathymetry
+    name: "GEBCO global bathymetry + topography"
+    publisher: "GEBCO"
+    url: "https://www.gebco.net/data-products/gridded-bathymetry-data/gebco2023-grid"
+    license: "CC BY 4.0"
+    geographic_coverage: "Global ocean + land (covers FAS)"
+    spatial_resolution: "15 arc-sec (~450 m)"
+    temporal_resolution: "annual grid"
+    auth: "none"
+    variables: "elevation + bathymetry"
+    implementation_status: planned
+    notes: "Use for atoll coastal/storm-surge exposure."
 
   - id: google-weathernext3
     name: "Google WeatherNext 3"
     publisher: "Google"
     url: "https://developers.google.com/weathernext/guides/access-forecast"
-    license: "Access-controlled"
-    geographic_coverage: "Global (model)"
-    spatial_resolution: "High-resolution ML model"
-    temporal_resolution: "Sub-daily forecast"
-    update_frequency: "Per access terms"
-    auth: "requires GCP + access approval"
-    variables: "Full forecast fields"
-    limitations: "Not accessible without approval. Adapter kept modular; not required for startup."
+    license: "Real-time: experimental ToU; Historical: CC BY 4.0"
+    geographic_coverage: "Global 0.05/0.1/0.25 deg"
+    temporal_resolution: "hourly, 24 inits/day, 64 members, 15-day horizon"
+    auth: "requires GCP allowlist (free account; ~5-7 day approval)"
+    variables: "full forecast fields (Zarr/BigQuery, not GRIB)"
     implementation_status: unavailable
-    verification_date: "2026-10-28"
-
-  - id: usgs-westpacific-drought
-    name: "USGS Drought Monitoring and 7-Day Precipitation Forecasting, Western Pacific Nations (2000-2026)"
-    publisher: "USGS"
-    url: "https://doi.org/10.5066/P1RXUMV3"
-    license: "U.S. Government public domain (verify)"
-    geographic_coverage: "Western Pacific nations (coverage per-country to verify)"
-    spatial_resolution: "To verify"
-    temporal_resolution: "Daily 7-day precip; drought indicators"
-    update_frequency: "To verify"
-    auth: "none (verify access mechanism)"
-    variables: "Drought index, 7-day precipitation forecast"
-    limitations: "Access mechanism and per-country coverage NOT yet verified."
-    implementation_status: planned
-    verification_date: "2026-10-28"
-
-  - id: worldpop-population
-    name: "WorldPop population grids"
-    publisher: "WorldPop / University of Southampton"
-    url: "https://www.worldpop.org/"
-    license: "CC BY 4.0 (attribution)"
-    geographic_coverage: "Global (subset FAS)"
-    spatial_resolution: "~100 m to 1 km"
-    temporal_resolution: "Annual estimates"
-    update_frequency: "Periodic"
-    auth: "none"
-    variables: "Population counts"
-    limitations: "Not yet integrated (Phase 6/7 exposure overlays)."
-    implementation_status: planned
-    verification_date: "2026-10-28"
+    notes: "Allowlist-gated, non-GRIB, ensemble bucket Requester-Pays. Apply and keep optional; ECMWF AIFS / GFS are the realistic free alternatives."

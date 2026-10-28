@@ -100,3 +100,12 @@ def make_db() -> Database:
 
 def units_imperial() -> bool:
     return st.session_state.get("units", "metric") == "imperial"
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_live_enso() -> dict:
+    """Fetch the current CPC Oceanic Niño Index (cached for 1 hour)."""
+    from ..ingestion.enso import CpcOniAdapter
+
+    adapter = CpcOniAdapter(cache=make_cache())
+    return adapter.get_oni()
