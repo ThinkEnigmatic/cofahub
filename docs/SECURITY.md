@@ -32,21 +32,18 @@ Deployed at **https://cofaforward.benigmatic.com** via a Cloudflare Tunnel:
   (0600) and is read only via `EARTHDATA_TOKEN`; it is **not** in the app image or
   the repository.
 
-### Access control (password gate — stopgap)
+### Access control (Cloudflare Access)
 
-The app is protected by a **single shared password** at the application level:
+Protected by **Cloudflare Access** (mirrors `ben.benigmatic.com`):
 
-* Password read from `~/.config/cofa-forward/app_password` (0600) when
-  `COFA_REQUIRE_AUTH=1` is set (the deployed launchd service sets it). The login
-  compares with `hmac.compare_digest` (constant-time).
-* Local/dev runs (no env var) skip the gate.
+* Access app `COFA Forward` on `cofaforward.benigmatic.com`, policy `owner`
+  (allow `bhemingway@gmail.com`), session 24h, team `bold-field-37ad`.
+* Unauthenticated requests → 302 to the Access login; the app is never reached
+  until an allowed identity authenticates.
 
-⚠️ This is a stopgap, not multi-user auth. To restrict to the operator with SSO,
-apply a **Cloudflare Access** policy for `cofaforward.benigmatic.com` (allowed
-identity: `bhemingway@gmail.com`), mirroring `ben.benigmatic.com`. This requires
-a valid Cloudflare API token with Access:Apps+Policies:Edit + Zone:DNS:Edit — the
-token at `~/.config/benigmatic/cloudflare_api_token` was invalid/expired at last
-check (returns "Invalid API Token").
+An optional **application-level password gate** remains in `app.py` (disabled
+now, single shared password via `COFA_REQUIRE_AUTH=1` + `~/.config/cofa-forward/
+app_password`), usable as defense-in-depth or if Access is ever removed.
 
 ### Manage
 

@@ -16,9 +16,10 @@ geospatial foundation. Repo: `~/cofa-forward`.
 - **Tests:** 162 offline + 11 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest).
 - **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel →
-  `127.0.0.1:8501`; services `com.ben.cofaforward-dashboard` + reuse of
-  `com.ben.benigmatic-tunnel`). See docs/SECURITY.md (currently public — add
-  Cloudflare Access).
+  `127.0.0.1:8501`), protected by **Cloudflare Access** (allow
+  `bhemingway@gmail.com`, team `bold-field-37ad`). Services
+  `com.ben.cofaforward-dashboard` + reuse of `com.ben.benigmatic-tunnel`.
+  See docs/SECURITY.md.
 - All 11 data-source adapters are live-tested, including IMERG (Earthdata token).
   Remaining: PEAC outlook (HTML) + map polygon rendering / area-weighted aggregation.
 
