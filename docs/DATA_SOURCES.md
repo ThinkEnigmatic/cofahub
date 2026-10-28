@@ -71,9 +71,10 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 
 ## Population, boundaries, terrain, infrastructure
 
-* **WorldPop** (`data.worldpop.org/.../Global_2000_2020_1km/`) — CC BY 4.0, ~100 m and
-  ~1 km, 2000–2020, covers PLW/FSM/MHL, no login. **Best exposure population raster.**
-  (WOPR does *not* cover these countries.)
+* **WorldPop** (`data.worldpop.org/.../Global_2000_2020_1km/`) — **implemented** (point/radius
+  extraction via rasterio). CC BY 4.0, ~1 km, 2000–2020, covers PLW/FSM/MHL, no login.
+  UN-adjusted 2020 totals exceed censuses → used for **spatial exposure**, not as the
+  census of record. (WOPR does *not* cover these countries.)
 * **GPWv4** (SEDAC) — ~1 km, requires Earthdata Login; census-consistent cross-check.
 * **HDX COD-AB boundaries** — FSM (`cod-ab-fsm`) and RMI (`cod-ab-mhl`), CC BY-IGO,
   reviewed Oct 2024. **Palau has no COD-AB** → use SPC Pacific Data Hub

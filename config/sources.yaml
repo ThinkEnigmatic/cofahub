@@ -246,13 +246,14 @@ sources:
     url: "https://www.worldpop.org/"
     api: "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km/"
     license: "CC BY 4.0"
-    geographic_coverage: "Global 2000-2020 (covers PLW/FSM/MHL at ~100m and ~1km)"
-    spatial_resolution: "~100 m and ~1 km"
+    geographic_coverage: "Global 2000-2020 (covers PLW/FSM/MHL at ~1km)"
+    spatial_resolution: "~1 km (100 m available)"
     temporal_resolution: "2000-2020 (5-yearly)"
     auth: "none"
-    variables: "population count, age/sex"
-    implementation_status: planned
-    notes: "Best exposure-overlay population raster. WOPR does NOT cover these countries."
+    variables: "population count (UN-adjusted)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Point/radius extraction (rasterio). UN-adjusted 2020 totals exceed censuses; used for spatial exposure, not census of record."
 
   - id: gpwv4-population
     name: "GPWv4 population (SEDAC)"

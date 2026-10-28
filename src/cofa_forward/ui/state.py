@@ -174,3 +174,17 @@ def get_chirps_monthly(geo_id: str, lat: float, lon: float) -> dict:
 
     adapter = ChirpsAdapter()
     return adapter.get_monthly_series(lat, lon, "1991-01-01", "2024-12-31")
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_worldpop_population(geo_id: str, country_code: str, lat: float, lon: float,
+                            radius_km: float = 10.0) -> dict:
+    """WorldPop population (UN-adjusted 2020) within a radius of a point."""
+    from ..ingestion.population import WorldPopAdapter
+
+    adapter = WorldPopAdapter(config=load_config())
+    try:
+        pop = adapter.population_within_radius(country_code, lat, lon, radius_km)
+        return {"ok": True, "population": pop, "radius_km": radius_km}
+    except Exception as exc:  # noqa: BLE001 - network/download errors surface here
+        return {"ok": False, "error": str(exc)}

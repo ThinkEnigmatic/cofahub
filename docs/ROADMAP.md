@@ -15,6 +15,10 @@
   gamma-fit SPI (MLE + zero-precipitation handling), both tested.
 * **Data-source research** — 5 extensive research passes; all remaining sources
   verified and cataloged (see docs/DATA_SOURCES.md).
+* **CHIRPS v3 precipitation** — point extraction from monthly COGs (rasterio
+  range requests); land-masked heuristic documented; wired into Drought page.
+* **WorldPop population** — ~1 km population grids (point/radius extraction),
+  wired into Island Profiles as a spatial-exposure layer.
 * **Water-need forecast (micro level)** — deterministic modeled water balance per
   island/atoll: population → demand → required rainfall vs forecast → projected
   deficit/surplus, with documented planning-default assumptions and a new
@@ -26,16 +30,12 @@
 
 ## Next (prioritized)
 
-1. **Phase 3 completion** — CPC Diagnostic Discussion scrape (official alert
-   status), PEAC seasonal rainfall outlook (freshness-guarded), NMME NetCDF.
-2. **Phase 4** — pull real CHIRPS/IMERG precipitation per location (add
-   rasterio/xarray); compute SPEI; threshold editing in the UI.
-3. **Phase 5 completion** — JTWC text warnings + NWS Guam advisories; wire
-   IBTrACS/JMA into the Tropical Cyclones page (currently CLI + tested).
-4. **Phase 6** — authoritative impact catalog + FTS5/RAG indexing; PDF export.
-5. **Phase 7** — exposure overlays (WorldPop + HDX COD-AB + GEBCO), ECMWF
-   AIFS / GFS model comparison, forecast verification vs real archives,
-   optional local LLM.
+1. **Boundaries & polygons** — HDX COD-AB (FSM/RMI) + SPC (Palau) admin boundaries
+   via geopandas/shapely: replace point registry with polygons, area-weighted
+   aggregation, accurate atoll population/exposure. (Currently point+radius.)
+2. **PEAC + NMME** seasonal outlook ingestion.
+3. **ECMWF AIFS / GFS** model comparison (GRIB).
+4. **IMERG** — Earthdata login (documented `requires_credentials`).
 
 ## Deferred / not attempted
 

@@ -19,7 +19,7 @@ from cofa_forward.ingestion.historical_impacts import HistoricalImpactsAdapter  
 from cofa_forward.ingestion.ibtracs import IbtracsAdapter  # noqa: E402
 from cofa_forward.ingestion.jma import JmaTyphoonAdapter  # noqa: E402
 from cofa_forward.ingestion.official_advisories import OfficialAdvisoriesAdapter  # noqa: E402
-from cofa_forward.ingestion.population import PopulationAdapter  # noqa: E402
+from cofa_forward.ingestion.population import WorldPopAdapter  # noqa: E402
 from cofa_forward.ingestion.rainfall import OpenMeteoArchiveAdapter  # noqa: E402
 from cofa_forward.ingestion.weather import OpenMeteoForecastAdapter  # noqa: E402
 
@@ -34,7 +34,7 @@ def main() -> int:
         JmaTyphoonAdapter(),
         ChirpsAdapter(),
         OfficialAdvisoriesAdapter(),
-        PopulationAdapter(),
+        WorldPopAdapter(config=cfg),
         HistoricalImpactsAdapter(),
     ]
     print(f"{'source':<24} {'available':<10} note")

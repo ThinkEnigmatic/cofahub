@@ -14,6 +14,7 @@ from ..state import (
     get_sample_forecast,
     get_sample_impacts,
     get_sample_tracks,
+    get_worldpop_population,
     load_registry,
 )
 
@@ -50,6 +51,22 @@ def render() -> None:
         if e.notes:
             st.caption(e.notes)
     with right:
+        st.markdown("**Population exposure (WorldPop)**")
+        if e.population:
+            wp = get_worldpop_population(e.geo_id, e.country_code, e.latitude, e.longitude)
+            if wp.get("ok") and wp.get("population") == wp.get("population"):
+                st.metric(
+                    f"WorldPop population within {wp['radius_km']:.0f} km",
+                    f"{wp['population']:,.0f}",
+                )
+                st.caption(
+                    "UN-adjusted 2020 (~1 km grid), summed near the reference point. "
+                    "This undercounts long/irregular atolls (e.g. Majuro); the census "
+                    "total above is the atoll figure. Accurate atoll polygons require "
+                    "boundary data (HDX COD-AB, planned)."
+                )
+            else:
+                st.caption("WorldPop population unavailable (offline or no land pixels).")
         st.markdown("**Geometry source**")
         st.info(
             "Point location from the seed registry — not a validated boundary or "
