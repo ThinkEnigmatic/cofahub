@@ -105,3 +105,11 @@ def test_live_himawari_image():
     assert r["ok"]
     resp = requests.head(r["image_url"], timeout=20)
     assert resp.status_code == 200, f"Himawari tile returned {resp.status_code}"
+
+
+def test_live_nws_guam_advisory():
+    from cofa_forward.ingestion.nws_guam import NwsGuamAdapter
+
+    r = NwsGuamAdapter().get_advisory()
+    assert r["ok"], f"live NWS Guam failed: {r.get('error')}"
+    assert r.get("agency") == "PGUM"

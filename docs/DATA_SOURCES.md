@@ -49,7 +49,8 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 * **JTWC** text warnings (`tgftp.nws.noaa.gov/data/raw/wt/wtpn3x.pgtw..txt`) — 1-min
   wind + quadrant radii + forecast track. **Implemented** (full ATCF-text parser).
 * **NWS Guam / PEAC** (`wtpq3x.pgum.*`, `api.weather.gov/alerts`) — FAS island-specific
-  watches/warnings. *Planned.*
+  watches/warnings. **Implemented** (TCP parser `nws_guam.py`; `api.weather.gov/
+  alerts` available for structured zone alerts).
 * ⚠️ Wind-speed averaging differs by agency (JMA 10-min vs JTWC/NWS 1-min). Always
   carry the agency + averaging period with any wind value.
 
@@ -58,7 +59,11 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
 * **Himawari-9** (JMA/NICT real-time web) — full-disk visible composite, 10-min
   cadence. **Implemented** (latest full-disk tile shown on the Tropical Cyclones
   page). IR bands and region-zoom tiles are a follow-up.
-* GOES / Sentinel / VIIRS — planned (heavier, not yet wired).
+* **GOES** (NOAA) — *not a fit for the FAS*: GOES-West covers the eastern Pacific/
+  Americas; the FAS (130–175E) is in Himawari's domain.
+* **Sentinel-2/3** (Copernicus, free) and **VIIRS** (NASA/NOAA, Earthdata) — ocean/
+  land remote sensing (SST, ocean colour, vegetation), not weather feeds; heavy
+  raster. *Planned* for SST/coastal overlays (STAC/AWS/LANCE access documented).
 
 ## Precipitation & drought
 

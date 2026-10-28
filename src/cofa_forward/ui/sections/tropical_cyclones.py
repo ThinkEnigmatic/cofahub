@@ -14,6 +14,7 @@ from ..state import (
     get_active_storms,
     get_himawari_image,
     get_jtwc_warnings,
+    get_nws_guam_advisory,
     get_real_tracks,
     get_sample_tracks,
     get_storm_details,
@@ -83,6 +84,26 @@ def render() -> None:
         )
     else:
         st.info("No active JTWC warnings at this time (or unavailable offline).", icon="🌀")
+
+    st.divider()
+
+    # ---- NWS Guam advisories (FAS island-specific) ---- #
+    st.subheader("NWS Guam advisories (island-specific)")
+    if st.button("Check NWS Guam advisory"):
+        get_nws_guam_advisory.clear()
+    nwsg = get_nws_guam_advisory()
+    if nwsg.get("ok"):
+        if nwsg.get("headline"):
+            st.markdown(f"**{nwsg['headline']}**")
+        if nwsg.get("watches_warnings"):
+            st.markdown("Watches / warnings in effect:")
+            for w in nwsg["watches_warnings"]:
+                st.markdown(f"- {w}")
+        else:
+            st.caption("No watches/warnings currently in effect.")
+        st.caption(f"Source: NWS Guam (Tiyan) {nwsg.get('retrieved_at')}.")
+    else:
+        st.info("NWS Guam advisory unavailable (offline?).", icon="🌀")
 
     st.divider()
 

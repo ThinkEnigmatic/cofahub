@@ -132,9 +132,10 @@ sources:
     temporal_resolution: "Advisory/local statement"
     update_frequency: ">=6-hourly"
     auth: "none"
-    variables: "island-level watch/warning status and impacts"
-    implementation_status: planned
-    notes: "Only source that turns JTWC/JMA guidance into FAS island-specific actions."
+    variables: "storm identity, island-level watches/warnings"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "TCP text parsed (storm + watches/warnings). api.weather.gov/alerts also available for structured zone alerts. The only source that turns JTWC/JMA guidance into FAS island-specific actions."
 
   - id: nasa-gpm-imerg
     name: "NASA GPM IMERG precipitation (Final/Late/Early)"
@@ -391,3 +392,48 @@ sources:
     auth: "none"
     implementation_status: unavailable
     notes: "USDM is US-only. The app instead computes a precipitation-percentile D0–D4 drought level (internal FAS scale) and uses CHIRPS/IMERG/ERA5 for drought indicators. USGS western-Pacific product (P1RXUMV3) covers FSM/RMI (planned)."
+
+  # --- Other satellite / remote-sensing systems (assessed honestly) ---
+  - id: noaa-goes
+    name: "NOAA GOES geostationary imagery"
+    publisher: "NOAA"
+    url: "https://www.star.nesdis.noaa.gov/goes/"
+    license: "Public domain"
+    geographic_coverage: "GOES-West full disk covers ~eastern Pacific / Americas — the FAS (130–175E) is in Himawari's domain, not GOES's"
+    auth: "none"
+    implementation_status: unavailable
+    notes: "Not a good fit for the FAS — Himawari-9 (implemented) is the correct geostationary satellite. GOES is only marginally useful for the far-eastern RMI (~172E)."
+
+  - id: copernicus-sentinel
+    name: "Copernicus Sentinel-2/3"
+    publisher: "ESA / Copernicus"
+    url: "https://scihub.copernicus.eu/"
+    license: "free & open (Copernicus licence)"
+    geographic_coverage: "Global (FAS included)"
+    spatial_resolution: "Sentinel-2 10 m optical; Sentinel-3 ~300 m SST/ocean color"
+    temporal_resolution: "S2 ~5-day revisit; S3 daily"
+    auth: "none (AWS S3 / Copernicus Data Space)"
+    implementation_status: planned
+    notes: "Ocean/land remote sensing (SST, ocean colour, vegetation), not weather feeds. STAC search over AWS s3://sentinel-* or the CDS; heavy raster. A follow-up for SST/coastal overlays."
+
+  - id: nasa-viirs
+    name: "NASA/NOAA VIIRS (SNPP/NOAA-20/21)"
+    publisher: "NASA / NOAA"
+    url: "https://ladsweb.modaps.eosdis.nasa.gov/"
+    license: "NASA open data"
+    geographic_coverage: "Global (FAS included)"
+    spatial_resolution: "375 m / 750 m"
+    temporal_resolution: "daily (SST, ocean colour, vegetation, fire)"
+    auth: "Earthdata login (same token as IMERG)"
+    implementation_status: planned
+    notes: "SST/ocean-colour/vegetation remote sensing via Earthdata (LANCE/LAADS). Heavy raster; a follow-up if SST monitoring is wanted."
+
+  - id: usgs-westpacific-drought
+    name: "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026)"
+    publisher: "USGS EROS"
+    url: "https://doi.org/10.5066/P1RXUMV3"
+    license: "U.S. Government public domain"
+    geographic_coverage: "FSM, RMI, Nauru, Solomon Islands — Palau NOT included"
+    auth: "none (ScienceBase; blocks non-browser GET)"
+    implementation_status: requires_manual_import
+    notes: "ScienceBase (where the data lives) bot-blocks curl/requests (403). Manual browser download + local import is the path; its R scripts document the IMERG-Early-Run + GFS pipeline that could be replicated for Palau."

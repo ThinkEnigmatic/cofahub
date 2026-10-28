@@ -157,6 +157,15 @@ def get_himawari_image(width: int = 550) -> dict:
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
+def get_nws_guam_advisory() -> dict:
+    """Latest NWS Guam tropical cyclone advisory (TCP) + watches/warnings."""
+    from ..ingestion.nws_guam import NwsGuamAdapter
+
+    adapter = NwsGuamAdapter(cache=make_cache())
+    return adapter.get_advisory()
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
 def get_storm_details(tc_id: str) -> dict:
     from ..ingestion.jma import JmaTyphoonAdapter
 
