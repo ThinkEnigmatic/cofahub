@@ -210,3 +210,12 @@ def get_zonal_population(geo_id: str, name: str, country_code: str) -> dict:
         return {"ok": True, "population": pop, "pcode": record["pcode"]}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_nmme_multimodel(lat: float, lon: float, variable: str = "prate") -> dict:
+    """Fetch the NMME multi-model seasonal forecast for a location (cached 24h)."""
+    from ..ingestion.nmme import NmmeAdapter
+
+    adapter = NmmeAdapter(config=load_config())
+    return adapter.get_multimodel(lat, lon, variable=variable)

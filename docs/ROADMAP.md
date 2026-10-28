@@ -30,14 +30,15 @@
 * **Administrative boundaries (HDX COD-AB)** — FSM + RMI polygons loaded via
   pyshp + rasterio (no GDAL/geopandas); accurate zonal WorldPop population per
   atoll/state wired into Island Profiles (fixes the point+radius undercount).
+* **NMME seasonal forecasts** — 6-model ensemble (xarray + netCDF4), wired into
+  the ENSO & Climate page as a multi-model precipitation outlook.
 
 ## Next (prioritized)
 
 1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
-   (Palau has no COD-AB; currently point-based).
-2. **PEAC + NMME** seasonal outlook ingestion.
-3. **ECMWF AIFS / GFS** model comparison (GRIB).
-4. **IMERG** — Earthdata login (documented `requires_credentials`).
+   (⚠️ Cloudflare-blocked; needs browser). Palau has no COD-AB; currently point-based.
+2. **ECMWF AIFS / GFS** model comparison (GRIB via `cfgrib`/`eccodes`).
+3. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
 
 ## Deferred / not attempted
 

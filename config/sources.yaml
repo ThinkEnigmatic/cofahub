@@ -196,10 +196,11 @@ sources:
     geographic_coverage: "Global 1 deg (FAS falls within grid cells)"
     temporal_resolution: "monthly inits, 12-month horizon, 2011-present"
     update_frequency: "monthly"
-    auth: "none (CPC FTP); IRI Data Library now needs login"
-    variables: "precip, tasmax/tasmin, winds, slp (NetCDF)"
-    implementation_status: planned
-    notes: "Primary machine-readable seasonal forecast source (NetCDF via xarray)."
+    auth: "none"
+    variables: "prate, tmp2m, tmpsfc (NetCDF3)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "xarray + netCDF4 point extraction of ENSMEAN across 6 models; ensemble mean/spread. 1-deg grid is coarse for atolls."
 
   - id: ecmwf-aifs
     name: "ECMWF AIFS open data (AI forecast)"

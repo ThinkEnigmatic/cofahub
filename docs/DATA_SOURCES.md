@@ -33,8 +33,9 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
   (14 stations incl. Koror/Yap/Chuuk/Pohnpei/Kosrae/Kwajalein/Majuro), monthly.
   HTML tables; *note: fetched page still showed SON-2024 → add a freshness guard*.
 * **NMME** (`ftp.cpc.ncep.noaa.gov/International/nmme/netcdf/`) — gridded 1° seasonal
-  forecasts (NetCDF), monthly inits, 2011–present. *Planned* (xarray). IRI Data
-  Library now requires login; CPC FTP + AWS `s3://noaa-nmme-pds` are open.
+  forecasts (NetCDF3), monthly inits, 2011–present. **Implemented** (xarray +
+  netCDF4, 6-model ensemble mean + spread, wired into ENSO & Climate page).
+  IRI Data Library now requires login; CPC FTP + AWS `s3://noaa-nmme-pds` are open.
 * **IRI ENSO plume** — *no longer serves numeric data* (figure only since ~Sep 2026).
   Not a viable numeric dependency.
 

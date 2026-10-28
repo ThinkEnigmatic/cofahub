@@ -14,6 +14,8 @@ dependencies = [
     "pyyaml>=6.0",
     "rasterio>=1.4.4",
     "pyshp>=3.1",
+    "xarray>=2026.9.0",
+    "netcdf4>=1.7.5.1.post1",
 ]
 
 [dependency-groups]

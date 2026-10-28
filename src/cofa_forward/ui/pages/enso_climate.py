@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from ...climate.enso_state import enso_state_from_config
 from ...visualization.maps import metric_map
 from ..components.common import page_header, render_plotly, sample_banner
-from ..state import get_all_indicators, get_live_enso, load_config, load_registry
+from ..state import (
+    get_all_indicators,
+    get_live_enso,
+    get_nmme_multimodel,
+    load_config,
+    load_registry,
+)
 
 
 def render() -> None:
@@ -58,8 +65,80 @@ def render() -> None:
 
     with col2:
         st.subheader("Seasonal outlook")
-        st.info("No official seasonal outlook is integrated yet", icon="ℹ️")
-        st.caption("Seasonal/subseasonal outlooks are planned. No outlook is fabricated.")
+        st.info("Multi-model seasonal forecast (NMME) is available below.", icon="ℹ️")
+        st.caption("Official probabilistic outlook: CPC Diagnostic Discussion (not parsed here).")
+
+    st.divider()
+
+    # ---- Seasonal outlook (NMME multi-model) ---- #
+    st.subheader("Seasonal outlook — NMME multi-model precipitation")
+    names = {e.geo_id: e.name for e in registry.all()}
+    s_geo = st.selectbox(
+        "Location",
+        options=list(names.keys()),
+        format_func=lambda g: f"{names[g]} ({g})",
+        key="nmme_loc",
+    )
+    s_entity = registry.by_id(s_geo)
+    if st.button("Load NMME seasonal forecast", key="nmme_load"):
+        get_nmme_multimodel.clear()
+    with st.spinner("Downloading NMME model forecasts (~18 MB, cached)…"):
+        mm = get_nmme_multimodel(s_entity.latitude, s_entity.longitude)
+    if mm.get("ok"):
+        st.success(
+            f"NMME {mm['cycle']} — {mm['n_models']} models, ensemble-mean precipitation.",
+            icon="🟢",
+        )
+        fig = go.Figure()
+        for col in mm["models"].columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=mm["models"].index,
+                    y=mm["models"][col],
+                    mode="lines+markers",
+                    name=col,
+                    line=dict(width=1, dash="dot"),
+                    opacity=0.7,
+                )
+            )
+        mean = mm["ensemble_mean"]
+        std = mm["ensemble_std"]
+        fig.add_trace(
+            go.Scatter(
+                x=mean.index,
+                y=mean.values,
+                mode="lines+markers",
+                name="Ensemble mean",
+                line=dict(color="#dc2626", width=3),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=mean.index.tolist() + mean.index.tolist()[::-1],
+                y=(mean + std).tolist() + (mean - std).tolist()[::-1],
+                fill="toself",
+                fillcolor="rgba(220,38,38,0.15)",
+                line=dict(width=0),
+                name="±1σ model spread",
+                showlegend=True,
+            )
+        )
+        fig.update_layout(
+            title=f"NMME seasonal precipitation — {s_entity.name} (mm/day)",
+            template="plotly_white",
+            height=360,
+            margin=dict(l=10, r=10, t=40, b=10),
+            yaxis_title="mm/day",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        )
+        render_plotly(fig, key="nmme_chart")
+        st.caption(
+            "1° (~110 km) grid, ensemble mean across the NMME models. Model spread "
+            "reflects inter-model disagreement; coarse for individual atolls. "
+            "This is a model forecast, not an official outlook."
+        )
+    else:
+        st.info(f"NMME forecast unavailable: {mm.get('error')}", icon="ℹ️")
 
     st.divider()
 
