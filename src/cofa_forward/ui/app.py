@@ -19,7 +19,7 @@ import streamlit as st  # noqa: E402
 
 from cofa_forward import __version__  # noqa: E402
 from cofa_forward.logging_config import setup_logging  # noqa: E402
-from cofa_forward.ui.pages import (  # noqa: E402
+from cofa_forward.ui.sections import (  # noqa: E402
     data_health,
     drought_water,
     enso_climate,

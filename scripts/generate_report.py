@@ -13,7 +13,7 @@ _SRC = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from cofa_forward.ui.pages.reports import assemble_brief  # noqa: E402
+from cofa_forward.ui.sections.reports import assemble_brief  # noqa: E402
 
 
 def main() -> int:
