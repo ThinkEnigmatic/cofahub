@@ -12,11 +12,11 @@ geospatial foundation. Repo: `~/cofa-forward`.
 
 ## Where things stand
 
-- **7 commits**; latest `9db151a`. Git repo is local (no remote).
-- **Tests:** 151 offline + 7 live-network pass. Lint/format clean (ruff).
+- **14 commits**; latest `3f4c5fa`. Git repo is local (no remote).
+- **Tests:** 162 offline + 10 live-network pass. Lint/format clean (ruff).
 - **App:** 10 pages, all render (AppTest). Live at `http://127.0.0.1:8501`.
 - Phases 0–7 of the original build prompt are substantially complete; the only
-  remaining data-source gaps are documented in the roadmap (below).
+  remaining item is IMERG live-verification (needs Earthdata credentials).
 
 ## Commands
 
@@ -75,7 +75,7 @@ reference:
 
 | source_id | module | notes |
 |---|---|---|
-| open-meteo-forecast | weather.py | current+hourly+daily, 16-day, no key |
+| open-meteo-forecast | weather.py | current+hourly+daily, 16-day, no key; **multi-model** (`models=`) |
 | open-meteo-archive | rainfall.py | ERA5 daily precip (climatology/anomalies) |
 | noaa-cpc-enso | enso.py | ONI `oni.ascii.txt`; phase via ≥5-season criterion |
 | noaa-ibtracs | ibtracs.py | WP-basin CSV (114 MB); WMO wind/pressure |
@@ -83,11 +83,16 @@ reference:
 | chirps-v3 | chirps.py | monthly COGs via rasterio `/vsicurl/` (land-masked) |
 | worldpop-population | population.py | ~1 km UN-adjusted grids; point/radius |
 | hdx-cod-ab | boundaries.py | FSM/RMI polygons via pyshp+rasterio; zonal pop |
+| geoboundaries | boundaries.py | Palau ADM1 (16 states, ODbL/OSM) via GeoJSON |
+| noaa-nmme | nmme.py | 6-model seasonal ENSMEAN (xarray + netCDF4) |
 
-`planned` (researched, not wired): PEAC seasonal outlook, NMME NetCDF, ECMWF
-AIFS, NOAA GFS/GEFS, CPC ENSO Diagnostic Discussion (partly via bulletin
-monitor), JTWC/NWS-Guam advisories (partly via bulletin monitor), PERSIANN-CDR,
-GPCC, SPEIbase, Copernicus DEM/GEBCO, IMERG (`requires_credentials`), WeatherNext
+`implemented_but_not_verified` (adapter + mocks, needs credentials):
+
+| nasa-gpm-imerg | imerg.py | earthaccess daily point extraction (Earthdata login) |
+
+`planned` (researched, not wired): PEAC seasonal outlook, CPC ENSO Diagnostic
+Discussion (partly via bulletin monitor), JTWC/NWS-Guam advisories (partly via
+bulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO, WeatherNext
 3 (`unavailable` — allowlist-gated). Full details in `docs/DATA_SOURCES.md`.
 
 ## Layout
@@ -95,7 +100,7 @@ GPCC, SPEIbase, Copernicus DEM/GEBCO, IMERG (`requires_credentials`), WeatherNex
 ```
 config/            app, geography (seed), sources, enso, drought, cyclones, alerts, bulletins
 src/cofa_forward/
-  ingestion/       base + 8 live adapters + bulletins monitor + stubs
+  ingestion/       base + 10 live adapters + bulletins monitor + IMERG (needs creds) + stubs
   storage/         FileCache, SQLite Database (provenance/bulletins), parquet, provenance
   geography/       registry (points), spatial_attribution (haversine), aggregation
   climate/         enso_state, episodes, analogs, climatology
@@ -141,16 +146,11 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Roadmap (next iteration)
 
-1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`.
-   ⚠️ **Blocked by Cloudflare bot protection** (`pacificdata.org` returns HTTP 403
-   "Just a moment…" to non-browser requests). Needs a browser (Playwright) or a
-   different source. Palau stays point-based for now.
-2. **PEAC + NMME** seasonal outlook ingestion — PEAC rainfall outlook appeared
-   stale (SON-2024) in research; NMME is NetCDF (adds `xarray` + `h5netcdf`).
-3. **ECMWF AIFS / GFS** model comparison (GRIB via `ecmwf-opendata`/`cfgrib`).
-4. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
-5. Polish: render boundary polygons on the map; area-weighted aggregation;
-   Palau point→polygon migration.
+1. **Verify IMERG live** — supply Earthdata credentials (`.netrc` or
+   `earthaccess.login`) to complete `implemented_and_tested` for `imerg.py`.
+2. **PEAC seasonal outlook** — HTML scrape (weather.gov/peac); the rainfall
+   outlook appeared stale (SON-2024) in research, so add a freshness guard.
+3. Polish: render boundary polygons on the map; area-weighted aggregation.
 
 ## Gotchas
 
