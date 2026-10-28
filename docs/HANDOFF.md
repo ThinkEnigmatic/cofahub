@@ -47,31 +47,27 @@ cd ~/cofa-forward
 .venv/bin/python scripts/generate_report.py
 ```
 
-## ⚠️ Environment blocker (MUST READ)
+## ⚠️ Environment note (RESOLVED 2026-10-28)
 
-**A machine-wide DNS outage hit mid-build and is NOT fully resolved.**
+A machine-wide DNS outage hit mid-build and has since been **resolved**. Kept for
+reference:
 
-- Root cause: **Tailscale client (1.94.2) is stale vs the daemon (1.104.2)** →
-  MagicDNS (resolver `100.100.100.100`) stopped forwarding → the system resolver
-  (mDNSResponder) got stuck → `uv` panics (`system-configuration` crate reads a
-  NULL) and `curl`/`pip`/`requests` DNS lookups fail.
-- **Applied fix:** `tailscale set --accept-dns=false` (reverted system DNS to
-  `1.1.1.1`/`8.8.8.8`; reversible with `--accept-dns=true`). This fixed the
-  *config* but the resolver daemon remained stuck.
-- **Consequences still active:**
-  - `uv run/add/sync` **panics**. Use `.venv/bin/python` directly (works).
-  - The uv venv has **no `pip`** (`python -m pip` → "No module named pip").
-  - **`pyshp` was hand-installed** by extracting the pure-Python wheel into
-    `.venv/lib/python3.12/site-packages/shapefile.py`. `pyproject.toml` declares
-    `pyshp>=3.1` but **`uv.lock` is stale** (no pyshp entry).
-  - No sudo ("you do not exist in the passwd database" — shell runs as UID 501).
-- **How to fully restore:** as the machine owner run `brew upgrade tailscale`
-  (or restart Tailscale), then `cd ~/cofa-forward && uv sync` to reconcile
-  `uv.lock`. Until then, everything still works via `.venv/bin/python`.
-- **Download workaround** (if DNS is still flaky): `dig +short @8.8.8.8 <host>`
-  then `curl --resolve "<host>:443:<IP>" ...`. HDX downloads also need a
-  `--resolve` for `s3.us-east-1.amazonaws.com` (HDX redirects there via
-  presigned URL).
+- Root cause was: **Tailscale client (1.94.2) stale vs daemon (1.104.2)** → MagicDNS
+  (resolver `100.100.100.100`) stopped forwarding → system resolver stuck → `uv`
+  panicked (`system-configuration` crate reads a NULL) and `curl`/`pip`/`requests`
+  DNS lookups failed.
+- Fix applied: `tailscale set --accept-dns=false` (reverted system DNS to
+  `1.1.1.1`/`8.8.8.8`); the machine owner later upgraded Tailscale.
+- **Current status: `uv` works, DNS resolves, `uv.lock` is reconciled (pyshp is
+  in it).** `uv run pytest`, `uv sync`, `uv run streamlit` all work normally.
+- If `uv` ever panics again with `system-configuration … Attempted to create a
+  NULL object`, it is the same network/Tailscale issue — check `tailscale status`
+  for a client/daemon version mismatch and upgrade/restart Tailscale.
+- No sudo available ("you do not exist in the passwd database" — shell runs as
+  UID 501). Download workaround (if DNS is ever flaky): `dig +short @8.8.8.8
+  <host>` then `curl --resolve "<host>:443:<IP>" ...`. HDX downloads also need a
+  `--resolve` for `s3.us-east-1.amazonaws.com` (HDX redirects there via presigned
+  URL).
 
 ## Data sources — status (all verified 2026-10-28)
 
@@ -145,9 +141,12 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Roadmap (next iteration)
 
-1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
-   (Palau has no COD-AB; currently point-based).
-2. **PEAC + NMME** seasonal outlook ingestion.
+1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`.
+   ⚠️ **Blocked by Cloudflare bot protection** (`pacificdata.org` returns HTTP 403
+   "Just a moment…" to non-browser requests). Needs a browser (Playwright) or a
+   different source. Palau stays point-based for now.
+2. **PEAC + NMME** seasonal outlook ingestion — PEAC rainfall outlook appeared
+   stale (SON-2024) in research; NMME is NetCDF (adds `xarray` + `h5netcdf`).
 3. **ECMWF AIFS / GFS** model comparison (GRIB via `ecmwf-opendata`/`cfgrib`).
 4. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
 5. Polish: render boundary polygons on the map; area-weighted aggregation;
