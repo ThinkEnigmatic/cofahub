@@ -11,7 +11,7 @@ exposure/terrain, and AI-forecast access).
 
 | Source | Endpoint | Auth | Notes |
 | --- | --- | --- | --- |
-| **Open-Meteo Forecast** | `api.open-meteo.com/v1/forecast` | none | current + hourly + daily, 16-day horizon, ~11 km |
+| **Open-Meteo Forecast** | `api.open-meteo.com/v1/forecast` | none | current + hourly + daily, 16-day horizon, ~11 km; **multi-model** via `models=` (ECMWF IFS/AIFS, GFS, ICON, GEM) |
 | **Open-Meteo Historical (ERA5)** | `archive-api.open-meteo.com/v1/archive` | none | daily precipitation, ~25 km |
 | **NOAA CPC Oceanic Niño Index** | `cpc.ncep.noaa.gov/data/indices/oni.ascii.txt` | none | authoritative ENSO index; phase derived via CPC ≥5-season criterion |
 | **IBTrACS v04r01 (WP basin)** | `ncei.noaa.gov/.../csv/ibtracs.WP.list.v04r01.csv` | none | historical tracks, 1842–present (114 MB CSV) |

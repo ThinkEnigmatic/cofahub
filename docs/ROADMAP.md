@@ -32,11 +32,13 @@
   into Island Profiles (fixes the point+radius undercount for all 3 countries).
 * **NMME seasonal forecasts** — 6-model ensemble (xarray + netCDF4), wired into
   the ENSO & Climate page as a multi-model precipitation outlook.
+* **Model comparison** — Open-Meteo multi-model API (ECMWF IFS/AIFS, GFS, ICON,
+  GEM, …) wired into Weather Operations; no GRIB/eccodes needed.
 
 ## Next (prioritized)
 
-1. **ECMWF AIFS / GFS** model comparison (GRIB via `cfgrib`/`eccodes`).
-2. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
+1. **IMERG** — Earthdata login (`earthaccess`), documented `requires_credentials`.
+2. Palau geometry refinement / area-weighted aggregation / map polygon rendering.
 
 ## Deferred / not attempted
 

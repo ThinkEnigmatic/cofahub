@@ -144,3 +144,64 @@ class OpenMeteoForecastAdapter(BaseAdapter):
             },
             **norm,
         }
+
+    def get_model_comparison(
+        self,
+        lat: float,
+        lon: float,
+        variable: str = "temperature_2m",
+        models: list[str] | None = None,
+        forecast_days: int = 7,
+    ) -> dict:
+        """Fetch one hourly variable from multiple models for comparison.
+
+        Open-Meteo serves several models (ECMWF IFS/AIFS, GFS, ICON, GEM, …) via
+        the ``models`` parameter; each returned column is ``{variable}_{model}``.
+        """
+        models = models or [
+            "best_match",
+            "ecmwf_aifs025",
+            "ecmwf_ifs025",
+            "gfs_global",
+            "icon_global",
+            "gem_global",
+        ]
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "hourly": variable,
+            "models": ",".join(models),
+            "forecast_days": forecast_days,
+            "timezone": "UTC",
+        }
+        res = self.fetch_json(self.source_url, params)
+        if not res.ok:
+            return {
+                "ok": False,
+                "error": res.error,
+                "source": self.source_id,
+                "retrieved_at": res.retrieved_at,
+            }
+        hourly = res.data.get("hourly", {}) or {}
+        if "time" not in hourly:
+            return {"ok": False, "error": "no hourly data", "source": self.source_id}
+        times = pd.to_datetime(hourly["time"], utc=True)
+        df = pd.DataFrame(
+            {k.replace(f"{variable}_", ""): v for k, v in hourly.items() if k != "time"},
+            index=times,
+        )
+        return {
+            "ok": True,
+            "source": self.source_id,
+            "retrieved_at": res.retrieved_at,
+            "variable": variable,
+            "models": df,
+            "n_models": int(df.shape[1]),
+            "resolution": "model-native grid (attributed to the requested point)",
+            "provenance": {
+                "dataset_id": self.source_id,
+                "source_url": self.source_url,
+                "calculation_method": "multi-model nearest-grid-cell attribution",
+                "notes": "Model disagreement is shown, not a probability forecast.",
+            },
+        }

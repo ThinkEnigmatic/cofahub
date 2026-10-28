@@ -80,3 +80,25 @@ def test_get_forecast_network_failure(monkeypatch):
     r = adapter.get_forecast(7.34, 134.48)
     assert r["ok"] is False
     assert r["error"] == "boom"
+
+
+def test_get_model_comparison(monkeypatch):
+    adapter = OpenMeteoForecastAdapter()
+    payload = {
+        "hourly": {
+            "time": ["2026-10-28T00:00", "2026-10-28T01:00"],
+            "temperature_2m_best_match": [27.5, 27.6],
+            "temperature_2m_gfs_global": [27.8, 27.9],
+            "temperature_2m_ecmwf_aifs025": [27.3, 27.4],
+        }
+    }
+
+    def fake_fetch(url, params=None, timeout=None):
+        return FetchResult(True, "open-meteo-forecast", url, data=payload)
+
+    monkeypatch.setattr(adapter, "fetch_json", fake_fetch)
+    r = adapter.get_model_comparison(7.34, 134.48, variable="temperature_2m")
+    assert r["ok"] is True
+    assert r["n_models"] == 3
+    assert list(r["models"].columns) == ["best_match", "gfs_global", "ecmwf_aifs025"]
+    assert len(r["models"]) == 2

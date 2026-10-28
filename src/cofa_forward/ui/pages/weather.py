@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from ...ingestion.weather import OpenMeteoForecastAdapter
@@ -17,6 +18,7 @@ from ..components.common import (
     source_caption,
 )
 from ..state import (
+    get_model_comparison,
     get_sample_forecast,
     load_config,
     load_registry,
@@ -159,6 +161,48 @@ def render() -> None:
         }
     ).set_index("time")
     render_plotly(forecast_chart(fc_df, title="Hourly forecast (sample)"), key="wx_sample_chart")
+
+    st.divider()
+
+    # ---- Model comparison (Open-Meteo multi-model) ---- #
+    st.subheader("Model comparison")
+    var = st.selectbox("Variable", ["temperature_2m", "precipitation"], key="wx_model_var")
+    if st.button("Load multi-model comparison", key="wx_model_load"):
+        get_model_comparison.clear()
+    with st.spinner("Fetching multiple models…"):
+        mc = get_model_comparison(entity.latitude, entity.longitude, variable=var)
+    if mc.get("ok"):
+        st.success(
+            f"{mc['n_models']} models available (retrieved {mc['retrieved_at']}).", icon="🟢"
+        )
+        df = mc["models"]
+        fig = go.Figure()
+        for col in df.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[col],
+                    mode="lines",
+                    name=col,
+                    line=dict(width=1.5),
+                    opacity=0.85,
+                )
+            )
+        fig.update_layout(
+            title=f"Model comparison — {var} ({entity.name})",
+            template="plotly_white",
+            height=340,
+            margin=dict(l=10, r=10, t=40, b=10),
+            yaxis_title=var,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        )
+        render_plotly(fig, key="wx_model_chart")
+        st.caption(
+            "Models: ECMWF IFS/AIFS, GFS, ICON, GEM (Open-Meteo multi-model API). "
+            "Model disagreement is shown as-is — this is not a probability forecast."
+        )
+    else:
+        st.info(f"Model comparison unavailable: {mc.get('error')}", icon="ℹ️")
 
     st.caption(
         "Scientific calculations are metric. Imperial units are a presentation "

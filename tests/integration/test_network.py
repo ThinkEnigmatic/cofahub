@@ -26,6 +26,15 @@ def test_live_forecast():
     assert "temperature_2m" in r["hourly"].columns
 
 
+def test_live_model_comparison():
+    cfg = get_config()
+    adapter = OpenMeteoForecastAdapter(config=cfg)
+    r = adapter.get_model_comparison(7.342, 134.478, variable="temperature_2m")
+    assert r["ok"], f"live model comparison failed: {r.get('error')}"
+    assert r["n_models"] >= 3
+    assert "best_match" in r["models"].columns
+
+
 def test_live_archive_rainfall():
     cfg = get_config()
     adapter = OpenMeteoArchiveAdapter(config=cfg)

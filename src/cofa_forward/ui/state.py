@@ -219,3 +219,12 @@ def get_nmme_multimodel(lat: float, lon: float, variable: str = "prate") -> dict
 
     adapter = NmmeAdapter(config=load_config())
     return adapter.get_multimodel(lat, lon, variable=variable)
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_model_comparison(lat: float, lon: float, variable: str = "temperature_2m") -> dict:
+    """Fetch one hourly variable from multiple weather models (cached 30 min)."""
+    from ..ingestion.weather import OpenMeteoForecastAdapter
+
+    adapter = OpenMeteoForecastAdapter(config=load_config(), cache=make_cache())
+    return adapter.get_model_comparison(lat, lon, variable=variable)
