@@ -13,6 +13,7 @@ if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
 from cofa_forward.config import get_config  # noqa: E402
+from cofa_forward.ingestion.boundaries import BoundariesAdapter  # noqa: E402
 from cofa_forward.ingestion.chirps import ChirpsAdapter  # noqa: E402
 from cofa_forward.ingestion.enso import CpcOniAdapter  # noqa: E402
 from cofa_forward.ingestion.historical_impacts import HistoricalImpactsAdapter  # noqa: E402
@@ -33,6 +34,7 @@ def main() -> int:
         IbtracsAdapter(),
         JmaTyphoonAdapter(),
         ChirpsAdapter(),
+        BoundariesAdapter(config=cfg),
         OfficialAdvisoriesAdapter(),
         WorldPopAdapter(config=cfg),
         HistoricalImpactsAdapter(),

@@ -77,8 +77,10 @@ Run them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,
   census of record. (WOPR does *not* cover these countries.)
 * **GPWv4** (SEDAC) — ~1 km, requires Earthdata Login; census-consistent cross-check.
 * **HDX COD-AB boundaries** — FSM (`cod-ab-fsm`) and RMI (`cod-ab-mhl`), CC BY-IGO,
-  reviewed Oct 2024. **Palau has no COD-AB** → use SPC Pacific Data Hub
-  `2015_plw_phc_admin_boundaries`.
+  reviewed Oct 2024. **Implemented** (loaded via `pyshp` + `rasterio`, no GDAL/
+  geopandas) — enables accurate zonal WorldPop population per atoll/state.
+  **Palau has no COD-AB** → use SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
+  (a documented follow-up; Palau remains point-based).
 * **Copernicus DEM GLO-30/GLO-90** (AWS Open Data, no login) — DSM terrain.
 * **GEBCO** (CC BY 4.0) — 15 arc-sec topography+bathymetry (atoll coastal exposure).
 * **SRTM GL1** (30 m) — via OpenTopography S3 or Earthdata (login).

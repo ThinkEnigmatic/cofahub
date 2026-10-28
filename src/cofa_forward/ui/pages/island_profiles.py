@@ -15,6 +15,7 @@ from ..state import (
     get_sample_impacts,
     get_sample_tracks,
     get_worldpop_population,
+    get_zonal_population,
     load_registry,
 )
 
@@ -53,25 +54,38 @@ def render() -> None:
     with right:
         st.markdown("**Population exposure (WorldPop)**")
         if e.population:
-            wp = get_worldpop_population(e.geo_id, e.country_code, e.latitude, e.longitude)
-            if wp.get("ok") and wp.get("population") == wp.get("population"):
+            # Prefer the accurate zonal (boundary) sum for FSM/RMI; fall back to
+            # the point+radius approximation for Palau (no COD-AB).
+            zonal = get_zonal_population(e.geo_id, e.name, e.country_code)
+            if zonal.get("ok") and zonal.get("population") == zonal.get("population"):
                 st.metric(
-                    f"WorldPop population within {wp['radius_km']:.0f} km",
-                    f"{wp['population']:,.0f}",
+                    f"WorldPop within {e.name} boundary",
+                    f"{zonal['population']:,.0f}",
                 )
                 st.caption(
-                    "UN-adjusted 2020 (~1 km grid), summed near the reference point. "
-                    "This undercounts long/irregular atolls (e.g. Majuro); the census "
-                    "total above is the atoll figure. Accurate atoll polygons require "
-                    "boundary data (HDX COD-AB, planned)."
+                    "UN-adjusted 2020 (~1 km grid) summed within the HDX COD-AB "
+                    "administrative boundary. Differs from the census total above "
+                    "(UN-adjusted, 1-km resolution)."
                 )
             else:
-                st.caption("WorldPop population unavailable (offline or no land pixels).")
+                wp = get_worldpop_population(e.geo_id, e.country_code, e.latitude, e.longitude)
+                if wp.get("ok") and wp.get("population") == wp.get("population"):
+                    st.metric(
+                        f"WorldPop population within {wp['radius_km']:.0f} km",
+                        f"{wp['population']:,.0f}",
+                    )
+                    st.caption(
+                        "UN-adjusted 2020 (~1 km grid) near the reference point. "
+                        "Palau has no COD-AB boundary; this point+radius estimate "
+                        "undercounts long/irregular atolls."
+                    )
+                else:
+                    st.caption("WorldPop population unavailable (offline or no land pixels).")
         st.markdown("**Geometry source**")
         st.info(
-            "Point location from the seed registry — not a validated boundary or "
-            "surveyed coordinate. Coarse-grid model values attributed here are regional "
-            "estimates, not atoll-accurate measurements."
+            "Point location from the seed registry. FSM/RMI use HDX COD-AB "
+            "administrative polygons for population; Palau remains point-based "
+            "(no COD-AB). Coarse-grid model values are regional estimates."
         )
 
     st.divider()

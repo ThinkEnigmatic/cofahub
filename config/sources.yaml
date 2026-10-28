@@ -276,9 +276,10 @@ sources:
     spatial_resolution: "ADM0-2 polygons"
     temporal_resolution: "static (reviewed Oct 2024)"
     auth: "none"
-    variables: "administrative boundaries (SHP/GeoJSON), P-coded"
-    implementation_status: planned
-    notes: "Palau boundaries: SPC Pacific Data Hub 2015 census (pacificdata.org)."
+    variables: "administrative boundaries (SHP), P-coded"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-28"
+    notes: "Loaded via pyshp + rasterio (no GDAL/geopandas). Enables accurate zonal WorldPop population. Palau boundaries: SPC Pacific Data Hub (planned)."
 
   - id: copernicus-dem
     name: "Copernicus DEM GLO-30/GLO-90 (terrain)"

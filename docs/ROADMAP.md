@@ -27,18 +27,20 @@
   detects new/updated content by hash, parses structured summaries (incl. the
   official CPC ENSO alert status), snapshots raw text, and logs updates to the
   dataset dynamically (CLI + UI feed + scheduling doc).
+* **Administrative boundaries (HDX COD-AB)** — FSM + RMI polygons loaded via
+  pyshp + rasterio (no GDAL/geopandas); accurate zonal WorldPop population per
+  atoll/state wired into Island Profiles (fixes the point+radius undercount).
 
 ## Next (prioritized)
 
-1. **Boundaries & polygons** — HDX COD-AB (FSM/RMI) + SPC (Palau) admin boundaries
-   via geopandas/shapely: replace point registry with polygons, area-weighted
-   aggregation, accurate atoll population/exposure. (Currently point+radius.)
+1. **Palau boundaries** — SPC Pacific Data Hub `2015_plw_phc_admin_boundaries`
+   (Palau has no COD-AB; currently point-based).
 2. **PEAC + NMME** seasonal outlook ingestion.
 3. **ECMWF AIFS / GFS** model comparison (GRIB).
 4. **IMERG** — Earthdata login (documented `requires_credentials`).
 
 ## Deferred / not attempted
 
-* Geometry/boundaries (GeoPandas/Shapely) — point registry for now.
+* Palau geometry (no COD-AB); area-weighted aggregation; full map polygon rendering.
 * Dynamical/statistical downscaling — not implemented (never claimed).
 * WeatherNext 3 (allowlist-gated; keep optional). Remote deployment hardening.

@@ -177,8 +177,9 @@ def get_chirps_monthly(geo_id: str, lat: float, lon: float) -> dict:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def get_worldpop_population(geo_id: str, country_code: str, lat: float, lon: float,
-                            radius_km: float = 10.0) -> dict:
+def get_worldpop_population(
+    geo_id: str, country_code: str, lat: float, lon: float, radius_km: float = 10.0
+) -> dict:
     """WorldPop population (UN-adjusted 2020) within a radius of a point."""
     from ..ingestion.population import WorldPopAdapter
 
@@ -187,4 +188,25 @@ def get_worldpop_population(geo_id: str, country_code: str, lat: float, lon: flo
         pop = adapter.population_within_radius(country_code, lat, lon, radius_km)
         return {"ok": True, "population": pop, "radius_km": radius_km}
     except Exception as exc:  # noqa: BLE001 - network/download errors surface here
+        return {"ok": False, "error": str(exc)}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_zonal_population(geo_id: str, name: str, country_code: str) -> dict:
+    """WorldPop population within the actual administrative boundary (FSM/RMI)."""
+    from ..ingestion.boundaries import BoundariesAdapter, match_by_name, zonal_population
+    from ..ingestion.population import WorldPopAdapter
+
+    if country_code.upper() not in ("FM", "MH"):
+        return {"ok": False, "error": "no COD-AB boundaries for this country (Palau)"}
+    try:
+        iso3 = WorldPopAdapter.iso3(country_code)
+        ba = BoundariesAdapter(config=load_config())
+        record = match_by_name(name, ba.get_admin(iso3, level=1))
+        if record is None:
+            return {"ok": False, "error": f"no boundary match for {name}"}
+        wpa = WorldPopAdapter(config=load_config())
+        pop = zonal_population(record["geometry"], wpa.raster_path(iso3))
+        return {"ok": True, "population": pop, "pcode": record["pcode"]}
+    except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
