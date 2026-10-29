@@ -143,12 +143,12 @@ def _rate_limited_archive() -> None:
         _LAST_ARCHIVE["t"] = time.time()
 
 
-def _long_era5(lat: float, lon: float) -> pd.DataFrame:
+def _long_era5(lat: float, lon: float, force: bool = False) -> pd.DataFrame:
     """ERA5 daily precip + tmax/tmin (1997→now), chunked + disk-cached."""
     from .ingestion.rainfall import OpenMeteoArchiveAdapter
 
     cache_file = _ERA5_DIR / f"era5_{lat:.2f}_{lon:.2f}.parquet"
-    if cache_file.exists() and (time.time() - cache_file.stat().st_mtime) < _ERA5_TTL:
+    if not force and cache_file.exists() and (time.time() - cache_file.stat().st_mtime) < _ERA5_TTL:
         try:
             return pd.read_parquet(cache_file)
         except Exception:  # noqa: BLE001
@@ -410,6 +410,52 @@ def trends(geo_id: str):
 @app.get("/api/plans", dependencies=[Depends(_auth)])
 def plans():
     return camelize(NATIONAL_PLANS)
+
+
+@app.post("/api/rag/query", dependencies=[Depends(_auth)])
+def rag_query(body: dict[str, Any]):
+    """Retrieve knowledge chunks for a query (optionally generate an answer).
+
+    Grounded retrieval over the project's docs, national plans, data-source
+    catalog and geography — BM25, provenance-carrying, never fabricated.
+    ``generate`` asks the sandboxed LLM to answer from the retrieved chunks
+    (only when the local gateway is configured).
+    """
+    from .intelligence.rag import load_knowledge_base
+
+    query = str(body.get("query", "")).strip()
+    if not query:
+        return {"chunks": [], "answer": None}
+    top_k = max(1, min(20, int(body.get("top_k", 5))))
+    generate = bool(body.get("generate", False))
+
+    kb = load_knowledge_base()
+    results = kb.search(query, top_k=top_k)
+    chunks = [
+        {
+            "title": c["title"],
+            "source": c["source"],
+            "kind": c["kind"],
+            "text": c["text"],
+            "score": c["score"],
+        }
+        for c in results
+    ]
+    answer = None
+    if generate and chunks:
+        context = "\n\n".join(f"[{c['title']}]\n{c['text']}" for c in chunks)
+        answer = _generate_answer(context, query)
+    return {"chunks": chunks, "answer": answer}
+
+
+def _generate_answer(context: str, question: str) -> str | None:
+    from .intelligence.llm_client import LLMClient
+
+    client = LLMClient(config=get_config())
+    if not client.available:
+        return None
+    r = client.analyze(context, question)
+    return r["text"] if r.get("ok") else None
 
 
 @app.get("/api/login")

@@ -1,0 +1,1178 @@
+[
+ {
+  "title": "Architecture — Architecture",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "COFA FORWARD is a modular Python application (Streamlit UI) for weather\noperations and anticipatory climate intelligence over the Freely Associated\nStates (Palau, FSM, RMI). It is a single-developer-friendly, single-process app\nwith no microservices and no required credentials."
+ },
+ {
+  "title": "Architecture — Design principles",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "1. **One data foundation, two modes.** Weather Operations and Anticipatory\n   Intelligence share the same geographic registry, observations/forecasts,\n   source/timestamp metadata, map framework, island profiles, impact catalog,\n   and uncertainty framework.\n2. **Deterministic science first.** Every quantitative indicator is a tested\n   numerical function. A language model (optional, not enabled by default) may\n   only *explain* validated results — never compute them.\n3. **Provenance everywhere.** Derived values record their inputs, methods,\n   parameters, baselines, aggregation, and missing-data handling.\n4. **Never fabricate.** Missing data stays missing; no invented storms,\n   warnings, forecasts, probabilities, or impact counts."
+ },
+ {
+  "title": "Architecture — Package layout",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "```\nconfig/          YAML (app, geography, sources, enso, drought, cyclones, alerts)\nsrc/cofa_forward/\n  config.py        validated config loader (pydantic-backed schemas)\n  units.py         explicit metric<->imperial conversions\n  timeutil.py      UTC timestamp normalization\n  schemas.py       pydantic models (GeoEntity, SourceRecord, EnsoEpisode, ...)\n  sample_data.py   deterministic synthetic sample data (clearly labeled)\n  ingestion/       provider adapters (base + Open-Meteo forecast/archive + stubs)\n  storage/         FileCache, SQLite Database, ParquetStore, provenance\n  geography/       registry, spatial attribution (haversine), aggregation\n  climate/         ENSO state, episodes, analogs, climatology\n  drought/         rainfall metrics, anomalies, percentiles, SPI, freshwater, alerts\n  cyclones/        tracks, proximity, climatology, ENSO analysis, exposure\n  impacts/         event catalog, evidence labeling\n  intelligence/    indicators, synthesis, confidence, report builder\n  visualization/   maps (Plotly scattergeo), charts, legends, layers\n  ui/              Streamlit app + 9 pages + shared components\nscripts/          initialize_data, ingest_weather, ingest_rainfall, ...\ntests/            unit + integration + scientific regression (pytest)\n```"
+ },
+ {
+  "title": "Architecture — Data flow",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "```\nproviders --(ingestion adapters)--> FileCache --> normalize/validate\n      |                                    |\n      +-- provenance/ingestion history --> SQLite (data/catalog.db)\n                                           |\ncomputed indicators/analogs <-- drought/climate/cyclone modules\n      |\n      +--> ui/ (Streamlit) & intelligence/report_builder (Markdown brief)\n```\n\n* `data/raw` — untouched source data\n* `data/interim` — intermediate transforms\n* `data/processed` — normalized analytical datasets\n* `data/samples` — clearly labeled synthetic data\n* `data/cache` — TTL cache for remote fetches"
+ },
+ {
+  "title": "Architecture — Key decisions",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "* **Maps use Plotly `scattergeo`** (no Mapbox token, no tile API key) so the app\n  runs fully offline with built-in Natural Earth coastlines. A heavier map stack\n  (PyDeck/Folium) is a later option if richer base layers are needed.\n* **Geography is point-based seed data.** Boundaries/polygons (GeoPandas/Shapely)\n  are deferred; the registry is data-driven so a validated inventory can replace\n  the seed YAML without code changes.\n* **Spatial attribution is nearest-grid-cell**, recorded explicitly, and never\n  described as downscaling.\n* **Percentile drought indicators before SPI.** A non-parametric normal-score\n  SPI is available; full gamma-fit SPI is deferred."
+ },
+ {
+  "title": "Architecture — Extending",
+  "source": "docs/ARCHITECTURE.md",
+  "kind": "doc",
+  "text": "Add a provider: subclass `ingestion.base.BaseAdapter`, implement `fetch`/\nnormalization, add a row to `config/sources.yaml`, and set its status honestly.\nAdd a location: append an entity to `config/geography.yaml`."
+ },
+ {
+  "title": "Data_Dictionary — Geography registry (`config/geography.yaml`)",
+  "source": "docs/DATA_DICTIONARY.md",
+  "kind": "doc",
+  "text": "| Field | Type | Description |\n| --- | --- | --- |\n| geo_id | str | Stable identifier (e.g. `PAL`, `FSM-CHUUK`, `RMI-MAJ`). |\n| name | str | Display name. |\n| entity_type | str | `country`, `state`, `island`, `atoll`, `monitoring_location`. |\n| country_code | str | ISO-3166 alpha-2 (PW / FM / MH). |\n| parent_geo_id | str | Parent entity id (null for countries). |\n| latitude / longitude | float | Approximate point location (seed, not surveyed). |\n| area_km2 | float | Approximate area (seed). |\n| population / population_year | int | Approximate population (seed). |\n| population_source | str | Provenance of the population figure. |\n| data_coverage | str | Qualitative coverage (moderate / sparse). |\n| notes | str | Caveats. |\n\n> The registry is **seed data** (`status: seed`). A validated FAS island/atoll\n> inventory can replace it without code changes."
+ },
+ {
+  "title": "Data_Dictionary — Weather forecast (`open-meteo-forecast`)",
+  "source": "docs/DATA_DICTIONARY.md",
+  "kind": "doc",
+  "text": "Hourly/daily DataFrames; metric units (°C, mm, m/s, hPa, %). Key columns:\n`temperature_2m`, `precipitation`, `relative_humidity_2m`, `wind_speed_10m`,\n`wind_direction_10m`, `surface_pressure`, `precipitation_sum` (daily),\n`precipitation_probability_max` (daily). Metadata includes `latitude`,\n`longitude`, `elevation_m`, `timezone`, and attribution note."
+ },
+ {
+  "title": "Data_Dictionary — Historical rainfall (`open-meteo-archive`)",
+  "source": "docs/DATA_DICTIONARY.md",
+  "kind": "doc",
+  "text": "Daily `precip_mm` Series (mm), tz-aware UTC, with NaN for missing days."
+ },
+ {
+  "title": "Data_Dictionary — Derived indicators",
+  "source": "docs/DATA_DICTIONARY.md",
+  "kind": "doc",
+  "text": "| Field | Description |\n| --- | --- |\n| `rain_{n}m_mm` | Rolling n-month rainfall total (n ∈ 1,3,6,12); NaN if any month incomplete. |\n| `anomaly_mm` | Monthly total − calendar-month climatology (baseline-valid only). |\n| `anomaly_pct` | (obs − clim) / clim × 100. |\n| `percentile` | Empirical percentile of the month vs its calendar-month baseline distribution. |\n| `percentile_category` | Severity label from percentile bins (config). |"
+ },
+ {
+  "title": "Data_Dictionary — Provenance record",
+  "source": "docs/DATA_DICTIONARY.md",
+  "kind": "doc",
+  "text": "Every derived value records: `dataset_id`, `source_url`, `retrieved_at`,\n`valid_time`, `init_time`, `lead_time`, `calculation_method`, `parameters`,\n`baseline_period`, `geographic_aggregation`, `missing_data_handling`,\n`output_timestamp`, `code_version`, `notes`."
+ },
+ {
+  "title": "Data_Sources — Data Sources",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "Status values: `implemented_and_tested`, `implemented_but_not_verified`,\n`requires_credentials`, `requires_manual_import`, `planned`, `unavailable`.\nA source is marked `implemented_and_tested` only after a successful integration\ntest. This catalog was refreshed with extensive online research on 2026-10-28\n(five independent research passes over ENSO, cyclones, precipitation/drought,\nexposure/terrain, and AI-forecast access)."
+ },
+ {
+  "title": "Data_Sources — Implemented & tested (live adapters)",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "| Source | Endpoint | Auth | Notes |\n| --- | --- | --- | --- |\n| **Open-Meteo Forecast** | `api.open-meteo.com/v1/forecast` | none | current + hourly + daily, 16-day horizon, ~11 km; **multi-model** via `models=` (ECMWF IFS/AIFS, GFS, ICON, GEM) |\n| **Open-Meteo Historical (ERA5)** | `archive-api.open-meteo.com/v1/archive` | none | daily precipitation, ~25 km |\n| **NOAA CPC Oceanic Niño Index** | `cpc.ncep.noaa.gov/data/indices/oni.ascii.txt` | none | authoritative ENSO index; phase derived via CPC ≥5-season criterion |\n| **IBTrACS v04r01 (WP basin)** | `ncei.noaa.gov/.../csv/ibtracs.WP.list.v04r01.csv` | none | historical tracks, 1842–present (114 MB CSV) |\n| **JMA RSMC Tokyo (active storms)** | `jma.go.jp/bosai/typhoon/data/targetTc.json` → `specifications.json` | none | position, 10-min wind, pressure, 5-day forecast + probability circles |\n| **CHIRPS v3 (precipitation)** | `data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs/` | none | monthly COGs, 0.05°, point extraction via rasterio range requests |\n\nRun them: `scripts/ingest_weather.py`, `ingest_rainfall.py`, `ingest_enso.py`,\n`ingest_ibtracs.py`, `ingest_jma.py`, `check_sources.py`. Live tests:\n`uv run pytest -m network` (6 tests, all passing)."
+ },
+ {
+  "title": "Data_Sources — ENSO & seasonal climate",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **CPC ONI** (`oni.ascii.txt`) — the canonical index. Free, no auth, plain ASCII,\n  monthly, 1950–present. **Implemented.**\n* **CPC ENSO Diagnostic Discussion** (`enso_advisory/ensodisc.html`) — the official\n  status statement (Watch/Advisory) + probabilistic outlook. Narrative HTML, monthly\n  (~2nd Thursday). *Planned* (regex-scrape alert status + synopsis).\n* **PEAC** (`weather.gov/peac/`) — FAS-specific seasonal rainfall outlook\n  (14 stations incl. Koror/Yap/Chuuk/Pohnpei/Kosrae/Kwajalein/Majuro), monthly.\n  HTML tables; *note: fetched page still showed SON-2024 → add a freshness guard*.\n* **NMME** (`ftp.cpc.ncep.noaa.gov/International/nmme/netcdf/`) — gridded 1° seasonal\n  forecasts (NetCDF3), monthly inits, 2011–present. **Implemented** (xarray +\n  netCDF4, 6-model ensemble mean + spread, wired into ENSO & Climate page).\n  IRI Data Library now requires login; CPC FTP + AWS `s3://noaa-nmme-pds` are open.\n* **IRI ENSO plume** — *no longer serves numeric data* (figure only since ~Sep 2026).\n  Not a viable numeric dependency."
+ },
+ {
+  "title": "Data_Sources — Tropical cyclones",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **IBTrACS v04r01** (`WP` basin CSV/NetCDF) — multi-agency best tracks.\n  **Implemented.** WMO wind/pressure = responsible agency (JMA 10-min for WP);\n  per-agency `USA_WIND`/`TOKYO_WIND` retained so averaging periods stay explicit.\n* **JMA RSMC Tokyo** JSON (`targetTc.json`, `specifications.json`, `forecast.json`,\n  `pastTracks.json`) — authoritative active-storm source. **Implemented.**\n* **JTWC** text warnings (`tgftp.nws.noaa.gov/data/raw/wt/wtpn3x.pgtw..txt`) — 1-min\n  wind + quadrant radii + forecast track. **Implemented** (full ATCF-text parser).\n* **NWS Guam / PEAC** (`wtpq3x.pgum.*`, `api.weather.gov/alerts`) — FAS island-specific\n  watches/warnings. **Implemented** (TCP parser `nws_guam.py`; `api.weather.gov/\n  alerts` available for structured zone alerts).\n* ⚠️ Wind-speed averaging differs by agency (JMA 10-min vs JTWC/NWS 1-min). Always\n  carry the agency + averaging period with any wind value."
+ },
+ {
+  "title": "Data_Sources — Satellite imagery",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **Himawari-9** (JMA/NICT real-time web) — full-disk visible composite, 10-min\n  cadence. **Implemented** (latest full-disk tile shown on the Tropical Cyclones\n  page). IR bands and region-zoom tiles are a follow-up.\n* **GOES** (NOAA) — *not a fit for the FAS*: GOES-West covers the eastern Pacific/\n  Americas; the FAS (130–175E) is in Himawari's domain.\n* **Sentinel-2/3** (Copernicus, free) and **VIIRS** (NASA/NOAA, Earthdata) — ocean/\n  land remote sensing (SST, ocean colour, vegetation), not weather feeds; heavy\n  raster. *Planned* for SST/coastal overlays (STAC/AWS/LANCE access documented)."
+ },
+ {
+  "title": "Data_Sources — Precipitation & drought",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **CHIRPS v3** (`data.chc.ucsb.edu/products/CHIRPS/v3.0/`) — **implemented** (point\n  extraction from monthly COGs via rasterio range requests). 0.05°, 60N–60S, CC BY 4.0.\n  **Land-masked** → sub-pixel islands use a documented max-valid-pixel heuristic; ERA5\n  is preferred for ocean-adjacent atolls.\n* **NASA GPM IMERG** (GES DISC) — global incl. ocean, 0.1°, sub-daily.\n  **Implemented & tested** (`earthaccess` adapter `ingestion/imerg.py` for daily\n  point extraction; live-verified with an Earthdata bearer token). Requires\n  `EARTHDATA_TOKEN` (or `.netrc`) + a one-time GPM IMERG EULA acceptance.\n  Note V07→V08 transition (V07 Final ends Sep 2025).\n* **PERSIANN-CDR** (NOAA NCEI) — 0.25° daily, 1983–present, no login.\n* **GPCC** (DWD) — gauge-only land; essentially no FAS gauges → *not recommended*.\n* **USGS P1RXUMV3** (western-Pacific drought + 7-day GFS forecast) — covers **FSM,\n  RMI, Nauru, Solomon — Palau NOT included**. ScienceBase blocks non-browser GET.\n  Reuse its R scripts to replicate the IMERG-Early-Run + GFS pipeline for Palau.\n* **SPEIbase / SPEI monitor** — global land 0.5°/1° (ODbL); many FAS atolls fall\n  between cells. Better to compute SPI/SPEI ourselves from CHIRPS/IMERG (SPI is\n  already implemented in `drought/spi.py`)."
+ },
+ {
+  "title": "Data_Sources — Population, boundaries, terrain, infrastructure",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **WorldPop** (`data.worldpop.org/.../Global_2000_2020_1km/`) — **implemented** (point/radius\n  extraction via rasterio). CC BY 4.0, ~1 km, 2000–2020, covers PLW/FSM/MHL, no login.\n  UN-adjusted 2020 totals exceed censuses → used for **spatial exposure**, not as the\n  census of record. (WOPR does *not* cover these countries.)\n* **GPWv4** (SEDAC) — ~1 km, requires Earthdata Login; census-consistent cross-check.\n* **HDX COD-AB boundaries** — FSM (`cod-ab-fsm`) and RMI (`cod-ab-mhl`), CC BY-IGO,\n  reviewed Oct 2024. **Implemented** (loaded via `pyshp` + `rasterio`, no GDAL/\n  geopandas) — enables accurate zonal WorldPop population per atoll/state.\n  **Palau** (no COD-AB) uses **geoBoundaries ADM1** (16 states, ODbL/OSM), parsed\n  from GeoJSON — also implemented.\n* **Copernicus DEM GLO-30/GLO-90** (AWS Open Data, no login) — DSM terrain.\n* **GEBCO** (CC BY 4.0) — 15 arc-sec topography+bathymetry (atoll coastal exposure).\n* **SRTM GL1** (30 m) — via OpenTopography S3 or Earthdata (login).\n* **OSM / Geofabrik / HOT** (ODbL) — the only open infrastructure/POI layer; coverage\n  is uneven (Koror/Majuro/Pohnpei well mapped, outer atolls thin)."
+ },
+ {
+  "title": "Data_Sources — AI / global forecast models",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **Google WeatherNext 3** — allowlist-gated (free Google account, ~5–7 day approval),\n  Zarr v3 / BigQuery / Earth Engine, 0.05°/0.1°/0.25°, hourly, 64-member, 15-day.\n  Real-time data under an experimental ToU; historical (≥1 h old) is CC BY 4.0.\n  **Adapter implemented** (`ingestion/weathernext.py`): reports `requires_credentials`\n  and reads Zarr via `gcsfs` once the allowlist is granted. Access form submitted\n  (see below).\n* **NVIDIA Earth-2 / FourCastNet / StormCast** — open downloadable weights (NGC/HF,\n  self-host on GPU via Modulus) or hosted NIM microservices (paid API key / DGX Cloud).\n  **No keyless free hosted weather API.** Adapter implemented and reports honestly.\n* **ECMWF AIFS open data** (`s3://ecmwf-forecasts`, CC BY 4.0, no account) — 0.25°,\n  4×/day to 15 days, GRIB2. **Best free AI/global drop-in** (per-point via\n  `ecmwf-opendata`).\n* **NOAA GFS/GEFS** (NOMADS / AWS NODD `s3://noaa-gfs-bdp-pds`) — public domain,\n  0.25°, byte-range GRIB2 subsetting. **Free fallback.**"
+ },
+ {
+  "title": "Data_Sources — AI-model account status",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **WeatherNext 3**: the access form requires (1) a Google account email, (2) a\n  Google Cloud account email to be allowlisted, (3) name/country/organisation. The\n  approval is 5–7 business days at Google's discretion. **Not yet granted.**\n* **NVIDIA**: a free `build.nvidia.com` key covers LLM/vision/embedding NIMs, **not**\n  the weather microservices (those need DGX Cloud). Signing up would not unblock a\n  hosted weather feed, so it is not pursued."
+ },
+ {
+  "title": "Data_Sources — Requested but not freely accessible",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "* **Windy** — commercial API only (`api.windy.com`); no free tier. Equivalent model\n  data (ECMWF/GFS/ICON/GEM) is already integrated via Open-Meteo multi-model.\n* **Weather Underground** — the free API was discontinued (2023); commercial only.\n* **Meteoconsult** — no public free API, limited Pacific coverage.\n* **NOAA US Drought Monitor (USDM)** — **US-only** (does not cover Palau/FSM/RMI).\n  The app computes an internal precipitation-percentile **D0–D4** drought level\n  instead, and uses CHIRPS/IMERG/ERA5 for drought indicators."
+ },
+ {
+  "title": "Data_Sources — Maps & basemaps",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "The original Plotly `scattergeo` map showed the FAS atolls as invisible dots on a\nblank ocean. Replaced with interactive Leaflet (folium) maps using **keyless\nsatellite basemaps** so the islands are actually visible:\n\n* **Esri World Imagery** — high-res commercial-satellite mosaic (zoom 19); default.\n* **NASA GIBS** BlueMarble / MODIS Terra / MODIS Aqua / VIIRS — official NASA EOSDIS\n  daily true-colour (~250 m), no key. Tile-matrix-set names are layer-specific\n  (`GoogleMapsCompatible_Level8/9`).\n* **OpenStreetMap** — street fallback.\n\nBasemaps are chosen client-side via a Leaflet layer control; tiles load in the\nbrowser directly from GIBS/Esri (no server-side proxy, no credentials)."
+ },
+ {
+  "title": "Data_Sources — Attribution & license notes",
+  "source": "docs/DATA_SOURCES.md",
+  "kind": "doc",
+  "text": "Open-Meteo (CC BY 4.0), ERA5 (CC BY 4.0 via CDS), CHIRPS v3 (CC BY 4.0), WorldPop\n(CC BY 4.0), GPWv4 (CC BY 4.0), GEBCO (CC BY 4.0), AIFS (CC BY 4.0). NOAA/NCEP/NCEI,\nUSGS, NASA, JTWC, NWS, JMA observational data are public-domain/observational.\nSPEIbase is ODbL 1.0; HDX COD-AB is CC BY-IGO; OSM/Geofabrik/HOT are ODbL.\nWeatherNext 3 real-time data is under a restrictive experimental ToU (historical is\nCC BY 4.0). Always confirm each source's terms before redistribution."
+ },
+ {
+  "title": "Handoff — COFA FORWARD — Handoff (cold-start state)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "> Written 2026-10-28. Read this first in any new session to continue without\n> re-discovering the project, its data sources, or the environment quirks."
+ },
+ {
+  "title": "Handoff — One-line summary",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "COFA FORWARD is a local Streamlit weather-intelligence platform for the Freely\nAssociated States (Palau, FSM, RMI): **Weather Operations** + **Anticipatory\nIntelligence** (ENSO-informed drought/cyclone/water analysis) on a shared data +\ngeospatial foundation. Repo: `~/cofa-forward`."
+ },
+ {
+  "title": "Handoff — Where things stand",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "- **35 commits**; latest `8c9b1de` (local git, no remote).\n- **Tests:** 228 offline + live-network pass. Lint/format clean (ruff).\n- **App:** 12 pages, all render (AppTest).\n- **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel → `127.0.0.1:8501`),\n  protected by **Cloudflare Access** (allow `bhemingway@gmail.com`, team\n  `bold-field-37ad`, 24h session). See the *Deployment* section below.\n- All live data-source adapters are implemented + tested (IMERG via Earthdata token).\n  WeatherNext + NVIDIA Earth-2 are credential-gated and wired honestly.\n- **Maps:** folium Leaflet satellite basemaps (Esri World Imagery + NASA GIBS) with\n  administrative boundary polygons + MUR SST / PACE chlorophyll-a overlays. See\n  `src/cofa_forward/visualization/leaflet_maps.py`.\n- **PEAC seasonal rainfall outlook** (`ingestion/peac.py`) scraped with a freshness\n  guard (product is stale: last updated 2024-09-16).\n- **macOS app + offline cache (v0.3.0):** SwiftUI shell in `apps/macos/`, offline\n  snapshot via `COFA_OFFLINE=1` + `scripts/prefetch_snapshot.py`. See\n  `docs/MACOS_APP.md`.\n- **WeatherNext access requested (2026-10-29):** submitted the Google DeepMind\n  access form for `hemingwayglobal77@gmail.com` (name \"Ben Hemingway\", residence\n  Philippines, org N/A, sector Other/General/Research/Weather, use case Weather\n  Prediction & Forecasting, WeatherNext 3 GCS Zarr selected, both license terms\n  accepted). Approval expected ~5–7 business days at Google's discretion.\n- **WeatherNext approval monitor (2026-10-29):** launchd\n  `com.ben.cofaforward-weathernext-monitor` polls the household Gmail over IMAP\n  (app password `~/.config/benigmatic/gmail_household_app_password`) hourly via\n  `scripts/monitor_weathernext_approval.py --notify`. Writes\n  `data/weathernext_status.json` (pending/approved/rejected) and notifies the\n  owner over Telegram on a state change. The Data Sources page + the WeatherNext\n  adapter both read that state file to surface the live approval status.\n- **Google Cloud account:** `hemingwayglobal77@gmail.com` has an active GCP\n  account (default project `project-2d5cb632-e1b6-46b7-b98`, free trial pending\n  prepayment — not required for the allowlist). Once WeatherNext approves, read\n  Zarr via `gcsfs` with ADC (`GOOGLE_APPLICATION_CREDENTIALS`) or\n  `gcloud auth application-default login`."
+ },
+ {
+  "title": "Handoff — Commands",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "```bash\ncd ~/cofa-forward"
+ },
+ {
+  "title": "Handoff — tests (uv works now — see Environment note)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "uv run pytest -m \"not network\" -q     # offline (162)\nuv run pytest -m network -q           # live (11, needs internet + EARTHDATA_TOKEN)"
+ },
+ {
+  "title": "Handoff — lint / format",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "uv run ruff check . ; uv run ruff format ."
+ },
+ {
+  "title": "Handoff — launch (local dev — no auth)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "uv run streamlit run src/cofa_forward/ui/app.py   # -> http://127.0.0.1:8501"
+ },
+ {
+  "title": "Handoff — page-render smoke test (AppTest; slow if DNS is down)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "uv run python scripts/verify_pages.py"
+ },
+ {
+  "title": "Handoff — CLI",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "uv run python scripts/ingest_weather.py --geo PAL-KOR\nuv run python scripts/ingest_enso.py\nuv run python scripts/ingest_ibtracs.py\nuv run python scripts/ingest_jma.py\nuv run python scripts/ingest_chirps.py --geo PAL-KOR\nuv run python scripts/monitor_bulletins.py\nuv run python scripts/check_sources.py\nuv run python scripts/generate_report.py\nuv run python scripts/prefetch_snapshot.py [--skip-ibtracs]   # offline snapshot\nscripts/deploy_macos_app.sh --host bens-macbook-pro.local      # macOS app (MBP)\n```"
+ },
+ {
+  "title": "Handoff — Deployment (cofaforward.benigmatic.com)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "| Layer | What |\n|---|---|\n| App | `com.ben.cofaforward-dashboard` — Streamlit on `127.0.0.1:8501` |\n| Tunnel | `cofaforward.benigmatic.com → http://127.0.0.1:8501` in `~/.cloudflared/benigmatic.yml` (tunnel `9e0be391…`, service `com.ben.benigmatic-tunnel`) |\n| DNS | CNAME `cofaforward` → tunnel (via `cloudflared tunnel route dns`) |\n| Auth | **Cloudflare Access** app `COFA Forward`, policy `owner` (allow `bhemingway@gmail.com`), team `bold-field-37ad` |\n\nManage:\n\n```bash\nlaunchctl kickstart -k gui/$(id -u)/com.ben.cofaforward-dashboard   # restart app\nlaunchctl kickstart -k gui/$(id -u)/com.ben.benigmatic-tunnel        # reload tunnel (after config edits)\ntail -f ~/cofa-forward/logs/streamlit.log                            # app logs\ntail -f ~/Library/Logs/benigmatic-tunnel.log                         # tunnel logs\n```"
+ },
+ {
+  "title": "Handoff — Secrets (all 0600, git-ignored — never commit)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "* `~/.config/benigmatic/cloudflare_api_token` — Cloudflare API token (Access +\n  Zone DNS; valid, rotated 2026-10-28).\n* `~/.config/benigmatic/cloudflare_account_id` — `474e8a119e7b90e59fc0215b745b1634`.\n* `~/.config/cofa-forward/earthdata_token` — NASA Earthdata bearer token (IMERG),\n  read via `EARTHDATA_TOKEN`.\n* `~/.config/cofa-forward/app_password` — optional app-level password gate\n  (currently DISABLED; enable by setting `COFA_REQUIRE_AUTH=1` in the launchd plist)."
+ },
+ {
+  "title": "Handoff — ⚠️ Environment note (RESOLVED 2026-10-28)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "A machine-wide DNS outage hit mid-build and has since been **resolved**. Kept for\nreference:\n\n- Root cause was: **Tailscale client (1.94.2) stale vs daemon (1.104.2)** → MagicDNS\n  (resolver `100.100.100.100`) stopped forwarding → system resolver stuck → `uv`\n  panicked (`system-configuration` crate reads a NULL) and `curl`/`pip`/`requests`\n  DNS lookups failed.\n- Fix applied: `tailscale set --accept-dns=false` (reverted system DNS to\n  `1.1.1.1`/`8.8.8.8`); the machine owner later upgraded Tailscale.\n- **Current status: `uv` works, DNS resolves, `uv.lock` is reconciled (pyshp is\n  in it).** `uv run pytest`, `uv sync`, `uv run streamlit` all work normally.\n- If `uv` ever panics again with `system-configuration … Attempted to create a\n  NULL object`, it is the same network/Tailscale issue — check `tailscale status`\n  for a client/daemon version mismatch and upgrade/restart Tailscale.\n- No sudo available (\"you do not exist in the passwd database\" — shell runs as\n  UID 501). Download workaround (if DNS is ever flaky): `dig +short @8.8.8.8\n  <host>` then `curl --resolve \"<host>:443:<IP>\" ...`. HDX downloads also need a\n  `--resolve` for `s3.us-east-1.amazonaws.com` (HDX redirects there via presigned\n  URL)."
+ },
+ {
+  "title": "Handoff — Data sources — status (all verified 2026-10-28)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "`implemented_and_tested` (live adapters, in `src/cofa_forward/ingestion/`):\n\n| source_id | module | notes |\n|---|---|---|\n| open-meteo-forecast | weather.py | current+hourly+daily, 16-day, no key; **multi-model** (`models=`) |\n| open-meteo-archive | rainfall.py | ERA5 daily precip (climatology/anomalies) |\n| noaa-cpc-enso | enso.py | ONI `oni.ascii.txt`; phase via ≥5-season criterion |\n| noaa-ibtracs | ibtracs.py | WP-basin CSV (114 MB); WMO wind/pressure |\n| jma-rsmc-tokyo | jma.py | active storms `targetTc.json` → `specifications.json` |\n| jtwc-advisories | jtwc.py | ATCF text warnings: 1-min wind, quadrant radii, forecast |\n| jma-himawari | himawari.py | Himawari-9 full-disk visible composite (10-min) |\n| nws-guam | nws_guam.py | NWS Guam TCP: island watches/warnings |\n| chirps-v3 | chirps.py | monthly COGs via rasterio `/vsicurl/` (land-masked) |\n| worldpop-population | population.py | ~1 km UN-adjusted grids; point/radius |\n| hdx-cod-ab | boundaries.py | FSM/RMI polygons via pyshp+rasterio; zonal pop |\n| geoboundaries | boundaries.py | Palau ADM1 (16 states, ODbL/OSM) via GeoJSON |\n| noaa-nmme | nmme.py | 6-model seasonal ENSMEAN (xarray + netCDF4) |\n| nasa-gpm-imerg | imerg.py | daily point extraction (earthaccess; needs token + EULA) |\n| noaa-peac-rainfall-outlook | peac.py | tercile rainfall outlook (HTML scrape; freshness guard) |\n| nasa-gibs-overlays | leaflet_maps.py | MUR SST / SST anomaly / PACE chlorophyll (keyless WMTS) |\n\n`planned` (researched, not wired): PEAC seasonal outlook, CPC ENSO Diagnostic\nDiscussion (partly via bulletin monitor), JTWC/NWS-Guam advisories (partly via\nbulletin monitor), PERSIANN-CDR, GPCC, SPEIbase, Copernicus DEM/GEBCO.\n\n`requires_credentials` (adapter implemented, gated honestly):\nWeatherNext 3 (`weathernext.py` — GCS allowlist) and NVIDIA Earth-2\n(`nvidia_earth2.py` — no keyless free hosted API). Full details in\n`docs/DATA_SOURCES.md`."
+ },
+ {
+  "title": "Handoff — Layout",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "```\nconfig/            app, geography (seed), sources, enso, drought, cyclones, alerts, bulletins\nsrc/cofa_forward/\n  ingestion/       base + 14 live adapters + bulletins monitor + stubs\n  storage/         FileCache, SQLite Database (provenance/bulletins), parquet, provenance\n  geography/       registry (points), spatial_attribution (haversine), aggregation\n  climate/         enso_state, episodes, analogs, climatology\n  drought/         rainfall_metrics, anomalies, percentiles, spi (gamma), water_balance, alerts\n  cyclones/        tracks, proximity, climatology, enso_analysis, exposure\n  impacts/         event_catalog, evidence\n  intelligence/    indicators, synthesis, confidence, report_builder, verification\n  visualization/   leaflet_maps (folium satellite basemaps), charts, legends, layers\n  ui/              app.py + sections/ (12 page modules) + components + state.py\n  storage/         FileCache (serve_stale), Database, ParquetStore, snapshot, provenance\napps/macos/        SwiftUI shell (Package.swift + Sources/ + package_app.sh)\nscripts/           CLI scripts (incl. prefetch_snapshot.py, deploy_macos_app.sh)\ntests/             unit/ + integration/ (network-marked) + fixtures/\ndata/              raw/ (worldpop, boundaries, bulletins, nmme) · processed/ · samples/ · cache/ · snapshot/ · catalog.db\n```"
+ },
+ {
+  "title": "Handoff — Key scientific/engineering decisions (do not regress)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "1. **Never fabricate.** Missing data stays missing; no invented storms/warnings/\n   probabilities/impact counts. ENSO phase is derived from ONI and labeled as\n   derived (official status = CPC discussion, ingested by the bulletin monitor).\n2. **Provenance everywhere.** Derived values carry dataset/timestamp/method/\n   baseline/aggregation. Stored in SQLite `data/catalog.db`.\n3. **Units:** metric for science, imperial presentation-only (`units.py`).\n4. **Spatial attribution ≠ downscaling.** Nearest-grid-cell only; the app always\n   says \"regional model estimate; individual-atoll conditions may differ.\"\n5. **Percentile indicators before SPI** (gamma SPI now implemented in\n   `drought/spi.py` — validated against reference values).\n6. **Water balance is modeled** (`drought/water_balance.py`): documented planning\n   defaults (100 L/person/day, 10 m²/person catchment, 0.8 eff), never claims\n   actual shortage.\n7. **CHIRPS land-mask heuristic:** max-valid-pixel in a 5×5 window (documented;\n   ERA5 preferred for ocean-adjacent atolls).\n8. **WorldPop is UN-adjusted** — use zonal (boundary) sum as the accurate method;\n   census seed figures are the atoll total of record.\n9. **Map = Plotly `scattergeo`** (no Mapbox token / tile key). Boundaries are not\n   yet rendered as polygons on the map (only used for zonal stats)."
+ },
+ {
+  "title": "Handoff — Cached data on disk (gitignored, already present)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "- `data/raw/worldpop/{mhl,fsm,plw}_2020.tif` (WorldPop 1 km grids)\n- `data/raw/boundaries/{mhl,fsm,plw}/` (extracted HDX COD-AB SHP + Palau geoBoundaries GeoJSON)\n- `data/raw/nmme/` (NMME ensemble-mean NetCDF, cached per cycle)\n- `data/raw/bulletins/` (monitor snapshots)\n- `data/catalog.db` (SQLite: provenance, ingestion history, bulletins)"
+ },
+ {
+  "title": "Handoff — Roadmap (next iteration)",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "1. **IMERG live-verify** — supply Earthdata creds to complete `implemented_and_tested`.\n2. **USGS western-Pacific drought (P1RXUMV3)** — manual browser import (ScienceBase\n   bot-blocks); covers FSM/RMI (not Palau).\n3. **Offline basemap-tile caching** — the map *data* works offline, but the Esri/GIBS\n   imagery tiles still need a connection (Leaflet fetches them client-side).\n4. Polish: Himawari IR bands + region-zoom tiles; Palau ADM2 geometry."
+ },
+ {
+  "title": "Handoff — Gotchas",
+  "source": "docs/HANDOFF.md",
+  "kind": "doc",
+  "text": "- **Page modules MUST NOT live in a directory named `pages/`.** Streamlit\n  1.66 auto-detects `pages/` next to the main script as a *multipage* app and\n  `exec`s each file standalone, breaking relative imports (`ImportError:\n  attempted relative import with no known parent package`) — the shell renders\n  but no data loads. They live in `ui/sections/` for this reason. (`AppTest`\n  won't catch this; only a real `streamlit run` browser does.)\n- `scripts/verify_pages.py` (AppTest) times out when DNS is down because live\n  fetches retry slowly; it passed cleanly (10/10) when network was up.\n- IBTrACS CSV is ~114 MB; the network test downloads it (marked `network`).\n- `monthly_totals` drops timezone before `to_period(\"M\")` (avoids a pandas warning).\n- The app's cached helpers (`ui/state.py`) use `st.cache_data` with TTLs — real\n  rainfall/CHIRPS/WorldPop/boundaries are fetched once and cached (24h), so first\n  load can be slow (CHIRPS full baseline ~1–2 min)."
+ },
+ {
+  "title": "Macos_App — COFA FORWARD — macOS app (SwiftUI shell + offline cache)",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "A native macOS app for the MacBook Pro that runs the full COFA FORWARD Streamlit\ndashboard locally, with an offline snapshot so it works **anytime** — with or\nwithout a network connection."
+ },
+ {
+  "title": "Macos_App — Architecture",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "```\nCOFA Forward.app (SwiftUI, arm64, macOS 14+)\n  ├─ WKWebView  ── loads http://127.0.0.1:8501\n  ├─ ServerManager ── launches `.venv/bin/streamlit run …` (or `uv run streamlit`)\n  │                    as a child process; sets COFA_OFFLINE=1 when toggled\n  └─ \"Refresh snapshot\" ── runs `scripts/prefetch_snapshot.py`\n```\n\nThe app is a **thin shell** — it does not reimplement any science. All 12 pages,\nthe Python deterministic-science layer, and the folium maps run in the bundled\nStreamlit app; the Swift layer only hosts the process + web view and controls\noffline mode."
+ },
+ {
+  "title": "Macos_App — Offline cache",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "`COFA_OFFLINE=1` (set by the app's Offline toggle) switches the app to read the\npre-fetched snapshot instead of the network:\n\n| Mechanism | What it covers |\n|---|---|\n| `FileCache(serve_stale=True)` | every adapter that goes through `make_cache()` (ENSO, ENSO discussion, JMA, JTWC, NWS Guam, PEAC, forecast, ERA5 archive) serves its cached raw responses past their TTL |\n| `data/raw/` | WorldPop rasters, boundary SHP/GeoJSON, NMME NetCDF, IBTrACS CSV — downloaded once, re-read locally |\n| `data/snapshot/` | structured per-source JSON/Parquet (CHIRPS monthly series per location, Himawari PNG, population, NMME) + `manifest.json` |\n\nThe snapshot is produced by `scripts/prefetch_snapshot.py` (run when online):\n\n```bash\nuv run python scripts/prefetch_snapshot.py --skip-ibtracs   # all locations\nuv run python scripts/prefetch_snapshot.py --locations RMI-MAJ\n```\n\nThe manifest records what was captured and when; a source that failed to fetch is\nrecorded as **missing** (never fabricated) and surfaced on the Data Sources page."
+ },
+ {
+  "title": "Macos_App — Offline map tiles",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "`scripts/prefetch_tiles.py` downloads OpenStreetMap tiles (region z0-9 + a window\naround each location at z10-11) into `data/tiles/`, and `cofa_forward.tileserver`\nserves them on `127.0.0.1:8502`. In offline mode the map's \"OpenStreetMap\n(streets)\" basemap is swapped to the local server, so the map *and* its imagery\nwork without a connection.\n\n```bash\nuv run python scripts/prefetch_tiles.py\nuv run python -m cofa_forward.tileserver          # the macOS app starts this automatically\n```\n\nOSM is used for offline imagery because it is openly licensed (ODbL, attribution\nrequired), permits caching for light personal use, and reaches high zoom. The\nsatellite basemaps (Esri/GIBS) are **not** cached offline — Esri restricts bulk\ncaching and GIBS true-colour caps at ~zoom 9 where atolls are only a few pixels."
+ },
+ {
+  "title": "Macos_App — Build & deploy",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "```bash"
+ },
+ {
+  "title": "Macos_App — build + assemble the .app bundle (ad-hoc signed, not sandboxed)",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "cd apps/macos && ./package_app.sh"
+ },
+ {
+  "title": "Macos_App — deploy to the MBP (rsync source → uv sync → optional prefetch → build → /Applications)",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "scripts/deploy_macos_app.sh --host bens-macbook-pro.local [--snapshot]\n```"
+ },
+ {
+  "title": "Macos_App — Requirements on the target (MBP)",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "* `uv` on PATH (at `~/.local/bin/uv`) — the app resolves it, or uses `.venv/bin/streamlit` if present.\n* `~/cofa-forward` present (synced by `deploy_macos_app.sh`).\n* First launch (online) runs `uv sync` once to build the venv; after that it is offline-capable."
+ },
+ {
+  "title": "Macos_App — Honest limitations",
+  "source": "docs/MACOS_APP.md",
+  "kind": "doc",
+  "text": "* **Offline imagery is OpenStreetMap streets, not satellite.** The satellite\n  basemaps (Esri/GIBS) still need a connection — Esri restricts bulk caching and\n  GIBS true-colour caps at ~zoom 9. The offline tile cache covers OSM (region\n  z0-9 + per-location z10-11) for a genuinely offline map with coastlines and\n  place names, but not high-resolution satellite pictures of individual atolls.\n* The offline snapshot is a **point-in-time capture**, not live data; the UI shows\n  the snapshot age.\n* The app is **not sandboxed** (ad-hoc signed) because it must launch a Python\n  server and read `~/cofa-forward`. Do not distribute it outside this machine."
+ },
+ {
+  "title": "Roadmap — Done (v0.1.0 → v0.2.0)",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "* Phase 0 — environment, project structure, config, logging, tests, docs.\n* Phase 1 — working app shell: 9 pages, seed geography registry, shared map,\n  Overview + Island Profiles + Data Health, clearly labeled sample data.\n* Phase 2 — live weather integration (Open-Meteo forecast + ERA5 archive),\n  caching, validation, provenance, timestamps, graceful failure.\n* **ENSO (Phase 3 core)** — live CPC ONI adapter (authoritative index + derived\n  phase via CPC criterion), wired into the ENSO & Overview pages.\n* **Cyclones (Phase 5 core)** — live IBTrACS v04r01 WP-basin historical tracks +\n  JMA RSMC Tokyo active-storm adapter (position, wind, pressure, forecast track).\n* **Science** — forecast-verification framework (bias/MAE/RMSE/skill) and full\n  gamma-fit SPI (MLE + zero-precipitation handling), both tested.\n* **Data-source research** — 5 extensive research passes; all remaining sources\n  verified and cataloged (see docs/DATA_SOURCES.md).\n* **CHIRPS v3 precipitation** — point extraction from monthly COGs (rasterio\n  range requests); land-masked heuristic documented; wired into Drought page.\n* **WorldPop population** — ~1 km population grids (point/radius extraction),\n  wired into Island Profiles as a spatial-exposure layer.\n* **Water-need forecast (micro level)** — deterministic modeled water balance per\n  island/atoll: population → demand → required rainfall vs forecast → projected\n  deficit/surplus, with documented planning-default assumptions and a new\n  \"Water Need Forecast\" page.\n* **Bulletin monitor** — polls public bulletins (NWS Guam, JTWC, JMA, CPC ENSO),\n  detects new/updated content by hash, parses structured summaries (incl. the\n  official CPC ENSO alert status), snapshots raw text, and logs updates to the\n  dataset dynamically (CLI + UI feed + scheduling doc).\n* **Administrative boundaries** — FSM/RMI via HDX COD-AB (pyshp+rasterio) and\n  Palau via geoBoundaries (GeoJSON); accurate zonal WorldPop population wired\n  into Island Profiles (fixes the point+radius undercount for all 3 countries).\n* **NMME seasonal forecasts** — 6-model ensemble (xarray + netCDF4), wired into\n  the ENSO & Climate page as a multi-model precipitation outlook.\n* **Model comparison** — Open-Meteo multi-model API (ECMWF IFS/AIFS, GFS, ICON,\n  GEM, …) wired into Weather Operations; no GRIB/eccodes needed.\n* **El Niño Comparison page** — long ERA5 series (1997→now) per location vs the\n  2015-16 / 1997-98 / 2023-24 emergencies; sourced crisis facts + media links.\n* **AI Analysis (sandboxed)** — LLM chat grounded in a deterministic data snapshot;\n  read-only text pipe (no tools/code execution), bounded input/output.\n* **Satellite basemaps** — folium Leaflet maps over Esri World Imagery + NASA GIBS\n  (replaces Plotly `scattergeo`).\n* **WeatherNext 3 + NVIDIA Earth-2** — credential-gated adapters wired honestly\n  (`requires_credentials`); WeatherNext access form submitted (monitor running)."
+ },
+ {
+  "title": "Roadmap — v0.3.0 (2026-10-29) — polygons, PEAC, remote-sensing, macOS app",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "1. **Map polygon rendering + area-weighted aggregation** — administrative boundary\n   polygons (FSM/RMI HDX COD-AB + Palau geoBoundaries) rendered on the folium map;\n   `polygon_area_km2()` (spherical, hole-aware) and `aggregate_by_area()` correct\n   the simple mean where island sizes differ. 27 entities matched to polygons\n   (countries = ADM0, outer islands = not ADM1 — documented).\n2. **PEAC seasonal rainfall outlook** — scraped weather.gov/peac into per-station\n   tercile outlooks (7 FAS stations carry geo_ids), with a **freshness guard**\n   (product is stale: last updated 2024-09-16, SON 2024; the PEU newsletter is\n   discontinued) so it is shown as historical, never current.\n3. **SST + chlorophyll-a overlays** — MUR SST, MUR SST anomaly, and PACE OCI\n   chlorophyll-a as keyless GIBS WMTS overlays (layer IDs/TMS verified live).\n4. **macOS app + offline cache (final phase)** — SwiftUI shell (`apps/macos/`)\n   hosting the Streamlit app in a WKWebView, with `COFA_OFFLINE` snapshot mode:\n   `FileCache(serve_stale=True)`, `data/raw/` persistence, and a structured\n   `data/snapshot/` store + `scripts/prefetch_snapshot.py` + `deploy_macos_app.sh`."
+ },
+ {
+  "title": "Roadmap — v0.3.1 (2026-10-29) — IMERG live-verify + offline basemap tiles",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "* **IMERG live-verified** — the EDL bearer token works (`search_data` returns\n  granules for both Final Run historical and Early Run near-real-time). Added\n  `imerg.ensure_earthdata_token()` (auto-loads `~/.config/cofa-forward/earthdata_token`)\n  and a `product` selector (`final`/`early`/`late`) fixing the near-real-time vs\n  Final-Run-lag mismatch. The `test_live_imerg_daily` network test passes.\n* **Offline basemap tiles** — `visualization/tiles.py` (OSM XYZ tile math +\n  prefetch), `scripts/prefetch_tiles.py`, and `cofa_forward.tileserver` (stdlib\n  loopback tile server on :8502). Offline mode swaps the OSM basemap to the local\n  server; the macOS app launches the tile server automatically."
+ },
+ {
+  "title": "Roadmap — v0.3.2 (2026-10-29) — drought monitor + quintile Rainfall Index",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "* **Quintile Rainfall Index** (`drought/percentiles.quintile_index`) — the USGS\n  western-Pacific classification: Drier/Dry/Typical/Wet/Wetter (20th-percentile\n  steps), plus the corrected D0-D4 USDM bands.\n* **Drought monitor** (`drought/monitor.py`) — replicates USGS Senay et al. 2026\n  Component 1 (monthly precip, climatological median, rolling 1/3/6-month,\n  quintile + D0-D4) on ERA5/CHIRPS; wired into the Drought & Water page as a live\n  status. The USGS CSV itself remains Cloudflare-gated on ScienceBase (documented\n  honestly; the exact station-specific PEAC absolute thresholds live in its R\n  scripts)."
+ },
+ {
+  "title": "Roadmap — Next (prioritized)",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "1. **USGS P1RXUMV3 CSV** — import the actual 9-site CSV via browser automation\n   (Cloudflare-gated); methodology already replicated locally, this adds the\n   authoritative numbers for FSM/RMI/Nauru/Solomon.\n2. Himawari IR bands + region-zoom tiles (visible full-disk only today).\n3. Offline satellite tiles (Esri ToS / GIBS low zoom means OSM streets is the\n   offline imagery; a proper open satellite source would remove this gap)."
+ },
+ {
+  "title": "Roadmap — Deferred / not attempted",
+  "source": "docs/ROADMAP.md",
+  "kind": "doc",
+  "text": "* Palau ADM2 / municipality geometry; area-weighted aggregation is ADM1-only for now.\n* Dynamical/statistical downscaling — not implemented (never claimed).\n* WeatherNext 3 (allowlist-gated; keep optional). Remote deployment hardening."
+ },
+ {
+  "title": "Scientific_Methods — Rainfall accumulation",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "Daily rainfall is summed to monthly totals; a month is valid only if at least\n80% of its days are present (`min_days_frac`). Incomplete months become NaN —\n**never zero**. Rolling n-month totals require all n contributing months to be\nvalid; otherwise the total is NaN."
+ },
+ {
+  "title": "Scientific_Methods — Climatology & anomalies",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "* **Baseline:** 1991–2020 (configurable in `config/drought.yaml`).\n* **Climatology:** mean rainfall per calendar month over the baseline.\n* **Anomaly (mm):** observed − climatology. **Anomaly (%):** (obs − clim)/clim × 100.\n* **Baseline validity:** an anomaly is computed only when ≥ `baseline_min_years`\n  (default 15) years of valid data exist in the baseline; otherwise it is NaN and\n  flagged."
+ },
+ {
+  "title": "Scientific_Methods — Percentile indicators",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "The empirical percentile of a month against its calendar-month baseline\ndistribution uses midpoint ranking: (count < value + 0.5 × count == value) / n.\nSeverity bins are configurable (`config/drought.yaml`). Percentile indicators are\nimplemented **before** SPI per the build plan."
+ },
+ {
+  "title": "Scientific_Methods — Standardized Precipitation Index (SPI)",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "`drought/spi.py` provides a non-parametric **normal-score transform**: the\nempirical percentile mapped to a standard-normal quantile via the stdlib\n`statistics.NormalDist`. It is a transparent approximation, **not** a full\ngamma-fit SPI, and does not measure water availability directly. Full gamma-fit\nSPI (with zero-precipitation and fitting handling) is a documented follow-up and\nis disabled by default."
+ },
+ {
+  "title": "Scientific_Methods — Spatial attribution",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "* **Nearest-grid-cell** extraction (haversine, km) attributes model grid data to\n  a registry point.\n* This is **attribution of existing model data**, not downscaling. No output is\n  labeled statistically or dynamically downscaled, because no downscaling is\n  performed.\n* A coarse grid cell over an atoll is never presented as atoll-accurate; the UI\n  shows \"regional model estimate; individual-atoll conditions may differ.\""
+ },
+ {
+  "title": "Scientific_Methods — Tropical cyclones",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "* **Distance** uses great-circle haversine (R = 6371.0088 km).\n* **Proximity exposure** reports closest approach; it is **not** a wind-impact\n  estimate (which needs storm size, intensity, and track uncertainty).\n* **ENSO-conditioned analysis** reports counts with sample sizes and limitations;\n  no causal claim is made from correlation and no hard-coded multiplier is turned\n  into an operational risk probability."
+ },
+ {
+  "title": "Scientific_Methods — Historical analogs",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "Analogs are ranked by a weighted, normalized absolute-distance similarity over\nENSO phase/intensity and rainfall anomaly (see `climate/analogs.py`). Missing\nfeatures are excluded and reported. A historical analog is **contextual\nevidence, not a forecast**."
+ },
+ {
+  "title": "Scientific_Methods — Confidence labels",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "Qualitative confidence is defined by criteria (see `intelligence/confidence.py`):\n* **high** — sample ≥ 20 and good data quality (and high model agreement where\n  applicable);\n* **medium** — sample ≥ 8;\n* **low** — small sample or limited quality;\n* **unknown** — insufficient information.\n\nNo numerical confidence values are manufactured."
+ },
+ {
+  "title": "Scientific_Methods — Freshwater vulnerability",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "Meteorological drought, hydrological stress, reported shortage, and modeled\nfuture risk are separate concepts. A composite score is not computed unless all\nrequired inputs exist; otherwise meteorological indicators are shown and missing\ninputs are listed explicitly."
+ },
+ {
+  "title": "Scientific_Methods — Water-need forecast (modeled water balance)",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "A deterministic water-balance model estimates, per island/atoll, whether forecast\nrainfall over the next N days meets the population's water demand:\n\n* daily demand (L) = population × `per_capita_lpd`\n* catchment area (m²) = population × `per_person_catchment_m2`\n* daily supply (L) = forecast precip (mm) × catchment (m²) × efficiency\n  (1 mm over 1 m² = 1 L)\n* required rainfall (mm) = total demand / (catchment × efficiency)\n* balance (mm) = forecast rainfall − required rainfall (negative → projected deficit)\n\nDefaults (`config/drought.yaml → freshwater.water_balance`): 100 L/person/day,\n10 m²/person catchment, 0.8 collection efficiency, storage assumed 0\n(conservative). These are **documented planning defaults, not measured site\ndata**; actual catchment, storage, desalination, and abstraction data are listed\nas missing. The output is a **modeled rainfall-driven deficit/surplus**, never a\nclaim of actual water shortage."
+ },
+ {
+  "title": "Scientific_Methods — Bulletin monitoring",
+  "source": "docs/SCIENTIFIC_METHODS.md",
+  "kind": "doc",
+  "text": "Authoritative sources that publish regular public bulletins (rather than stable\nAPIs) are polled by `ingestion/bulletins.py`: content is fetched, hashed, and —\non change — parsed into a structured summary, snapshotted to `data/raw/bulletins/`,\nand logged as an update. Parsers cover NWS/JTWC WMO text products (header, agency,\nissue time, headline), JMA typhoon bulletins, and the CPC ENSO Diagnostic\nDiscussion (the official ENSO alert status). See `docs/DATA_SOURCES.md`."
+ },
+ {
+  "title": "Security — Security",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "The initial release is a **local, single-user** application. Sensible defaults\nare in place and documented so a remote deployment is not accidentally exposed."
+ },
+ {
+  "title": "Security — In place",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "* Binds to `127.0.0.1` by default (never public).\n* No credentials required to launch; `data/`, `data/cache/`, `.env`, and secrets\n  are git-ignored.\n* Secrets are read only from environment variables / `~/.config`-style files, and\n  are **never** written to logs, reports, or the UI.\n* External data is validated before processing (normalization + pydantic schemas);\n  network fetches use timeouts and bounded retries with backoff.\n* No arbitrary shell execution from UI controls.\n* Retrieved documents and any future LLM output are treated as **untrusted data**:\n  they can never override system behavior, execute code, or trigger tools.\n* Errors are logged without secrets.\n* Source data (`raw`) is kept separate from derived data (`processed`)."
+ },
+ {
+  "title": "Security — Deployment (2026-10-28)",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "Deployed at **https://cofaforward.benigmatic.com** via a Cloudflare Tunnel:\n\n* **App service** — `com.ben.cofaforward-dashboard` runs Streamlit bound to\n  `127.0.0.1:8501` (never a public bind).\n* **Tunnel** — `cofaforward.benigmatic.com` → `http://127.0.0.1:8501` on the\n  existing `benigmatic.yml` tunnel (`com.ben.benigmatic-tunnel`). DNS CNAME is\n  auto-managed by Cloudflare.\n* **TLS** — terminated by Cloudflare (HTTPS).\n* **Secrets** — the Earthdata token lives at `~/.config/cofa-forward/earthdata_token`\n  (0600) and is read only via `EARTHDATA_TOKEN`; it is **not** in the app image or\n  the repository."
+ },
+ {
+  "title": "Security — Access control (Cloudflare Access)",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "Protected by **Cloudflare Access** (mirrors `ben.benigmatic.com`):\n\n* Access app `COFA Forward` on `cofaforward.benigmatic.com`, policy `owner`\n  (allow `bhemingway@gmail.com`), session 24h, team `bold-field-37ad`.\n* Unauthenticated requests → 302 to the Access login; the app is never reached\n  until an allowed identity authenticates.\n\nAn optional **application-level password gate** remains in `app.py` (disabled\nnow, single shared password via `COFA_REQUIRE_AUTH=1` + `~/.config/cofa-forward/\napp_password`), usable as defense-in-depth or if Access is ever removed."
+ },
+ {
+  "title": "Security — Manage",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "```bash\nlaunchctl kickstart -k gui/$(id -u)/com.ben.cofaforward-dashboard   # restart app\nlaunchctl kickstart -k gui/$(id -u)/com.ben.benigmatic-tunnel        # reload tunnel (after config edits)\ntail -f ~/cofa-forward/logs/streamlit.log                            # app logs\n```"
+ },
+ {
+  "title": "Security — If deployed remotely (not yet supported)",
+  "source": "docs/SECURITY.md",
+  "kind": "doc",
+  "text": "Before any remote deployment, additional work is required: authentication and\nauthorization, TLS termination, access logging, rate limiting, secrets\nmanagement, a data-protection review (population/exposure data), and a formal\nreview of each data source's license for redistribution."
+ },
+ {
+  "title": "User_Guide — Launch",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "```bash\ncd cofa-forward\nuv sync\nuv run streamlit run src/cofa_forward/ui/app.py"
+ },
+ {
+  "title": "User_Guide — → open http://127.0.0.1:8501",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "```"
+ },
+ {
+  "title": "User_Guide — Navigation (left sidebar)",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "* **Units** — metric (default) / imperial. Scientific calculations are always\n  metric; imperial is presentation only.\n* **Overview** — regional situation picture (map, ENSO status, cyclone activity,\n  flagged locations, data freshness, evidence-linked summary).\n* **Weather Operations** — pick a location; **Fetch live forecast (Open-Meteo)**\n  for real current + hourly + daily data; otherwise a clearly labeled sample\n  forecast is shown.\n* **ENSO & Climate** — ENSO status/outlook, episode catalog, analog comparison,\n  rainfall-anomaly map.\n* **Drought & Water** — monthly rainfall vs climatology, rolling totals,\n  percentile category, alert thresholds, freshwater framework, SPI note.\n* **Tropical Cyclones** — sample tracks, seasonal climatology, closest-approach,\n  exposure, ENSO-conditioned note.\n* **Historical Impacts** — impact catalog (sample), summaries.\n* **Island Profiles** — per-entity geography, conditions, rainfall, drought\n  indicators, cyclone exposure, impacts.\n* **Reports** — generate and download the Markdown daily brief.\n* **Data Sources & System Health** — provider status, ingestion history,\n  provenance."
+ },
+ {
+  "title": "User_Guide — Scheduling",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "Bulletin monitoring and ingestion are explicit scripts — run them on a schedule\nrather than on page load (no page load triggers a large download).\n\n**cron (every 15 minutes):**\n```\n*/15 * * * *  cd /Users/ben/cofa-forward && /Users/ben/cofa-forward/.venv/bin/python scripts/monitor_bulletins.py >> logs/monitor.log 2>&1\n```\n\n**launchd (macOS)** — create `~/Library/LaunchAgents/com.ben.cofa-bulletins.plist`:\n```xml\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n  <key>Label</key><string>com.ben.cofa-bulletins</string>\n  <key>ProgramArguments</key>\n  <array>\n    <string>/Users/ben/cofa-forward/.venv/bin/python</string>\n    <string>/Users/ben/cofa-forward/scripts/monitor_bulletins.py</string>\n  </array>\n  <key>StartInterval</key><integer>900</integer>\n  <key>RunAtLoad</key><true/>\n  <key>StandardOutPath</key><string>/Users/ben/cofa-forward/logs/monitor.log</string>\n  <key>StandardErrorPath</key><string>/Users/ben/cofa-forward/logs/monitor.err.log</string>\n</dict></plist>\n```\nLoad with `launchctl load ~/Library/LaunchAgents/com.ben.cofa-bulletins.plist`."
+ },
+ {
+  "title": "User_Guide — CLI",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "```bash\nuv run python scripts/initialize_data.py            # generate sample datasets\nuv run python scripts/ingest_weather.py --geo PAL-KOR   # fetch live forecast\nuv run python scripts/ingest_rainfall.py --geo PAL-KOR --start 1991-01-01 --end 2020-12-31\nuv run python scripts/build_climatology.py          # build climatology tables\nuv run python scripts/ingest_enso.py                # fetch CPC ONI\nuv run python scripts/ingest_ibtracs.py             # fetch IBTrACS FAS tracks\nuv run python scripts/ingest_jma.py                 # fetch JMA active storms\nuv run python scripts/monitor_bulletins.py          # poll bulletins, record updates\nuv run python scripts/generate_report.py            # print the daily brief\nuv run python scripts/check_sources.py              # adapter availability\n```"
+ },
+ {
+  "title": "User_Guide — Important conventions",
+  "source": "docs/USER_GUIDE.md",
+  "kind": "doc",
+  "text": "* **Sample data is always labeled.** Live data is only shown after a real fetch\n  and always carries its source, valid time, and resolution.\n* **No fabricated outputs.** Missing data stays missing; ENSO phase is not\n  assumed; no storms, warnings, forecasts, probabilities, or impact counts are\n  invented.\n* **Evidence tags** (🔵 observed / 🟡 forecast / 🟢 official / 🟣 historical /\n  🟠 modeled / ⚪ analyst) distinguish the nature of each statement."
+ },
+ {
+  "title": "Validation — Test suite",
+  "source": "docs/VALIDATION.md",
+  "kind": "doc",
+  "text": "```bash\nuv run pytest              # offline suite (unit + integration + regression)\nuv run pytest -m network   # live provider tests (requires internet)\nuv run ruff check .        # lint\nuv run ruff format --check .  # format\nuv run python scripts/verify_pages.py  # render every page via AppTest\n```\n\nCurrent: **122 offline tests pass, 5 live network tests pass** (Open-Meteo\nforecast + archive, CPC ONI, JMA RSMC Tokyo, IBTrACS), all 9 pages render\nwithout exceptions, lint clean."
+ },
+ {
+  "title": "Validation — Scientific regression tests",
+  "source": "docs/VALIDATION.md",
+  "kind": "doc",
+  "text": "Small version-controlled synthetic datasets verify known results:\n\n* a known rainfall sequence produces expected rolling totals;\n* a known baseline produces expected anomaly and percentile;\n* a known track produces expected distances to a test location;\n* a known ENSO event catalog returns the expected matching episode;\n* missing months never become zero rainfall;\n* an incomplete climatological baseline is rejected/flagged;\n* a report never claims current conditions from stale data (ENSO phase is derived\n  from the live ONI and clearly labeled as derived, never inferred from an old\n  report)."
+ },
+ {
+  "title": "Validation — Forecast verification framework",
+  "source": "docs/VALIDATION.md",
+  "kind": "doc",
+  "text": "A verification module (`intelligence/verification.py`) computes bias, MAE, RMSE,\nPearson correlation, and a climatological skill score on time-matched\nforecast/observation pairs. It is implemented and unit-tested; applying it to real\nforecast-vs-archive comparisons is a follow-up that requires time-matched archives."
+ },
+ {
+  "title": "Validation — Known limitations",
+  "source": "docs/VALIDATION.md",
+  "kind": "doc",
+  "text": "* ENSO **current state is live** (CPC ONI); the official *status statement*\n  (Diagnostic Discussion) is not yet scraped.\n* Percentile/anomaly indicators run on **synthetic sample** series until real\n  CHIRPS/IMERG/ERA5 rainfall is pulled per location (the ERA5 path already works\n  via `scripts/ingest_rainfall.py`).\n* Geography is **point-based seed data**, not validated boundaries (HDX COD-AB /\n  SPC are the researched sources for polygons).\n* JTWC text warnings and NWS Guam advisories are **planned, not yet wired**; the\n  JMA active-storm + IBTrACS historical-track adapters are live.\n* No exposure overlays (WorldPop/GEBCO) integrated yet."
+ },
+ {
+  "title": "Analysis Roadmap — Analysis roadmap — what else would benefit COFA FORWARD",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "Deep-dive into the tool's remaining gaps, framed by its real job: **anticipatory\nwater security and climate-hazard early warning for atoll nations** (Palau, FSM,\nRMI). Each item is scored for value, feasibility, and effort, with the honest\ncaveat. Data sources are named and their free/open status noted."
+ },
+ {
+  "title": "Analysis Roadmap — The core insight",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "The tool's three structural weaknesses are, in order:\n\n1. **No ground truth.** Every layer is model (ERA5, NMME) or satellite (CHIRPS,\n   IMERG, Himawari). The FAS has airport weather stations — the only independent\n   check on all of it — and they are not yet wired in.\n2. **Precipitation-only drought.** Drought is a *water balance* (precip minus\n   evapotranspiration), but the monitor only sees the precip side. The USGS\n   release this app now mirrors actually ships an ET + water-budget component\n   (SSEBop) that is missing here.\n3. **The two biggest atoll hazards are under-served.** Sea-level rise / king-tide\n   flooding and cyclone *wind/surge impact* — not just track proximity — are what\n   actually damage atolls, and neither is modeled yet.\n\n---"
+ },
+ {
+  "title": "Analysis Roadmap — Priority 1 — In-situ station ground truth (GHCNd)",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** daily precipitation + temperature from the FAS airport WMO stations\n  (Koror PTRO, Yap PTYA, Chuuk PTKK, Pohnpei PTPN, Kosrae PTSA, Majuro PKMR,\n  Kwajalein PKWA).\n* **Why:** the single highest-value addition. It lets the app (a) validate\n  ERA5/CHIRPS/IMERG against reality, (b) show a \"satellite vs gauge\" bias, and\n  (c) feed the forecast-verification loop. Today every \"drought\" call is an\n  unverified satellite/model estimate.\n* **Source:** NOAA NCEI GHCNd (free, public domain, daily, 1900s–present).\n* **Effort:** moderate (adapter + bias comparison + provenance). **Feasibility: high.**"
+ },
+ {
+  "title": "Analysis Roadmap — Priority 2 — Evapotranspiration → true water balance (SSEBop)",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** operational actual ET (SSEBop) + water-balance = precipitation − ET\n  per island, giving a real water-deficit drought indicator instead of a rainfall\n  one.\n* **Why:** this is the \"Water Budget components\" child of the same USGS release\n  (Senay et al. 2026) the app now mirrors for rainfall. It converts \"is it dry?\"\n  into \"is there actually a water deficit?\"\n* **Source:** USGS SSEBop (1 km, global, 2000–present, free, already used by the\n  same USGS team).\n* **Effort:** moderate. **Feasibility: high.**"
+ },
+ {
+  "title": "Analysis Roadmap — Priority 3 — Sea level + coastal flooding",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** satellite-altimetry sea-level anomaly + (optionally) tide/king-tide\n  forecasts per atoll.\n* **Why:** ENSO moves western-Pacific sea level by ±20–30 cm; on a 2 m atoll that\n  is the difference between dry and flooded. Sea level is arguably the most\n  ENSO-coupled, atoll-critical variable the app does not track at all.\n* **Source:** AVISO/CMEMS satellite altimetry (free); NOAA CO-OPS tide gauges\n  (free, but sparse in the FAS); PEAC also publishes a seasonal sea-level\n  forecast (same nav as the rainfall outlook the app already scrapes).\n* **Effort:** moderate–high (gridded altimetry is heavy). **Feasibility: high** for\n  the PEAC outlook + altimetry point extraction."
+ },
+ {
+  "title": "Analysis Roadmap — Priority 4 — Cyclone impact (wind + surge), not just proximity",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** wind-impact estimate from JTWC quadrant wind radii (already ingested)\n  + a storm-surge/inundation estimate using GEBCO bathymetry.\n* **Why:** the app explicitly says \"proximity only, no wind impact.\" For atolls,\n  the actual damage is wind + overwash, which a nearest-track distance cannot\n  express.\n* **Source:** JTWC radii (have it), GEBCO bathymetry (`planned` in sources.yaml),\n  a simple parametric wind field + storm-surge model.\n* **Effort:** high. **Feasibility: medium** (surge modeling is the hard part; wind\n  field is tractable)."
+ },
+ {
+  "title": "Analysis Roadmap — Priority 5 — Forecast verification loop (closed)",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** score the Open-Meteo/ECMWF forecasts against observed (gauge/IMERG)\n  rainfall each cycle, surface the skill.\n* **Why:** the verification framework (bias/MAE/RMSE/skill) exists and is tested\n  but is not run against live data. An unverified forecast in a decision tool\n  quietly overstates confidence.\n* **Source:** none new — combines #1 (gauge) with existing forecast + archive.\n* **Effort:** low. **Feasibility: high.**"
+ },
+ {
+  "title": "Analysis Roadmap — Priority 6 — ENSO → hazard coupling",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** cyclone frequency, sea-level anomaly, and SST/bleaching by ENSO phase\n  (the analog engine already exists but has nothing to feed it).\n* **Why:** turns \"what is ENSO doing\" into \"what does ENSO mean here\" — the\n  El Niño drought linkage is partially done; cyclone and sea-level linkages are not.\n* **Source:** IBTrACS + ONI (have), altimetry + SST (have the tiles, need the series).\n* **Effort:** moderate. **Feasibility: high.**"
+ },
+ {
+  "title": "Analysis Roadmap — Priority 7 — Alerting / decision support",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **What:** push (Telegram/iMessage) when a drought index crosses a threshold, a\n  cyclone approaches a location, or the PEAC index flips to Red.\n* **Why:** the app is a dashboard; the FAS use case is *early warning*. The\n  household already has a Telegram front door (ai-dev) this could reuse.\n* **Source:** none new — thresholds + the existing alert engine + a notifier.\n* **Effort:** low–moderate. **Feasibility: high.**\n\n---"
+ },
+ {
+  "title": "Analysis Roadmap — Suggested next three",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "1. **GHCNd stations** (ground truth — unlocks verification + trust).\n2. **SSEBop ET + water balance** (completes the drought monitor's other half).\n3. **Sea-level anomaly + PEAC sea-level outlook** (the biggest un-modeled atoll\n   hazard, and directly ENSO-coupled)."
+ },
+ {
+  "title": "Analysis Roadmap — Built (2026-10-29)",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* GHCNd in-situ ground truth + bias check · Hargreaves PET water balance ·\n  UHSLC tide gauges · national drought plans/declarations guidance page ·\n  climate trends (linear/Theil-Sen/Mann-Kendall) · live forecast verification ·\n  marine waves/SST · compound-hazard flags · ENSO analogs · coral-bleaching\n  watch (DHW) · deterministic live situation brief.\n\nStill open: precise atoll storm-surge (hi-res bathymetry), groundwater-lens depth,\nSSEBop *actual* ET current years (ScienceBase-gated), Palau-specific USGS data."
+ },
+ {
+  "title": "Analysis Roadmap — Honest non-starters (kept out)",
+  "source": "docs/analysis-roadmap.md",
+  "kind": "doc",
+  "text": "* **Groundwater / freshwater-lens depth** — not satellite-observable; needs local\n  wells. (Already documented as a missing input, never fabricated.)\n* **Exact per-atoll storm surge** — needs high-res bathymetry + a hydrodynamic\n  model; GEBCO (450 m) is too coarse for precise atoll overwash.\n* **Palau-specific USGS drought data** — the USGS release does not include Palau."
+ },
+ {
+  "title": "El Nino Drought Research — El Niño Droughts in the Freely Associated States — Research Synthesis",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "> Compiled 2026-10-29 by a parallel research swarm (5 agents). Every figure is\n> quoted from a cited source; nothing is invented. Where sources conflict, both\n> values are shown. This is contextual research for COFA FORWARD's anticipatory\n> drought intelligence — **not a forecast and not operational guidance.**"
+ },
+ {
+  "title": "El Nino Drought Research — Bottom line",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "The Freely Associated States (Palau, FSM, RMI) sit in the western-Pacific \"warm\npool.\" During El Niño the Walker circulation's rising branch shifts east of the\ndate line, imposing **subsidence over the warm pool** and suppressing the deep\nconvection that produces the region's rainfall. The result is a recurring,\nwell-documented **drought that peaks in the dry season the year *after* a strong\nEl Niño** (the \"El Niño Year +1\" / post-peak phase). The region's **low coral\natolls** (most of the RMI, the FSM outer islands, Palau's remote atolls) are the\nmost vulnerable because they have no surface water and only a thin freshwater\nlens + rain catchment.\n\n**Immediate relevance (Oct 2026):** CPC's ENSO Diagnostic Discussion (8 Oct 2026)\nis at **\"El Niño Advisory\"** — Niño-3.4 at **+2.1 °C** and strengthening, with a\nstrong-to-very strong El Niño likely through Jan–Mar 2027 and a 54–83% chance of a\n*historic* event exceeding any since 1950. This is the drought precursor pattern."
+ },
+ {
+  "title": "El Nino Drought Research — The physical mechanism",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "1. **Walker circulation shift.** El Niño moves the warm pool eastward; the rising\n   (convective) branch of the Pacific Walker cell follows it east of 180°, and the\n   sinking (subsidence) branch settles over the Maritime Continent / western warm\n   pool (NOAA Climate.gov; Xiao et al. 2022, *Sci. Rep.*).\n2. **ITCZ + SPCZ displacement.** The ITCZ shifts equatorward/eastward; the SPCZ\n   shifts north and east (up to ~10° of latitude in strong events), leaving the\n   FAS sector under the subsiding branch (Cai et al. 2012; Brown et al. 2021).\n3. **Rainfall dipole.** The west Pacific dries while the central/eastern Pacific\n   gets wetter. In Jan–Mar 1998 the western-Pacific rainfall total north of the\n   equator was **<100 mm, >800 mm below normal** (CPC ENSO Rainfall).\n4. **Lag.** Drought typically peaks **after** the El Niño peak — in the dry season\n   of the following year (PEAC: \"a very dry first-half of a calendar year is\n   typical of the year following El Niño\"). USGS: sharpest drought for Guam/Saipan/\n   Chuuk arrives \"the year after El Niño onset.\" Hydrological recovery can lag the\n   rainfall recovery by years."
+ },
+ {
+  "title": "El Nino Drought Research — 1997–98 (strongest in local memory)",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "- **Timing:** dry from late 1997 (outer islands from Oct); peak **Jan–May 1998**;\n  Majuro drought ended **June 1998**.\n- **Rainfall:** Majuro (RMI) got **8% of normal rain Jan–Apr 1998**. Jan 1998\n  %-of-normal: Kolonia/Pingelap/Nukuoro (Pohnpei) 4–5%, Kosrae 9%, Weno 12%,\n  Lukunoch (Chuuk) 3%, Kwajalein/Ebeye 8%, Wotje 18%, Saipan 25%, Koror 44%.\n- **Gradient:** Pohnpei/Kosrae and the northern RMI atolls hardest; Palau was last\n  to dry (Koror 44% in Jan); southern Palau (Peleliu) was wetter.\n- **Crisis:** FSM + Pohnpei + Chuuk declared emergencies; ~28,800 people (~30% of\n  outer-island population) needed relief; rivers dried, wells turned saline; taro\n  failed; RMI drought disaster Feb 1998; Guam's worst drought (65% of normal annual\n  rainfall, 12% of land scorched)."
+ },
+ {
+  "title": "El Nino Drought Research — 2015–16 (super El Niño, record ONI)",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "- **Timing:** onset Jan–Jun 2015, peak Jul 2015–Feb 2016; drought rainfall deficits\n  from **OND 2015**, worst **Jan–Apr 2016**, recovery Apr–Aug 2016 (Palau's\n  accumulated deficit bottomed −85.73 in in Aug 2016).\n- **Rainfall (% normal):** Q4 2015 — Majuro 39%, Yap 40%, Palau 46%, Kosrae 52%;\n  Q1 2016 — Kwajalein 18%, Majuro 27%, Yap 35%, Palau 55%. Koror got ~1/3 of normal\n  from 1 Mar 2016 and its lowest 4-month total since 1951.\n- **Gradient:** west + north hardest (Palau, Yap, northern RMI atolls); Chuuk less\n  affected; Pohnpei/Kosrae had big relative shortfalls from a very wet baseline;\n  American Samoa was anomalously *wet* (127–137%).\n- **Crisis:** FSM emergency 18 Feb 2016; RMI emergency 3 Feb → disaster 8/10 Mar\n  (extended twice); **Obama FEMA disaster declaration for RMI 27 Apr 2016** (only\n  FAS country to request international aid); Palau EO-389 21/22 Mar 2016 — Ngerimel\n  Dam dried, Koror/Airai on 3 hr/day rationing; ~21,000 affected in RMI, ~100,000\n  in FSM; RMI deployed 55 RO units / 33 communities."
+ },
+ {
+  "title": "El Nino Drought Research — 2023–24 (strong, but weaker than the two above)",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "- **Timing:** declared Jul 2023, peak Dec 2023–Jan 2024 (ONI ~+2.0 °C), neutral by\n  mid-2024.\n- **Impact:** **FSM national emergency 11 Mar 2024** (~22,700 people, ~20% of\n  population; Yap/Ulithi reached **D4 exceptional drought**; Yap's Mar–Apr rain was\n  2nd-driest in 73 years). **RMI** severe drought ~5,200 people (Wotje D4) but **no\n  national disaster declaration**. **Palau mostly spared** (Stage 1 / abnormal\n  dryness only).\n- **Comparison:** FSM/SPREP: impacts \"unlikely to match\" 1997–98 or 2015–16."
+ },
+ {
+  "title": "El Nino Drought Research — Which areas are most affected, and why",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "| Tier | Areas | Why |\n|---|---|---|\n| **Most vulnerable** | Northern RMI atolls (Wotje, Utrik, Ailuk, Mejit, Likiep, Maloelap, Wotho, Ujae…); FSM outer atolls (Yap's Ulithi/Woleai/Fais; Chuuk's Mortlocks; Pohnpei's southern atolls); Palau's Kayangel/Sonsorol/Hatohobei | No surface water; thin lens; rain catchment only. RMI: 55% of islands have lens <2.5 m; islands <300 m wide fully depleted in 1998 drought (Barkey & Bailey 2017). |\n| **Driest high island** | Yap Proper (~122 in/yr; streams dry ~3 mo/yr) vs Pohnpei (~190 in/yr) | Lower baseline rainfall; intermittent streams. |\n| **More resilient** | Pohnpei, Kosrae, Chuuk Lagoon high islands, Palau's Babeldaob | Rainfall + perennial streams/rivers (Babeldaob has Palau's only perennial rivers + Lake Ngardok). |\n| **Surprising failure point** | Palau's Koror (limestone, dam-dependent) | Ngerimel Dam dried up in 2016 despite national streams. |"
+ },
+ {
+  "title": "El Nino Drought Research — Population exposure (approximate, flagged as such)",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "- RMI ~55–58,000 total; Majuro ~20,000+; 2013 northern-atoll drought ~6,400 people\n  / 15 atolls; 2024 ~5,200 (12.3%) severe + ~14,600–15,000 (~35%) drought+inundation.\n- FSM ~102,000–113,815; 2024 drought >21,000 urgent need; Yap State ~6,800–10,000\n  (outer islands ~2,737).\n- Palau ~18,000; five outlying states ~1,350."
+ },
+ {
+  "title": "El Nino Drought Research — Sources",
+  "source": "docs/el-nino-drought-research.md",
+  "kind": "doc",
+  "text": "Full source lists are in the five per-topic reports from the swarm. Key anchors:\nNOAA CPC ENSO Diagnostic Discussion (8 Oct 2026); NOAA Climate.gov \"Drought in the\nPacific\" (2016); PEAC *Pacific ENSO Update* v4n1 (1998) and v22 (2016); USGS SIR\n2005-5098 (Majuro lens); GFDRR PDNA 2017 (RMI 2015–16 drought); World Bank CCKP RMI\nprofile; Barkey & Bailey 2017 (*Water* 9:41); Xiao et al. 2022; Cai et al. 2012;\nBrown et al. 2021; OCHA/IFRC/IOM/UNICEF/FEMA drought situation reports (1998, 2013,\n2016, 2024)."
+ },
+ {
+  "title": "Sciencebase Access — ScienceBase external access — how to unlock the auth-gated files",
+  "source": "docs/sciencebase-access.md",
+  "kind": "doc",
+  "text": "The USGS western-Pacific release (DOI 10.5066/P1RXUMV3) has three components. The\nR-code, metadata, site-selection, and GFS-forecast files are on the *public*\n`catalog/file/get` endpoint and are already downloaded into `data/raw/usgs_drought/`.\nBut the **SSEBop actual-ET / water-balance spreadsheets** (`evapotranspiration_\nSSEBop_2012_2025.xlsx`, `water balance.xlsx`, `precipitation_IMERG_*.xlsx`) and the\n**drought-monitor charts** (195 MB) are stored on the newer S3-backed \"manager\"\nstorage, which requires a ScienceBase login. The S3 bucket\n(`prod-is-usgs-sb-prod-content`) is not public (403), and the `catalog/file/get`\nURL 404s for these objects."
+ },
+ {
+  "title": "Sciencebase Access — Why this needs a human",
+  "source": "docs/sciencebase-access.md",
+  "kind": "doc",
+  "text": "ScienceBase external access is a two-gate federal process:\n\n1. **Login.gov account** (`https://secure.login.gov/`) — federal SSO. This must be\n   *your* identity; it cannot be created on your behalf (may require identity\n   proofing, and it is your personal federal credential).\n2. **USGS sponsor approval** — the registration form at\n   `https://sciencebase.gov/directory/signUp` requires a *USGS Sponsor Email\n   Address*; a USGS employee must approve the request before access is granted."
+ },
+ {
+  "title": "Sciencebase Access — The two steps (for the owner)",
+  "source": "docs/sciencebase-access.md",
+  "kind": "doc",
+  "text": "1. Create a **login.gov** account using the household email\n   (`hemingwayglobal77@gmail.com`) or `bhemingway@gmail.com`.\n2. Fill the ScienceBase registration form with:\n   - Email (the login.gov email),\n   - First/Last name,\n   - **USGS Sponsor Email** — the natural sponsor is the dataset's own contact.\n     The release metadata lists the authors at USGS EROS: Gabriel Senay, Stefanie\n     Kagone, Francis Dwomoh, Matthew E Andersen; the general data contact is\n     `custserv@usgs.gov`. Request sponsorship from the data author (they published\n     the data and are the appropriate vouching party)."
+ },
+ {
+  "title": "Sciencebase Access — Draft sponsor-outreach email",
+  "source": "docs/sciencebase-access.md",
+  "kind": "doc",
+  "text": "> Subject: Request for ScienceBase sponsor approval — USGS western-Pacific\n> drought release (DOI 10.5066/P1RXUMV3)\n>\n> Dear Dr. Andersen / USGS EROS data team,\n>\n> I am building a drought early-warning dashboard for the Freely Associated\n> States (Palau, FSM, RMI). I have been able to download the public files of\n> your release \"Hydro-climatic datasets … western Pacific Island nations\"\n> (10.5066/P1RXUMV3), but the SSEBop actual-ET / water-budget spreadsheets and\n> the drought-monitor charts are on the S3-backed ScienceBase \"manager\" storage,\n> which requires sponsor-approved login.gov access.\n>\n> Would you be willing to sponsor my ScienceBase registration so I can download\n> the evapotranspiration and water-balance spreadsheets? My login.gov account is\n> registered to <EMAIL>.\n>\n> Thank you, Ben Hemingway"
+ },
+ {
+  "title": "Sciencebase Access — What happens after approval",
+  "source": "docs/sciencebase-access.md",
+  "kind": "doc",
+  "text": "Once the account is sponsor-approved and signed in, the auth-gated files can be\ndownloaded through the browser session (the existing `scripts/cdp_download.mjs`\nreal-Chrome path), then:\n* `evapotranspiration_SSEBop_2012_2025.xlsx` → actual ET through 2025 (replaces\n  the FEWS NET portal, which ends Jun 2021).\n* `water balance.xlsx` → the authoritative P−ET balance.\n* `Drought_Monitor_Charts.zip` → the official monthly drought-monitor outputs."
+ },
+ {
+  "title": "Usgs Drought Import — USGS western-Pacific drought dataset — import & method verification",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "Retrieved the authoritative USGS data release (public domain) through a real\nChrome session (Cloudflare-gated on ScienceBase; headless browsers are blocked),\nand used it to verify the app's drought classification *exactly*."
+ },
+ {
+  "title": "Usgs Drought Import — Dataset",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "- **Title:** Drought Monitoring and 7-Day Precipitation Forecasting for western\n  Pacific nations from 2000–2026 (child of \"Hydro-climatic datasets…\", Senay,\n  Kagone, Dwomoh & Andersen 2026).\n- **DOI:** https://doi.org/10.5066/P1RXUMV3 (CC0-1.0 public domain).\n- **ScienceBase item:** `69f8f726b66b014d9c576c9c`."
+ },
+ {
+  "title": "Usgs Drought Import — Files downloaded → `data/raw/usgs_drought/` (gitignored)",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "| File | What it contains |\n|---|---|\n| `Drought_Monitoring_Metadata.xml` | FGDC metadata (methodology, contacts, extent) |\n| `R_codes.zip` | the exact R pipeline (incl. `3_IMERG_Monthly_Drought_Monitor.R`) |\n| `pacific_islands_wgs_selection.zip` | the 9 study sites (SHP) |"
+ },
+ {
+  "title": "Usgs Drought Import — Verified drought-classification method (from `3_IMERG_Monthly_Drought_Monitor.R`)",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "Four indices, all computed against the **2000–2024 baseline**:\n\n1. **1-/3-/6-Month Rainfall Index** — quintile class of the monthly precipitation\n   and its right-aligned rolling 3-/6-month sums, each vs the same-calendar-month\n   distribution: `<20th→Drier, <40th→Dry, <60th→Typical, <80th→Wet, ≥80th→Wetter`.\n2. **PEAC 4/8-inch Index** — absolute traffic light on the latest month:\n   `<101.6 mm→Red (drought concern), 101.6–203.2 mm→Yellow (adequate),\n   >203.2 mm→Dark Green (sufficient)`.\n\nThe app's `drought/percentiles.quintile_index` and `drought/percentiles.peac_index`\nreproduce these thresholds exactly; `drought/monitor.py` computes all four indices."
+ },
+ {
+  "title": "Usgs Drought Import — The 9 study sites (from the SHP)",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "| USGS site | Nation | App registry id |\n|---|---|---|\n| Majuro | RMI | RMI-MAJ |\n| Weno (Chuuk) | FSM | FSM-CHUUK |\n| Pohnpei | FSM | FSM-POH |\n| Kosrae | FSM | FSM-KOS |\n| Yap | FSM | FSM-YAP |\n| Nauru | Nauru | (out of scope) |\n| Noro, Munda, NoroMundaBasin | Solomon Islands | (out of scope) |\n\nThe five FAS sites map 1:1 to the app registry; Palau is not in the release."
+ },
+ {
+  "title": "Usgs Drought Import — Notes / differences",
+  "source": "docs/usgs-drought-import.md",
+  "kind": "doc",
+  "text": "- The USGS pipeline runs on **IMERG Early Run**; the app computes the same\n  indicators from **ERA5/CHIRPS** (more reliable over ocean-adjacent atolls).\n- The USGS quintile baseline is **2000–2024**; the app defaults to **1991–2020**\n  (both ~25-year climatologies — noted in the UI).\n- The raw monthly CSV is generated by the R pipeline from IMERG (not shipped as a\n  standalone file); the app reproduces it live rather than importing a snapshot."
+ },
+ {
+  "title": "Immediate Drought Response Plan for the Republic of the Marshall Islands",
+  "source": "https://reliefweb.int/report/marshall-islands/immediate-drought-response-plan-republic-marshall-islands",
+  "kind": "plan",
+  "text": "Immediate Drought Response Plan for the Republic of the Marshall Islands. Complementing the Declaration on State of Emergency (3 Feb 2016) for the 2015–16 El Niño drought. Covers a 6-month WASH-focused response across 19 atolls/islands, 44 communities, ~1,257 households plus 4,092 in Majuro. State of Emergency declared 3 February 2016. Vulnerability zoning: Zone 1 (>8°N) high, Zone 2 (6°–8°N) high, Zone 3 (<6°N) moderate (Mili Atoll raised to Zone 2). Northern atolls (Zone 1/2) are the government-designated highest-vulnerability area — matches the app's northern-atoll finding. El Niño rainfall pattern: above-average early year, dry from Nov–Dec, returning ~July. Response: drinking-water distribution points, reverse-osmosis units, safe-water education."
+ },
+ {
+  "title": "RMI Response Plan for Drought and Inundation (RPDI) 2024",
+  "source": "https://reliefweb.int/report/micronesia-federated-states/micronesia-drought-response-situation-report-08-april-2024",
+  "kind": "plan",
+  "text": "RMI Response Plan for Drought and Inundation (RPDI) 2024. The 2024 drought + inundation response plan. In early 2024, 18 atolls were impacted by inundation and drought affected ~15,000 people (~35%) across 23 atolls/islands; NDMO deployed RO units to 9 of 16 affected atolls. NDMO deployed Reverse-Osmosis units to 9 of 16 drought-affected atolls (2024). ~5,200 people (12.3% of population) affected across 15 atolls/islands. Three schools without RO units were forced to close. 18 atolls impacted by inundation on 20 Jan and 9–10 Mar 2024."
+ },
+ {
+  "title": "FSM National Drought Preparedness and Response Plan (NDPRP)",
+  "source": "https://kpress.fm/fsm-national-drought-plan-water-security",
+  "kind": "plan",
+  "text": "FSM National Drought Preparedness and Response Plan (NDPRP). FSM's first comprehensive national drought framework, endorsed 22 Aug 2026. Three pillars: (1) early warning systems, (2) vulnerability & impact assessment, (3) mitigation, preparedness & response. Coordinates national, state, municipal and community actors. Endorsed 22 August 2026 (the current national framework). Three pillars: early warning; vulnerability/impact assessment; mitigation–preparedness–response. Historical drought events: 1983, 1998, 2015–16, and 2023–24 El Niño. National emergency declared 12 March 2024 (President Simina) for Pohnpei/Yap/Chuuk; $1.2M; 21,000+ in urgent need."
+ },
+ {
+  "title": "Palau National Drought Action Plan",
+  "source": "https://islandtimes.org/palau-nec-activates-stage-1-of-nations-drought-action-plan-water-shortage-watch",
+  "kind": "plan",
+  "text": "Palau National Drought Action Plan. Palau's stage-based drought action plan. The National Emergency Committee activates stages; NEMO issues public advisories. Stage 1 is the water-shortage watch (entered 26 March 2024 during the 2023–24 El Niño). Stage 1 = water-shortage watch; activated 26 March 2024. NEC activates stages based on National Weather Service monitoring; NEMO issues advisories. Stage definitions are stage-based (watch → warning → emergency) rather than rainfall-percentile based."
+ },
+ {
+  "title": "Drought Emergency Response for the North Pacific (FSM and RMI)",
+  "source": "https://www.unicef.org/media/155256/file/Drought-Emergency-Response-for-the-North-Pacific(FSM-and-RMI),April%202024.pdf",
+  "kind": "plan",
+  "text": "Drought Emergency Response for the North Pacific (FSM and RMI). UNICEF's response to the 2023–24 El Niño drought in FSM and RMI: WASH kits, RO support, health/nutrition, education continuity, and child protection. FSM: >21,000 in urgent need; saltwater intrusion in Lekinioch/Piherarh/Onoun (Chuuk lagoon). RMI: >5,200 people (12.3%) affected across 15 atolls/islands; little/no rain for 2–3 months. 4,307 WASH kits planned; 12 collapsible water tanks; water filters + school WASH."
+ },
+ {
+  "title": "Open-Meteo Forecast API",
+  "source": "https://open-meteo.com/",
+  "kind": "source",
+  "text": "Open-Meteo Forecast API. Publisher Open-Meteo. Global; covers Palau, FSM, RMI points temperature_2m, precipitation, wind_speed_10m, wind_direction_10m, relative_humidity_2m, surface_pressure, ... "
+ },
+ {
+  "title": "Open-Meteo Marine API (waves + sea-surface temperature)",
+  "source": "https://open-meteo.com/en/docs/marine-weather-api",
+  "kind": "source",
+  "text": "Open-Meteo Marine API (waves + sea-surface temperature). Publisher Open-Meteo. Global ocean (covers FAS points) significant wave height/period/direction, sea-surface temperature Feeds the coastal/marine conditions + the simplified coral-bleaching watch (Degree Heating Weeks)."
+ },
+ {
+  "title": "Open-Meteo Historical Weather API (ERA5-based)",
+  "source": "https://open-meteo.com/en/docs/historical-weather-api",
+  "kind": "source",
+  "text": "Open-Meteo Historical Weather API (ERA5-based). Publisher Open-Meteo / ECMWF ERA5. Global precipitation_sum, temperature_2m_mean "
+ },
+ {
+  "title": "NOAA CPC Oceanic Niño Index (ONI)",
+  "source": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php",
+  "kind": "source",
+  "text": "NOAA CPC Oceanic Niño Index (ONI). Publisher NOAA Climate Prediction Center. Niño-3.4 index (basin-scale; no per-island data) ONI SST anomaly (the canonical ENSO index) Authoritative machine-readable ENSO index. Phase label is derived via the CPC >=5-season criterion; the official status statement is the Diagnostic Discussion."
+ },
+ {
+  "title": "PEAC seasonal rainfall outlook (tercile consensus)",
+  "source": "https://www.weather.gov/peac/rainfall_new",
+  "kind": "source",
+  "text": "PEAC seasonal rainfall outlook (tercile consensus). Publisher NOAA NWS Pacific ENSO Applications Climate Services. 14 stations: Hawaii, USAPI (Palau/FSM/RMI), Guam/CNMI, American Samoa tercile rainfall probabilities (below:near:above), final outlook per station HTML scrape of the official experimental consensus outlook (7 seasonal models, tercile form). FAS stations carry a geo_id. FRESHNESS GUARD: last updated 2024-09-16 (SON 2024) — the Pacific ENSO Update newsletter is discontinued and the outlook has gone stale; the adapter flags is_stale so the app presents it as historical, never as current."
+ },
+ {
+  "title": "University of Hawaii Sea Level Center (UHSLC) tide gauges",
+  "source": "https://uhslc.soest.hawaii.edu/",
+  "kind": "source",
+  "text": "University of Hawaii Sea Level Center (UHSLC) tide gauges. Publisher University of Hawaii / NOAA. 6 FAS tide gauges: Malakal (Palau), Yap, Chuuk, Pohnpei, Kwajalein, Majuro (no Kosrae) sea level (mm above station datum) Authoritative current tide-gauge source. Replaces the PEAC seasonal sea-level outlook, which was DISCONTINUED January 2020. Sea level is the most ENSO-coupled atoll hazard (El Nino raises western-Pacific sea level -> king-tide/inundation flooding). Data availability varies by station."
+ },
+ {
+  "title": "NOAA CPC ENSO Diagnostic Discussion",
+  "source": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/ensodisc.html",
+  "kind": "source",
+  "text": "NOAA CPC ENSO Diagnostic Discussion. Publisher NOAA Climate Prediction Center. Global ENSO state + official probabilistic outlook ENSO Alert System status, synopsis, outlook summary HTML scrape of the official status statement: issue date, alert status (e.g. El Niño Advisory), synopsis, outlook summary. Authoritative (not a derived phase)."
+ },
+ {
+  "title": "IBTrACS v04r01 (International Best Track Archive)",
+  "source": "https://www.ncei.noaa.gov/products/international-best-track-archive",
+  "kind": "source",
+  "text": "IBTrACS v04r01 (International Best Track Archive). Publisher NOAA/NCEI. Western North Pacific basin (covers Palau/FSM/RMI) position, WMO wind/pressure (JMA 10-min for WP), per-agency wind (USA/Tokyo), radii "
+ },
+ {
+  "title": "JMA RSMC Tokyo-Typhoon Center (active storms)",
+  "source": "https://www.jma.go.jp/bosai/map.html",
+  "kind": "source",
+  "text": "JMA RSMC Tokyo-Typhoon Center (active storms). Publisher Japan Meteorological Agency. Western North Pacific (RSMC Tokyo AOR; covers all FAS) position, central pressure, 10-min sustained wind, gusts, 30/50-kt radii, forecast track + probability circles Authoritative active-storm source (WMO RSMC). JSON endpoints, no auth."
+ },
+ {
+  "title": "JTWC tropical cyclone warnings",
+  "source": "https://www.metoc.navy.mil/jtwc/jtwc.html",
+  "kind": "source",
+  "text": "JTWC tropical cyclone warnings. Publisher Joint Typhoon Warning Center (via NWS text mirror). NW Pacific (covers FAS) 1-min sustained wind, quadrant wind radii (34/50/64 kt), MSLP, forecast track ATCF-style text warnings parsed into structured data (position, 1-min wind, radii, forecast). Complements JMA (10-min wind)."
+ },
+ {
+  "title": "JMA Himawari-9 geostationary satellite imagery",
+  "source": "https://himawari8.nict.go.jp/",
+  "kind": "source",
+  "text": "JMA Himawari-9 geostationary satellite imagery. Publisher JMA / NICT. Full disk (80E–160W; FAS in western-Pacific portion) visible composite imagery Full-disk composite shown in the app (Tropical Cyclones page). IR bands and region zoom tiles are a follow-up."
+ },
+ {
+  "title": "NWS Guam / PEAC (FAS watches & warnings)",
+  "source": "https://www.weather.gov/gum/",
+  "kind": "source",
+  "text": "NWS Guam / PEAC (FAS watches & warnings). Publisher NOAA NWS Pacific Region. Marianas + Micronesia (Palau, FSM, RMI island-specific) storm identity, island-level watches/warnings TCP text parsed (storm + watches/warnings). api.weather.gov/alerts also available for structured zone alerts. The only source that turns JTWC/JMA guidance into FAS island-specific actions."
+ },
+ {
+  "title": "NASA GPM IMERG precipitation (Final/Late/Early)",
+  "source": "https://gpm.nasa.gov/data/imerg",
+  "kind": "source",
+  "text": "NASA GPM IMERG precipitation (Final/Late/Early). Publisher NASA GES DISC. 60N-60S (covers FAS, over ocean + land) precipitationCal, randomError, probabilityLiquidPrecipitation earthaccess adapter (ingestion/imerg.py) for daily point extraction; live-verified (token auth + search + download + extraction). Requires EARTHDATA_TOKEN (or ~/.netrc) and a one-time GPM IMERG EULA acceptance."
+ },
+ {
+  "title": "CHIRPS v3 precipitation (UCSB Climate Hazards Center)",
+  "source": "https://www.chc.ucsb.edu/data/chirps3",
+  "kind": "source",
+  "text": "CHIRPS v3 precipitation (UCSB Climate Hazards Center). Publisher UC Santa Barbara. 60N-60S (land-masked; tiny atolls may be sparse) precip (mm) Point extraction via COG range requests (rasterio /vsicurl). Land-masked; sub-pixel islands use a documented max-valid-pixel heuristic. ERA5 preferred for ocean-adjacent atolls."
+ },
+ {
+  "title": "USGS SSEBop actual evapotranspiration (FEWS NET monthly)",
+  "source": "https://www.usgs.gov/centers/eros/science/operational-simplified-surface-energy-balance-ssebop",
+  "kind": "source",
+  "text": "USGS SSEBop actual evapotranspiration (FEWS NET monthly). Publisher USGS EROS. Global land (~1 km) — tiny atolls fall in ocean (nodata) pixels actual evapotranspiration (mm/month) Actual ET (the complement to Hargreaves PET). Land-only — valid for high islands (Pohnpei/Kosrae/Yap/Weno/Babeldaob), unavailable for tiny atolls. ~73 MB/month; sampled with the max-valid-pixel heuristic."
+ },
+ {
+  "title": "PERSIANN-CDR precipitation (NOAA CDR)",
+  "source": "https://www.ncei.noaa.gov/products/climate-data-records/precipitation-persiann",
+  "kind": "source",
+  "text": "PERSIANN-CDR precipitation (NOAA CDR). Publisher NOAA NCEI / UC Irvine CHRS. 60S-60N (covers FAS, over ocean + land) precipitation (mm) Daily point extraction via NCEI HTTP (per-file download + xarray). Satellite-gauge blend; covers ocean-adjacent atolls (CHIRPS is land-masked). Lags ~3-6 months (CDR)."
+ },
+ {
+  "title": "GPCC monthly gauge precipitation",
+  "source": "https://opendata.dwd.de/climate_environment/GPCC/",
+  "kind": "source",
+  "text": "GPCC monthly gauge precipitation. Publisher DWD (Deutscher Wetterdienst). Land only — essentially no gauges on FAS islands (not recommended) precip, numgauge Not a primary FAS source (no local gauges)."
+ },
+ {
+  "title": "SPEIbase (global standardized precipitation-evapotranspiration index)",
+  "source": "https://spei.csic.es/database.html",
+  "kind": "source",
+  "text": "SPEIbase (global standardized precipitation-evapotranspiration index). Publisher CSIC. Global land 0.5 deg — many FAS atolls fall between cells (NaN) SPEI Coarse; better to compute SPI/SPEI ourselves from CHIRPS/IMERG."
+ },
+ {
+  "title": "NMME seasonal forecasts (multi-model ensemble)",
+  "source": "https://www.ncei.noaa.gov/products/weather-climate-models/north-american-multi-model",
+  "kind": "source",
+  "text": "NMME seasonal forecasts (multi-model ensemble). Publisher NOAA/NCEP + partners. Global 1 deg (FAS falls within grid cells) prate, tmp2m, tmpsfc (NetCDF3) xarray + netCDF4 point extraction of ENSMEAN across 6 models; ensemble mean/spread. 1-deg grid is coarse for atolls."
+ },
+ {
+  "title": "ECMWF AIFS open data (AI forecast)",
+  "source": "https://www.ecmwf.int/en/forecasts/datasets/open-data",
+  "kind": "source",
+  "text": "ECMWF AIFS open data (AI forecast). Publisher ECMWF. Global 0.25 deg (covers FAS) 2m temp/dewpoint, 10m wind, total precipitation, MSLP, pressure levels (GRIB2) Best free AI/global model drop-in (GRIB2). See docs."
+ },
+ {
+  "title": "NOAA GFS / GEFS (NOMADS / AWS NODD)",
+  "source": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod",
+  "kind": "source",
+  "text": "NOAA GFS / GEFS (NOMADS / AWS NODD). Publisher NOAA/NCEP. Global 0.25 deg full GRIB2 forecast fields "
+ },
+ {
+  "title": "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026)",
+  "source": "https://doi.org/10.5066/P1RXUMV3",
+  "kind": "source",
+  "text": "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026). Publisher USGS EROS. 9 sites across FSM, RMI, Nauru, Solomon Islands — PALAU NOT INCLUDED monthly precip, 25-yr climatological median, rolling 1/3/6-month, quintile Rainfall Index (Drier/Dry/Typical/Wet/Wetter), PEAC thresholds, 7-day GFS forecast METHODOLOGY REPLICATED LOCALLY: the app computes the same indicators (monthly precip, climatological median, rolling 1/3/6-month, quintile Rainfall Index + D0-D4) from ERA5/CHIRPS in drought/monitor.py — an independent implementation of Senay et al. 2026 (the USGS pipeline runs on IMERG Early Run). The USGS CSV itself remains ScienceBase/Cloudflare-gated (403 to curl); the exact station-specific PEAC absolute thresholds are in its R scripts (blocked). Covers FSM/RMI/Nauru/Solomon only — Palau is not in the release."
+ },
+ {
+  "title": "WorldPop population grids (Unconstrained individual countries)",
+  "source": "https://www.worldpop.org/",
+  "kind": "source",
+  "text": "WorldPop population grids (Unconstrained individual countries). Publisher University of Southampton. Global 2000-2020 (covers PLW/FSM/MHL at ~1km) population count (UN-adjusted) Point/radius extraction (rasterio). UN-adjusted 2020 totals exceed censuses; used for spatial exposure, not census of record."
+ },
+ {
+  "title": "GPWv4 population (SEDAC)",
+  "source": "https://sedac.ciesin.columbia.edu/data/set/gpw-v4-population-count-rev11/data-download",
+  "kind": "source",
+  "text": "GPWv4 population (SEDAC). Publisher NASA SEDAC / CIESIN. Global (covers FAS) population count, density "
+ },
+ {
+  "title": "HDX Common Operational Dataset administrative boundaries",
+  "source": "https://data.humdata.org/dataset/cod-ab-fsm",
+  "kind": "source",
+  "text": "HDX Common Operational Dataset administrative boundaries. Publisher OCHA / ITOS / SPC. FSM (4 states, 75 municipalities) and RMI (25 atolls, 153 EAs). Palau: no COD-AB. administrative boundaries (SHP), P-coded Loaded via pyshp + rasterio (no GDAL/geopandas). Enables accurate zonal WorldPop population. Palau: see geoboundaries source (no COD-AB)."
+ },
+ {
+  "title": "geoBoundaries administrative boundaries (Palau ADM1)",
+  "source": "https://www.geoboundaries.org/",
+  "kind": "source",
+  "text": "geoBoundaries administrative boundaries (Palau ADM1). Publisher William & Mary geoLab (OpenStreetMap-derived). Palau ADM1 (16 states) administrative boundaries (GeoJSON) Parsed with stdlib json. Used for Palau zonal population (Palau has no COD-AB)."
+ },
+ {
+  "title": "Copernicus DEM GLO-30/GLO-90 (terrain)",
+  "source": "https://registry.opendata.aws/copernicus-dem/",
+  "kind": "source",
+  "text": "Copernicus DEM GLO-30/GLO-90 (terrain). Publisher Copernicus / Sinergise (AWS Open Data). GLO-90 worldwide (covers FAS); GLO-30 limited (verify tiles) surface elevation "
+ },
+ {
+  "title": "GEBCO global bathymetry + topography",
+  "source": "https://www.gebco.net/data-products/gridded-bathymetry-data/gebco2023-grid",
+  "kind": "source",
+  "text": "GEBCO global bathymetry + topography. Publisher GEBCO. Global ocean + land (covers FAS) elevation + bathymetry Use for atoll coastal/storm-surge exposure."
+ },
+ {
+  "title": "Google WeatherNext 3",
+  "source": "https://developers.google.com/weathernext/guides/access-forecast",
+  "kind": "source",
+  "text": "Google WeatherNext 3. Publisher Google. Global 0.05/0.1/0.25 deg full forecast fields (Zarr v3 / BigQuery / Earth Engine) Allowlist-gated GCS buckets (gs://weathernext3_spatial). Adapter implemented; reads Zarr via gcsfs once credentials + allowlist are present. Access form submitted (see docs). ECMWF AIFS / GFS are the working free alternatives in the meantime."
+ },
+ {
+  "title": "NVIDIA Earth-2 / FourCastNet / StormCast",
+  "source": "https://build.nvidia.com/nvidia/fourcastnet",
+  "kind": "source",
+  "text": "NVIDIA Earth-2 / FourCastNet / StormCast. Publisher NVIDIA. Global 0.25 deg (FourCastNet); 3-km regional (StormCast/CorrDiff) 2m temp, 10m wind, MSLP, TP, 500hPa geopotential No keyless free hosted weather API. FourCastNet/StormCast are downloadable open weights (self-host on GPU via Modulus); hosted NIM weather microservices need a paid NVIDIA API key / DGX Cloud. Adapter implemented and honestly reports unavailable without a key."
+ },
+ {
+  "title": "Windy",
+  "source": "https://www.windy.com/",
+  "kind": "source",
+  "text": "Windy. Publisher Windy.com. Global  No free public API. Model data (ECMWF/GFS/ICON/GEM) already integrated via Open-Meteo multi-model."
+ },
+ {
+  "title": "Weather Underground",
+  "source": "https://www.wunderground.com/",
+  "kind": "source",
+  "text": "Weather Underground. Publisher Weather Underground (IBM/The Weather Company). Global  The free WU API was shut down. Use Open-Meteo / GFS / METAR alternatives instead."
+ },
+ {
+  "title": "Meteoconsult (MétéoConsult)",
+  "source": "https://www.meteoconsult.fr/",
+  "kind": "source",
+  "text": "Meteoconsult (MétéoConsult). Publisher Meteoconsult / La Chaîne Météo. Primarily Europe  No public free API and minimal Pacific coverage. Meteoblue has a free non-commercial API if a European NWP alternative is wanted."
+ },
+ {
+  "title": "NOAA US Drought Monitor (USDM)",
+  "source": "https://droughtmonitor.unl.edu/",
+  "kind": "source",
+  "text": "NOAA US Drought Monitor (USDM). Publisher NOAA/NDMC/USDA. US + territories only — does NOT cover Palau/FSM/RMI  USDM is US-only. The app instead computes a precipitation-percentile D0–D4 drought level (internal FAS scale) and uses CHIRPS/IMERG/ERA5 for drought indicators. USGS western-Pacific product (P1RXUMV3) covers FSM/RMI (planned)."
+ },
+ {
+  "title": "NOAA GOES geostationary imagery",
+  "source": "https://www.star.nesdis.noaa.gov/goes/",
+  "kind": "source",
+  "text": "NOAA GOES geostationary imagery. Publisher NOAA. GOES-West full disk covers ~eastern Pacific / Americas — the FAS (130–175E) is in Himawari's domain, not GOES's  Not a good fit for the FAS — Himawari-9 (implemented) is the correct geostationary satellite. GOES is only marginally useful for the far-eastern RMI (~172E)."
+ },
+ {
+  "title": "Copernicus Sentinel-2/3",
+  "source": "https://scihub.copernicus.eu/",
+  "kind": "source",
+  "text": "Copernicus Sentinel-2/3. Publisher ESA / Copernicus. Global (FAS included)  Ocean/land remote sensing (SST, ocean colour, vegetation), not weather feeds. STAC search over AWS s3://sentinel-* or the CDS; heavy raster. A follow-up for SST/coastal overlays."
+ },
+ {
+  "title": "NASA/NOAA VIIRS (SNPP/NOAA-20/21)",
+  "source": "https://ladsweb.modaps.eosdis.nasa.gov/",
+  "kind": "source",
+  "text": "NASA/NOAA VIIRS (SNPP/NOAA-20/21). Publisher NASA / NOAA. Global (FAS included)  SST/ocean-colour/vegetation remote sensing via Earthdata (LANCE/LAADS). Heavy raster; a follow-up if SST monitoring is wanted."
+ },
+ {
+  "title": "NASA GIBS remote-sensing overlays (MUR SST, SST anomaly, PACE chlorophyll-a)",
+  "source": "https://gibs.earthdata.nasa.gov/",
+  "kind": "source",
+  "text": "NASA GIBS remote-sensing overlays (MUR SST, SST anomaly, PACE chlorophyll-a). Publisher NASA EOSDIS / JPL. Global ocean (FAS included) sea-surface temperature, SST anomaly, chlorophyll-a concentration Toggleable map overlays (semi-transparent WMTS tiles) drawn over the satellite basemap. Remote-sensing fields, NOT forecast or in-situ station data. SST anomaly is relative to a MUR climatology and is relevant to ENSO monitoring."
+ },
+ {
+  "title": "Palau (PAL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Palau (PAL) — country in PW. Country. Coordinates approximate centroid; area/ population approximate."
+ },
+ {
+  "title": "Federated States of Micronesia (FSM)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Federated States of Micronesia (FSM) — country in FM. Country. Four states (Yap, Chuuk, Pohnpei, Kosrae)."
+ },
+ {
+  "title": "Republic of the Marshall Islands (RMI)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Republic of the Marshall Islands (RMI) — country in MH. Country. Composed of atolls; low-lying coral islands."
+ },
+ {
+  "title": "Yap (FSM-YAP)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Yap (FSM-YAP) — state in FM. FSM state."
+ },
+ {
+  "title": "Chuuk (FSM-CHUUK)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Chuuk (FSM-CHUUK) — state in FM. FSM state."
+ },
+ {
+  "title": "Pohnpei (FSM-POH)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Pohnpei (FSM-POH) — state in FM. FSM state."
+ },
+ {
+  "title": "Kosrae (FSM-KOS)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Kosrae (FSM-KOS) — state in FM. FSM state."
+ },
+ {
+  "title": "Koror (PAL-KOR)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Koror (PAL-KOR) — island in PW. Largest population center."
+ },
+ {
+  "title": "Babeldaob (PAL-BAB)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Babeldaob (PAL-BAB) — island in PW. Largest island by area."
+ },
+ {
+  "title": "Melekeok (PAL-MEL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Melekeok (PAL-MEL) — monitoring_location in PW. Capital (Ngerulmud area)."
+ },
+ {
+  "title": "Peleliu (PAL-PEL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Peleliu (PAL-PEL) — island in PW. Southern island."
+ },
+ {
+  "title": "Angaur (PAL-ANG)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Angaur (PAL-ANG) — island in PW. Southernmost state."
+ },
+ {
+  "title": "Kayangel (PAL-KAY)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Kayangel (PAL-KAY) — atoll in PW. Northern atoll."
+ },
+ {
+  "title": "Majuro (RMI-MAJ)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Majuro (RMI-MAJ) — atoll in MH. Capital atoll."
+ },
+ {
+  "title": "Kwajalein (RMI-KWA)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Kwajalein (RMI-KWA) — atoll in MH. Large atoll; includes Ebeye."
+ },
+ {
+  "title": "Ebeye (RMI-EBE)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Ebeye (RMI-EBE) — monitoring_location in MH. Densely populated islet within Kwajalein."
+ },
+ {
+  "title": "Jaluit (RMI-JAL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Jaluit (RMI-JAL) — atoll in MH. Southern atoll."
+ },
+ {
+  "title": "Wotje (RMI-WOT)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Wotje (RMI-WOT) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Arno (RMI-ARN)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Arno (RMI-ARN) — atoll in MH. Atoll east of Majuro."
+ },
+ {
+  "title": "Utrik (RMI-UTR)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Utrik (RMI-UTR) — atoll in MH. Northern atoll; repeatedly hardest-hit in El Niño droughts."
+ },
+ {
+  "title": "Ailuk (RMI-AIL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Ailuk (RMI-AIL) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Mejit (RMI-MEJ)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Mejit (RMI-MEJ) — island in MH. Raised coral island (not an atoll)."
+ },
+ {
+  "title": "Likiep (RMI-LIK)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Likiep (RMI-LIK) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Maloelap (RMI-MAL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Maloelap (RMI-MAL) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Wotho (RMI-WTH)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Wotho (RMI-WTH) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Ujae (RMI-UJA)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Ujae (RMI-UJA) — atoll in MH. Northern atoll."
+ },
+ {
+  "title": "Enewetak (RMI-ENW)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Enewetak (RMI-ENW) — atoll in MH. Far-northwestern atoll; includes Ebadon."
+ },
+ {
+  "title": "Namu (RMI-NAM)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Namu (RMI-NAM) — atoll in MH. Atoll."
+ },
+ {
+  "title": "Lae (RMI-LAE)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Lae (RMI-LAE) — atoll in MH. Atoll."
+ },
+ {
+  "title": "Lib (RMI-LIB)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Lib (RMI-LIB) — island in MH. Small island."
+ },
+ {
+  "title": "Aur (RMI-AUR)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Aur (RMI-AUR) — atoll in MH. Atoll."
+ },
+ {
+  "title": "Ulithi (FSM-YAP-ULI)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Ulithi (FSM-YAP-ULI) — atoll in FM. Yap outer atoll; D4 exceptional drought in 2024."
+ },
+ {
+  "title": "Woleai (FSM-YAP-WOL)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Woleai (FSM-YAP-WOL) — atoll in FM. Yap outer atoll."
+ },
+ {
+  "title": "Fais (FSM-YAP-FAI)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Fais (FSM-YAP-FAI) — island in FM. Raised coral island in Yap outer islands."
+ },
+ {
+  "title": "Kapingamarangi (FSM-POH-KAP)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Kapingamarangi (FSM-POH-KAP) — atoll in FM. Southernmost Pohnpei atoll; equatorial."
+ },
+ {
+  "title": "Nukuoro (FSM-POH-NUK)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Nukuoro (FSM-POH-NUK) — atoll in FM. Southern Pohnpei atoll."
+ },
+ {
+  "title": "Sonsorol (PAL-SON)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Sonsorol (PAL-SON) — atoll in PW. Southwestern atoll; rainwater catchment only."
+ },
+ {
+  "title": "Hatohobei (PAL-HAT)",
+  "source": "config/geography.yaml",
+  "kind": "geography",
+  "text": "Hatohobei (PAL-HAT) — atoll in PW. Southernmost Palau atoll (Tobi)."
+ }
+]

@@ -5,6 +5,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./lib/auth";
 import { SelectionProvider } from "./lib/selection";
 import About from "./sections/About";
+import Ask from "./sections/Ask";
 import Coastal from "./sections/Coastal";
 import Console from "./sections/Console";
 import Drought from "./sections/Drought";
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/coastal", label: "Coastal" },
   { to: "/enso", label: "ENSO" },
   { to: "/plans", label: "Plans" },
+  { to: "/ask", label: "Ask" },
   { to: "/about", label: "About" },
 ];
 
@@ -72,6 +74,7 @@ export default function App() {
             <Route path="/coastal" element={<Coastal />} />
             <Route path="/enso" element={<Enso />} />
             <Route path="/plans" element={<Plans />} />
+            <Route path="/ask" element={<Ask />} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

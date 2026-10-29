@@ -36,6 +36,23 @@ export async function api<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Basic ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    clearToken();
+    throw new ApiError(401, "unauthorized");
+  }
+  if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export async function login(user: string, pass: string): Promise<boolean> {
   const token = btoa(`${user}:${pass}`);
   const res = await fetch(`${API_BASE}/login`, {

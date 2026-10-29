@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _DOCS_DIR = _PROJECT_ROOT / "docs"
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -65,7 +65,7 @@ def _split_markdown(path: Path) -> list[dict[str, Any]]:
 
 
 def _chunk_plans() -> list[dict[str, Any]]:
-    from .guidance.national_plans import NATIONAL_PLANS
+    from ..guidance.national_plans import NATIONAL_PLANS
 
     chunks = []
     for p in NATIONAL_PLANS:
@@ -82,7 +82,7 @@ def _chunk_plans() -> list[dict[str, Any]]:
 
 
 def _chunk_sources() -> list[dict[str, Any]]:
-    from .config import get_config
+    from ..config import get_config
 
     chunks = []
     for s in get_config().sources():
@@ -102,7 +102,7 @@ def _chunk_sources() -> list[dict[str, Any]]:
 
 
 def _chunk_geography() -> list[dict[str, Any]]:
-    from .config import get_config
+    from ..config import get_config
 
     chunks = []
     for e in get_config().geography_entities():

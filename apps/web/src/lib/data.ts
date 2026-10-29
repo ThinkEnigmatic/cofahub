@@ -1,5 +1,5 @@
 /** Typed data-fetch helpers over the COFAHUB API. */
-import { api } from "./api";
+import { api, apiPost } from "./api";
 import type {
   CompoundFlag,
   DroughtStatus,
@@ -42,3 +42,18 @@ export const getPlans = () =>
 
 /** A station with its drought level resolved (for the rail dots). */
 export type StationWithLevel = Station & { level: string | null };
+
+// RAG knowledge-base query.
+export interface RagChunk {
+  title: string;
+  source: string;
+  kind: string;
+  text: string;
+  score: number;
+}
+export interface RagResult {
+  chunks: RagChunk[];
+  answer: string | null;
+}
+export const ragQuery = (query: string, generate = false) =>
+  apiPost<RagResult>("/rag/query", { query, top_k: 5, generate });

@@ -319,7 +319,7 @@
 }
 .login .btn {
   background: var(--nn-key);
-  color: var(--nn-abyss);
+  color: #05050a;
   border: none;
   border-radius: 4px;
   padding: 0.75rem;
@@ -419,6 +419,36 @@
   color: var(--nn-ink-3);
   font-family: var(--font-mono);
   font-size: 0.75rem;
+}
+
+/* ── Buttons + ask input (shared) ───────────────────────────────────── */
+.btn {
+  background: var(--nn-key);
+  color: #05050a; /* dark ink on the cyan key, both themes */
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: filter var(--t-tap) var(--ease);
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.ask-input {
+  background: var(--nn-raised);
+  border: 1px solid var(--nn-line);
+  border-radius: 4px;
+  color: var(--nn-ink);
+  padding: 0.7rem 0.8rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+.ask-input:focus {
+  outline: none;
+  border-color: var(--nn-key-glow);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nn-key-glow) 22%, transparent);
 }
 
 /* ── Responsive: rail collapses to a top strip on narrow screens ───── */
