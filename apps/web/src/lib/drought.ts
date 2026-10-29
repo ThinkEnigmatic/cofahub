@@ -9,6 +9,13 @@ export const DROUGHT_SEVERITY: Record<DroughtLevel, string> = {
   D4: "Exceptional drought",
 };
 
+/** USDM impact-designation labels. */
+export const USDM_IMPACT: Record<string, string> = {
+  S: "short-term impacts",
+  L: "long-term impacts",
+  SL: "short- and long-term impacts",
+};
+
 /** CSS variable for each drought level (matches the rail/map ramp). */
 export const DROUGHT_VAR: Record<DroughtLevel, string> = {
   D0: "var(--d0)",

@@ -140,6 +140,8 @@ _ARCHIVE_LOCK = threading.Lock()
 _LAST_ARCHIVE = {"t": 0.0}
 _ARCHIVE_MIN_INTERVAL = 1.5  # seconds
 
+_ROOT = Path(__file__).resolve().parents[2]
+
 
 def _rate_limited_archive() -> None:
     with _ARCHIVE_LOCK:
@@ -416,6 +418,17 @@ def trends(geo_id: str):
 @app.get("/api/plans", dependencies=[Depends(_auth)])
 def plans():
     return camelize(NATIONAL_PLANS)
+
+
+@app.get("/api/usdm", dependencies=[Depends(_auth)])
+def usdm():
+    """Official U.S. Drought Monitor D0–D4 ranking for the FAS (source of truth)."""
+    from .ingestion.usdm import UsdmAdapter
+
+    def load():
+        return camelize(UsdmAdapter(_ROOT).get_latest())
+
+    return CACHE.get("usdm", load)
 
 
 @app.post("/api/rag/query", dependencies=[Depends(_auth)])

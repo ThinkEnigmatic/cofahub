@@ -4,11 +4,13 @@ import Readout from "../components/Readout";
 import { getTrends, getVerification } from "../lib/data";
 import { useSelection } from "../lib/selection";
 import { useStation } from "../lib/useStation";
+import { useUsdm } from "../lib/useUsdm";
 import type { Trend, Verification } from "../lib/types";
 
 export default function Drought() {
   const { geoId } = useSelection();
   const { drought } = useStation(geoId);
+  const usdm = useUsdm();
   const [verification, setVerification] = useState<Verification | null>(null);
   const [trends, setTrends] = useState<{ rainfall?: Trend; tmax?: Trend } | null>(null);
 
@@ -19,20 +21,27 @@ export default function Drought() {
     getTrends(geoId).then((t) => setTrends(t.available ? t : null)).catch(() => {});
   }, [geoId]);
 
+  const usdmStation = usdm?.stations?.[geoId];
+
   return (
     <div className="section">
       <div className="section-head">
         <h1>Drought &amp; water</h1>
         <p className="deck">
-          The four USGS western-Pacific indices — 1/3/6-month Rainfall Index and the PEAC
-          4/8-inch traffic light — on ERA5, with forecast verification and the long-term
+          The official U.S. Drought Monitor category leads; the four USGS
+          western-Pacific indices — 1/3/6-month Rainfall Index and the PEAC 4/8-inch
+          traffic light — follow, on ERA5, with forecast verification and the long-term
           station trend.
         </p>
       </div>
 
       {/* Drought level — the hero indicator. */}
       <DroughtLevel
-        level={drought?.d0D4 ?? null}
+        ranked={!!usdmStation}
+        usdmLevel={usdmStation?.level ?? null}
+        usdmImpact={usdmStation?.impact ?? null}
+        usdmDate={usdm?.date ?? null}
+        localLevel={drought?.d0D4 ?? null}
         percentile={drought?.percentile ?? null}
         latestMonth={drought?.latestMonth ?? null}
       />

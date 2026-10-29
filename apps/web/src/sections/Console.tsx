@@ -7,12 +7,14 @@ import { getEnso } from "../lib/data";
 import { useSelection } from "../lib/selection";
 import { useStation } from "../lib/useStation";
 import { useStations } from "../lib/useStations";
+import { useUsdm } from "../lib/useUsdm";
 import type { EnsoState } from "../lib/types";
 
 export default function Console() {
   const { geoId } = useSelection();
   const { drought, marine, seaLevel, compound, rainfall } = useStation(geoId);
   const { stations, levels } = useStations();
+  const usdm = useUsdm();
   const [enso, setEnso] = useState<EnsoState | null>(null);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export default function Console() {
 
   const station = stations.find((s) => s.geoId === geoId);
   const name = station?.name ?? geoId;
+  const usdmStation = usdm?.stations?.[geoId];
 
   return (
     <div className="section">
@@ -58,10 +61,11 @@ export default function Console() {
 
       {/* Satellite map — the regional situation. */}
       <div className="map-panel">
-        <FASMap stations={stations} levels={levels} />
+        <FASMap stations={stations} levels={levels} usdm={usdm} />
         <div className="map-legend">
-          <span className="mono-label">Drought level</span>
-          <span><i style={{ background: "#00a2c8" }} /> none</span>
+          <span className="mono-label">US Drought Monitor</span>
+          <span><i style={{ background: "#8a8f98" }} /> not ranked</span>
+          <span><i style={{ background: "#00a2c8" }} /> no drought</span>
           <span><i style={{ background: "#c87600" }} /> D0</span>
           <span><i style={{ background: "#e0604e" }} /> D1</span>
           <span><i style={{ background: "#ff4fa3" }} /> D2</span>
@@ -107,7 +111,11 @@ export default function Console() {
       {/* Drought level — the hero indicator for this atoll. */}
       <div style={{ marginTop: "1.25rem" }}>
         <DroughtLevel
-          level={drought?.d0D4 ?? null}
+          ranked={!!usdmStation}
+          usdmLevel={usdmStation?.level ?? null}
+          usdmImpact={usdmStation?.impact ?? null}
+          usdmDate={usdm?.date ?? null}
+          localLevel={drought?.d0D4 ?? null}
           percentile={drought?.percentile ?? null}
           latestMonth={drought?.latestMonth ?? null}
         />

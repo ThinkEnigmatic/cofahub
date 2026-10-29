@@ -8,6 +8,7 @@ import {
   getSeaLevel,
   getStations,
   getTrends,
+  getUsdm,
   getVerification,
 } from "../lib/data";
 import { useSelection } from "../lib/selection";
@@ -20,6 +21,7 @@ import type {
   SeaLevelState,
   Station,
   Trend,
+  UsdmStatus,
   Verification,
 } from "../lib/types";
 
@@ -45,6 +47,15 @@ function num(v: number | null | undefined, digits = 0, suffix = ""): string {
 function signed(v: number | null | undefined, digits = 1): string {
   if (v == null || Number.isNaN(v)) return "—";
   return `${v >= 0 ? "+" : ""}${v.toFixed(digits)}`;
+}
+
+function ordinal(n: number): string {
+  const r10 = n % 10;
+  const r100 = n % 100;
+  if (r10 === 1 && r100 !== 11) return `${n}st`;
+  if (r10 === 2 && r100 !== 12) return `${n}nd`;
+  if (r10 === 3 && r100 !== 13) return `${n}rd`;
+  return `${n}th`;
 }
 
 /** A single label/value row in a report section. */
@@ -74,6 +85,7 @@ export default function PrintReport() {
   const [rainfall, setRainfall] = useState<RainfallSeries | null>(null);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [trends, setTrends] = useState<{ rainfall?: Trend; tmax?: Trend } | null>(null);
+  const [usdm, setUsdm] = useState<UsdmStatus | null>(null);
   const [stamp, setStamp] = useState("");
 
   useEffect(() => {
@@ -91,6 +103,7 @@ export default function PrintReport() {
     setRainfall(null);
     setVerification(null);
     setTrends(null);
+    setUsdm(null);
 
     (async () => {
       const results = await Promise.allSettled([
@@ -103,10 +116,11 @@ export default function PrintReport() {
         getRainfall(geoId),
         getVerification(geoId),
         getTrends(geoId),
+        getUsdm(),
       ]);
       if (cancelled) return;
 
-      const [stationsR, ensoR, droughtR, marineR, seaLevelR, compoundR, rainfallR, verifR, trendsR] = results;
+      const [stationsR, ensoR, droughtR, marineR, seaLevelR, compoundR, rainfallR, verifR, trendsR, usdmR] = results;
       if (stationsR.status === "fulfilled") {
         setStation(stationsR.value.find((s) => s.geoId === geoId) ?? null);
       }
@@ -120,6 +134,7 @@ export default function PrintReport() {
       if (trendsR.status === "fulfilled") {
         setTrends(trendsR.value.available ? trendsR.value : null);
       }
+      if (usdmR.status === "fulfilled") setUsdm(usdmR.value.ok ? usdmR.value : null);
     })();
 
     return () => {
@@ -130,6 +145,7 @@ export default function PrintReport() {
   const name = station?.name ?? geoId;
   const country = station?.countryName ?? "";
   const recentMonths = rainfall && rainfall.months.length ? rainfall.months.slice(-12) : [];
+  const usdmStation = usdm?.stations?.[geoId];
 
   return (
     <article className="print-report">
@@ -173,7 +189,22 @@ export default function PrintReport() {
           <>
             <Row
               k="Drought level"
-              v={drought.d0D4 ? `${drought.d0D4} — ${DROUGHT_SEVERITY[drought.d0D4]}` : "no drought"}
+              v={
+                usdmStation
+                  ? usdmStation.level
+                    ? `${usdmStation.level} — ${DROUGHT_SEVERITY[usdmStation.level]} (USDM)`
+                    : "no drought (USDM)"
+                  : "not ranked by USDM"
+              }
+            />
+            <Row k="USDM date" v={usdm?.date ?? "—"} />
+            <Row
+              k="Local estimate"
+              v={
+                drought?.d0D4
+                  ? `${drought.d0D4} — ${DROUGHT_SEVERITY[drought.d0D4]} (precipitation percentile)`
+                  : "—"
+              }
             />
             <Row
               k="PEAC 4/8-inch index"
@@ -183,7 +214,7 @@ export default function PrintReport() {
               k="Monthly rainfall"
               v={
                 drought.monthlyMm != null
-                  ? `${num(drought.monthlyMm, 0)} mm  (median ${num(drought.climMedianMm, 0)} mm, ${drought.percentile != null ? `${(drought.percentile * 100).toFixed(0)}th` : "—"} percentile)`
+                  ? `${num(drought.monthlyMm, 0)} mm  (median ${num(drought.climMedianMm, 0)} mm, ${drought.percentile != null ? `${ordinal(Math.round(drought.percentile * 100))}` : "—"} percentile)`
                   : "—"
               }
             />

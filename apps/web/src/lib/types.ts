@@ -102,3 +102,19 @@ export interface Trend {
   end: string;
   mannKendall: { tau: number; pValue: number; trend: string | null };
 }
+
+/** A single island's official USDM ranking. */
+export interface UsdmStation {
+  level: DroughtLevel | null;
+  impact: "S" | "L" | "SL" | null;
+  usdmName: string;
+}
+
+/** The official U.S. Drought Monitor status for the FAS (source of truth). */
+export interface UsdmStatus {
+  ok: boolean;
+  date: string;
+  sourceName: string;
+  sourceUrl: string;
+  stations: Record<string, UsdmStation>;
+}

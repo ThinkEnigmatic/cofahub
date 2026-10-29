@@ -313,6 +313,12 @@
   font-size: 0.7rem;
   color: var(--nn-ink-2);
 }
+.drought-hero-local {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--nn-ink-3);
+  margin-top: 0.15rem;
+}
 
 /* Drought-level badge inside Leaflet popups (hex — popup bg is light). */
 .map-d-level {

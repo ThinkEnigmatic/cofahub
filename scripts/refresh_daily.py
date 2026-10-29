@@ -5,9 +5,11 @@ Runs once per 24 hours (launchd ``com.ben.cofahub-refresh``) and:
 
 1. re-fetches the ERA5 daily climate for every station (refreshing the 7-day
    parquet cache that feeds the drought monitor + water balance),
-2. rebuilds the RAG knowledge index (docs + national plans + data-source
+2. re-downloads the official U.S. Drought Monitor OCONUS shapefile (the source
+   of truth for the D0–D4 ranking; released weekly, checked daily),
+3. rebuilds the RAG knowledge index (docs + national plans + data-source
    catalog + geography) so retrieval stays in sync with the code,
-3. refreshes the other live sources through their adapters (ENSO, marine, tide
+4. refreshes the other live sources through their adapters (ENSO, marine, tide
    gauges) so their file caches are warm.
 
 Everything is best-effort and logged; a single source failing never aborts the
@@ -23,6 +25,7 @@ from pathlib import Path
 _SRC = Path(__file__).resolve().parents[1] / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 from cofa_forward.config import get_config  # noqa: E402
 from cofa_forward.geography.registry import GeographyRegistry  # noqa: E402
@@ -85,12 +88,31 @@ def _rebuild_rag() -> None:
     print(f"  {len(chunks)} chunks → {path}")
 
 
+def _refresh_usdm() -> None:
+    from cofa_forward.ingestion.usdm import UsdmAdapter
+
+    print("==> refreshing U.S. Drought Monitor (D0–D4 source of truth)…")
+    try:
+        latest = UsdmAdapter(_PROJECT_ROOT).get_latest(force=True)
+        if latest.get("ok"):
+            ranked = {g: s for g, s in latest["stations"].items() if s["level"]}
+            print(
+                f"  USDM {latest['date']}: {len(ranked)} ranked drought "
+                f"(of {len(latest['stations'])} ranked islands)"
+            )
+        else:
+            print(f"  USDM: FAILED ({latest.get('error')})")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  USDM: FAILED ({exc})")
+
+
 def main() -> int:
     started = time.time()
     cfg = get_config()
     registry = GeographyRegistry(cfg.geography_entities())
 
     _refresh_era5(registry)
+    _refresh_usdm()
     _rebuild_rag()
     _refresh_sources()
 

@@ -2,24 +2,31 @@ import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip } from "react-lea
 import "leaflet/dist/leaflet.css";
 import { DROUGHT_HEX, DROUGHT_SEVERITY } from "../lib/drought";
 import { useSelection } from "../lib/selection";
-import type { DroughtLevel, Station } from "../lib/types";
+import type { DroughtLevel, Station, UsdmStatus } from "../lib/types";
 
 interface FASMapProps {
   stations: Station[];
+  /** Local precipitation-percentile estimate (geoId -> D0-D4 or null). */
   levels: Record<string, string | null>;
+  /** Official U.S. Drought Monitor status (source of truth for the D ranking). */
+  usdm: UsdmStatus | null;
 }
 
-const NORMAL_COLOR = "#00a2c8";
+const NO_DROUGHT_COLOR = "#00a2c8"; // USDM-ranked, no drought
+const UNRANKED_COLOR = "#8a8f98"; // not individually ranked by USDM
 
-function colorFor(level: string | null): string {
-  return level ? DROUGHT_HEX[level as DroughtLevel] ?? NORMAL_COLOR : NORMAL_COLOR;
+/** Marker color from the official USDM category (falls back to "not ranked"). */
+function colorFor(geoId: string, usdm: UsdmStatus | null): string {
+  const s = usdm?.stations?.[geoId];
+  if (!s) return UNRANKED_COLOR;
+  return s.level ? DROUGHT_HEX[s.level as DroughtLevel] : NO_DROUGHT_COLOR;
 }
 
 const ESRI_IMAGERY =
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
-/** The FAS satellite map — station markers coloured by current drought level. */
-export default function FASMap({ stations, levels }: FASMapProps) {
+/** The FAS satellite map — markers coloured by the official USDM drought level. */
+export default function FASMap({ stations, levels, usdm }: FASMapProps) {
   const { geoId, setGeoId } = useSelection();
   const points = stations.filter((s) => s.entityType !== "country");
 
@@ -39,7 +46,9 @@ export default function FASMap({ stations, levels }: FASMapProps) {
         maxZoom={19}
       />
       {points.map((s) => {
-        const level = levels[s.geoId] ?? null;
+        const usdmStation = usdm?.stations?.[s.geoId];
+        const level = usdmStation?.level ?? null;
+        const local = levels[s.geoId] ?? null;
         const selected = s.geoId === geoId;
         return (
           <CircleMarker
@@ -47,9 +56,9 @@ export default function FASMap({ stations, levels }: FASMapProps) {
             center={[s.lat, s.lon]}
             radius={selected ? 9 : 6}
             pathOptions={{
-              color: selected ? "#ffffff" : colorFor(level),
+              color: selected ? "#ffffff" : colorFor(s.geoId, usdm),
               weight: selected ? 2.5 : 1.2,
-              fillColor: colorFor(level),
+              fillColor: colorFor(s.geoId, usdm),
               fillOpacity: selected ? 1 : 0.85,
             }}
             eventHandlers={{ click: () => setGeoId(s.geoId) }}
@@ -71,7 +80,18 @@ export default function FASMap({ stations, levels }: FASMapProps) {
               <br />
               {s.countryName} · {s.geoId}
               <br />
-              {level ? `Drought level: ${level}` : "No drought"}
+              {usdmStation ? (
+                <span>
+                  USDM: {level ? level : "no drought"}
+                  {usdmStation.impact ? ` (${usdmStation.impact})` : ""}
+                </span>
+              ) : (
+                <span>USDM: not ranked</span>
+              )}
+              <br />
+              <span style={{ color: "var(--nn-ink-2)" }}>
+                Local estimate: {local ?? "—"}
+              </span>
               <br />
               {s.population != null && (
                 <>

@@ -8,11 +8,13 @@ import type {
   SeaLevelState,
   Station,
   Trend,
+  UsdmStatus,
   Verification,
 } from "./types";
 
 export const getStations = () => api<Station[]>("/stations");
 export const getEnso = () => api<EnsoState>("/enso");
+export const getUsdm = () => api<UsdmStatus>("/usdm");
 export const getDrought = (geoId: string) => api<DroughtStatus>("/drought/" + geoId);
 export const getMarine = (geoId: string) => api<MarineState>("/marine/" + geoId);
 export const getSeaLevel = (geoId: string) => api<SeaLevelState>("/sealevel/" + geoId);

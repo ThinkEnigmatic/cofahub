@@ -1,4 +1,5 @@
 const SOURCES = [
+  ["U.S. Drought Monitor (USDM)", "official D0–D4 drought ranking (weekly, source of truth)"],
   ["NOAA CPC ONI", "live ENSO index + derived phase"],
   ["NOAA CPC ENSO Discussion", "official status statement"],
   ["PEAC rainfall outlook", "tercile seasonal outlook (freshness-flagged)"],
@@ -34,6 +35,7 @@ export default function About() {
         <ul className="stack" style={{ listStyle: "none", color: "var(--nn-ink-2)", fontSize: "0.9rem" }}>
           <li>— Missing data stays missing; nothing is fabricated.</li>
           <li>— Every number carries provenance (source + retrieved time).</li>
+          <li>— The D0–D4 ranking is the official U.S. Drought Monitor (weekly); the precipitation-percentile figure is a separate, clearly-labelled local estimate.</li>
           <li>— Classification is deterministic and verified against the USGS R scripts.</li>
           <li>— Drought is a water balance (P − ET), not rainfall alone.</li>
           <li>— The AI layer is a read-only, sandboxed analyst over a data snapshot.</li>
