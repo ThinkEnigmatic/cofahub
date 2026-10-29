@@ -436,6 +436,17 @@ def get_sea_level(geo_id: str) -> dict:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_ssebop_et(lat: float, lon: float, yyyymm: str = "202106") -> dict:
+    """USGS SSEBop actual ET (mm) for a single month at a point.
+
+    The free FEWS NET portal ends at Jun 2021; tiny atolls return NaN (land-only).
+    """
+    from ..ingestion.ssebop import SsebopAdapter
+
+    return SsebopAdapter(config=load_config()).get_et(lat, lon, yyyymm)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_water_balance(geo_id: str, lat: float, lon: float) -> dict:
     """Meteorological water balance (P − PET) from ERA5 daily climate.
 

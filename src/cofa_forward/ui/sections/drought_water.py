@@ -23,6 +23,7 @@ from ..state import (
     get_ghcnd_monthly,
     get_real_rainfall,
     get_sample_rainfall,
+    get_ssebop_et,
     get_water_balance,
     load_config,
     load_registry,
@@ -255,12 +256,27 @@ def render() -> None:
             )
         st.caption(
             "Hargreaves (1985) potential evapotranspiration from ERA5 2m temperature. "
-            "PET is atmospheric demand, not actual ET (the USGS SSEBop actual-ET product, "
-            "available 2003–2021, would refine this). A meteorological balance only — it "
+            "PET is atmospheric demand, not actual ET. A meteorological balance only — it "
             "ignores soil/groundwater storage and human abstraction."
         )
     else:
         st.info(f"Water balance unavailable: {wb.get('error')}", icon="ℹ️")
+
+    # Actual-ET cross-check (USGS SSEBop, land-only, 2003–2021).
+    if st.button("Cross-check with SSEBop actual ET (Jun 2021)"):
+        with st.spinner("Downloading SSEBop ET (~73 MB)…"):
+            ssebop = get_ssebop_et(entity.latitude, entity.longitude)
+        if ssebop.get("ok") and ssebop["et_mm"] == ssebop["et_mm"]:
+            st.caption(
+                f"SSEBop actual ET (Jun 2021): **{ssebop['et_mm']:.0f} mm/month**. "
+                "Actual ET ≤ PET; the gap widens in dry months. Land-only — tiny atolls "
+                "may be unavailable."
+            )
+        else:
+            st.caption(
+                "SSEBop actual ET unavailable here (land-only 1-km product; tiny atolls "
+                "fall in ocean pixels)."
+            )
 
     st.divider()
 

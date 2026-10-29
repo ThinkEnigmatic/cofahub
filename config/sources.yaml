@@ -216,6 +216,21 @@ sources:
     verification_date: "2026-10-28"
     notes: "Point extraction via COG range requests (rasterio /vsicurl). Land-masked; sub-pixel islands use a documented max-valid-pixel heuristic. ERA5 preferred for ocean-adjacent atolls."
 
+  - id: usgs-ssebop
+    name: "USGS SSEBop actual evapotranspiration (FEWS NET monthly)"
+    publisher: "USGS EROS"
+    url: "https://www.usgs.gov/centers/eros/science/operational-simplified-surface-energy-balance-ssebop"
+    api: "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/fews/web/global/monthly/eta/downloads/m{YYYYMM}.zip"
+    license: "U.S. Government public domain"
+    geographic_coverage: "Global land (~1 km) — tiny atolls fall in ocean (nodata) pixels"
+    spatial_resolution: "1 km"
+    temporal_resolution: "monthly, Jan 2003 – Jun 2021 (free portal; later years ScienceBase-gated)"
+    auth: "none (FEWS NET portal)"
+    variables: "actual evapotranspiration (mm/month)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "Actual ET (the complement to Hargreaves PET). Land-only — valid for high islands (Pohnpei/Kosrae/Yap/Weno/Babeldaob), unavailable for tiny atolls. ~73 MB/month; sampled with the max-valid-pixel heuristic."
+
   - id: persiann-cdr
     name: "PERSIANN-CDR precipitation (NOAA CDR)"
     publisher: "NOAA NCEI / UC Irvine CHRS"
