@@ -27,6 +27,7 @@ PAGES = [
     "Tropical Cyclones",
     "Historical Impacts",
     "Island Profiles",
+    "AI Analysis",
     "Reports",
     "Data Sources & System Health",
 ]

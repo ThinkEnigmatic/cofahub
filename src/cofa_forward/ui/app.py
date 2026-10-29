@@ -20,6 +20,7 @@ import streamlit as st  # noqa: E402
 from cofa_forward import __version__  # noqa: E402
 from cofa_forward.logging_config import setup_logging  # noqa: E402
 from cofa_forward.ui.sections import (  # noqa: E402
+    ai_analysis,
     data_health,
     drought_water,
     el_nino_compare,
@@ -83,6 +84,7 @@ PAGES = {
     "Tropical Cyclones": tropical_cyclones.render,
     "Historical Impacts": historical_impacts.render,
     "Island Profiles": island_profiles.render,
+    "AI Analysis": ai_analysis.render,
     "Reports": reports.render,
     "Data Sources & System Health": data_health.render,
 }
