@@ -17,6 +17,7 @@ data/interim/
 data/processed/
 data/cache/
 data/snapshot/
+data/tiles/
 data/*.db
 data/*.db-*
 data/samples/*.parquet

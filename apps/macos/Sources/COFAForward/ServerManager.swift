@@ -8,9 +8,11 @@ import Foundation
 /// displayed in the app's WKWebView.
 struct ServerManager {
     let port = 8501
+    let tilePort = 8502
     var serverURL: URL { URL(string: "http://127.0.0.1:\(port)")! }
 
     private var process: Process?
+    private var tileProcess: Process?
 
     /// Resolve the cofa-forward app directory (env override or ~/cofa-forward).
     private static var appDir: URL {
@@ -53,6 +55,17 @@ struct ServerManager {
         return (resolveUv(), ["run", "streamlit"] + commonArgs)
     }
 
+    /// Build the argv for the offline tile server (always started so offline
+    /// mode works seamlessly; it serves local tiles from data/tiles).
+    private static func tileServerCommand() -> (String, [String]) {
+        let appDir = self.appDir
+        let venvPython = appDir.appendingPathComponent(".venv/bin/python")
+        if FileManager.default.fileExists(atPath: venvPython.path) {
+            return (venvPython.path, ["-m", "cofa_forward.tileserver"])
+        }
+        return (resolveUv(), ["run", "python", "-m", "cofa_forward.tileserver"])
+    }
+
     mutating func start(offline: Bool, onStatus: @escaping (AppState.ServerStatus) -> Void) {
         stop()
         let (exe, args) = Self.streamlitCommand(offline: offline)
@@ -78,6 +91,7 @@ struct ServerManager {
         do {
             try p.run()
             process = p
+            startTileServer()
             // Give Streamlit a moment to bind; then report running.
             DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
                 if p.isRunning {
@@ -91,9 +105,27 @@ struct ServerManager {
         }
     }
 
+    private mutating func startTileServer() {
+        guard tileProcess == nil else { return }
+        let (exe, args) = Self.tileServerCommand()
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: exe)
+        p.arguments = args
+        p.currentDirectoryURL = Self.appDir
+        do {
+            try p.run()
+            tileProcess = p
+        } catch {
+            // Tile server is optional; the map falls back to online basemaps.
+            tileProcess = nil
+        }
+    }
+
     mutating func stop() {
         process?.terminate()
         process = nil
+        tileProcess?.terminate()
+        tileProcess = nil
     }
 
     /// Run the offline-snapshot prefetch and return its stdout.

@@ -24,6 +24,7 @@ import folium
 import pandas as pd
 
 from ..geography.registry import GeographyRegistry
+from ..storage.snapshot import is_offline
 
 # Consistent entity styling (shared art direction with the Plotly map).
 ENTITY_STYLE = {
@@ -97,8 +98,13 @@ BASEMAPS: dict[str, dict] = {
         "attr": "© OpenStreetMap contributors",
         "max_native_zoom": 19,
         "max_zoom": 19,
+        "offline": True,  # served from the local tile cache in offline mode
     },
 }
+
+# Local tile server (cofa_forward.tileserver) used for offline OSM tiles.
+_TILE_SERVER_URL = "http://127.0.0.1:8502/{z}/{x}/{y}.png"
+_OFFLINE_DEFAULT = "OpenStreetMap (streets)"
 
 _DEFAULT_BASEMAP = "Esri satellite (hi-res)"
 
@@ -156,11 +162,14 @@ def _resolved_basemap(name: str) -> dict:
         spec["url"] = (
             f"{_GIBS_BASE}/{spec['layer']}/default/{date}/{spec['tms']}/{{z}}/{{y}}/{{x}}.jpg"
         )
+    elif is_offline() and spec.get("offline"):
+        spec["url"] = _TILE_SERVER_URL
     return spec
 
 
 def _add_basemaps(m: folium.Map) -> None:
     """Attach all basemaps and a layer control (basemaps are mutually exclusive)."""
+    default = _OFFLINE_DEFAULT if is_offline() else _DEFAULT_BASEMAP
     for name in BASEMAPS:
         resolved = _resolved_basemap(name)
         folium.TileLayer(
@@ -171,7 +180,7 @@ def _add_basemaps(m: folium.Map) -> None:
             max_zoom=resolved.get("max_zoom", 19),
             overlay=False,
             control=True,
-            show=(name == _DEFAULT_BASEMAP),
+            show=(name == default),
         ).add_to(m)
     _add_overlays(m)
     folium.LayerControl(collapsed=False, position="topright").add_to(m)

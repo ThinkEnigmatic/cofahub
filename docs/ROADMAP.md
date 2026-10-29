@@ -61,12 +61,25 @@
    `FileCache(serve_stale=True)`, `data/raw/` persistence, and a structured
    `data/snapshot/` store + `scripts/prefetch_snapshot.py` + `deploy_macos_app.sh`.
 
+## v0.3.1 (2026-10-29) — IMERG live-verify + offline basemap tiles
+
+* **IMERG live-verified** — the EDL bearer token works (`search_data` returns
+  granules for both Final Run historical and Early Run near-real-time). Added
+  `imerg.ensure_earthdata_token()` (auto-loads `~/.config/cofa-forward/earthdata_token`)
+  and a `product` selector (`final`/`early`/`late`) fixing the near-real-time vs
+  Final-Run-lag mismatch. The `test_live_imerg_daily` network test passes.
+* **Offline basemap tiles** — `visualization/tiles.py` (OSM XYZ tile math +
+  prefetch), `scripts/prefetch_tiles.py`, and `cofa_forward.tileserver` (stdlib
+  loopback tile server on :8502). Offline mode swaps the OSM basemap to the local
+  server; the macOS app launches the tile server automatically.
+
 ## Next (prioritized)
 
-1. **Verify IMERG live** — supply Earthdata credentials (`.netrc` or
-   `earthaccess.login`) to complete `implemented_and_tested` for the IMERG adapter.
-2. USGS western-Pacific drought (P1RXUMV3) manual import; Himawari IR bands.
-3. Offline basemap-tile caching (imagery tiles currently need a connection).
+1. **USGS western-Pacific drought (P1RXUMV3)** — manual browser import
+   (ScienceBase bot-blocks); covers FSM/RMI (not Palau).
+2. Himawari IR bands + region-zoom tiles (visible full-disk only today).
+3. Offline satellite tiles (Esri ToS / GIBS low zoom means OSM streets is the
+   offline imagery; a proper open satellite source would remove this gap).
 
 ## Deferred / not attempted
 

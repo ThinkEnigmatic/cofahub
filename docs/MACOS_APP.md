@@ -40,6 +40,24 @@ uv run python scripts/prefetch_snapshot.py --locations RMI-MAJ
 The manifest records what was captured and when; a source that failed to fetch is
 recorded as **missing** (never fabricated) and surfaced on the Data Sources page.
 
+### Offline map tiles
+
+`scripts/prefetch_tiles.py` downloads OpenStreetMap tiles (region z0-9 + a window
+around each location at z10-11) into `data/tiles/`, and `cofa_forward.tileserver`
+serves them on `127.0.0.1:8502`. In offline mode the map's "OpenStreetMap
+(streets)" basemap is swapped to the local server, so the map *and* its imagery
+work without a connection.
+
+```bash
+uv run python scripts/prefetch_tiles.py
+uv run python -m cofa_forward.tileserver          # the macOS app starts this automatically
+```
+
+OSM is used for offline imagery because it is openly licensed (ODbL, attribution
+required), permits caching for light personal use, and reaches high zoom. The
+satellite basemaps (Esri/GIBS) are **not** cached offline — Esri restricts bulk
+caching and GIBS true-colour caps at ~zoom 9 where atolls are only a few pixels.
+
 ## Build & deploy
 
 ```bash
@@ -58,9 +76,11 @@ scripts/deploy_macos_app.sh --host bens-macbook-pro.local [--snapshot]
 
 ## Honest limitations
 
-* **The satellite basemaps (Esri/GIBS tiles) load in the browser and need a
-  connection** even in offline mode — the map *data* (markers, boundaries,
-  overlays) is local, but the imagery tiles are fetched by Leaflet client-side.
+* **Offline imagery is OpenStreetMap streets, not satellite.** The satellite
+  basemaps (Esri/GIBS) still need a connection — Esri restricts bulk caching and
+  GIBS true-colour caps at ~zoom 9. The offline tile cache covers OSM (region
+  z0-9 + per-location z10-11) for a genuinely offline map with coastlines and
+  place names, but not high-resolution satellite pictures of individual atolls.
 * The offline snapshot is a **point-in-time capture**, not live data; the UI shows
   the snapshot age.
 * The app is **not sandboxed** (ad-hoc signed) because it must launch a Python

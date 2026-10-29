@@ -12,11 +12,35 @@ verification requires Earthdata credentials (not present in this environment).
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import numpy as np
 
 from .base import BaseAdapter
 
-SHORT_NAME = "GPM_3IMERGDF"  # IMERG Final Run, daily
+SHORT_NAME = "GPM_3IMERGDF"  # IMERG Final Run, daily (historical; ~3.5-month lag)
+EARLY_SHORT_NAME = "GPM_3IMERGHHE"  # IMERG Early Run (near-real-time; ~4-hour lag)
+LATE_SHORT_NAME = "GPM_3IMERGHHL"  # IMERG Late Run (near-real-time; ~14-hour lag)
+
+_TOKEN_FILE = Path.home() / ".config" / "cofa-forward" / "earthdata_token"
+
+
+def ensure_earthdata_token() -> None:
+    """Load the Earthdata bearer token from the local token file if not in env.
+
+    Makes the adapter self-contained: the operator stores the EDL bearer token at
+    ``~/.config/cofa-forward/earthdata_token`` (0600) and it is exported as
+    ``EARTHDATA_TOKEN`` automatically. The token is short-lived (~1 hour), so it
+    must be refreshed periodically; this only avoids a manual export per process.
+    """
+    if os.environ.get("EARTHDATA_TOKEN"):
+        return
+    if _TOKEN_FILE.is_file():
+        token = _TOKEN_FILE.read_text(encoding="utf-8").strip()
+        if token:
+            os.environ["EARTHDATA_TOKEN"] = token
+
 
 _PRECIP_VARS = ("precipitation", "precipitationCal", "GPM_3IMERGDF")
 
@@ -58,8 +82,15 @@ class ImergAdapter(BaseAdapter):
 
         return earthaccess.login(strategy=strategy)
 
-    def get_recent_daily(self, lat: float, lon: float, start: str, end: str) -> dict:
+    def get_recent_daily(
+        self, lat: float, lon: float, start: str, end: str, product: str = "final"
+    ) -> dict:
         """Fetch daily IMERG precipitation at a point over [start, end].
+
+        ``product`` selects the run: ``"final"`` (GPM_3IMERGDF, ~3.5-month lag,
+        default), ``"early"`` (GPM_3IMERGHHE, ~4-hour lag), or ``"late"``
+        (GPM_3IMERGHHL, ~14-hour lag). For near-real-time use ``"early"``/``"late"``;
+        ``"final"`` only extends to a few months ago.
 
         Requires authentication (``EARTHDATA_TOKEN`` or ``~/.netrc``) AND a one-time
         acceptance of the GPM IMERG End User License Agreement (EULA) via the
@@ -68,10 +99,17 @@ class ImergAdapter(BaseAdapter):
         """
         import earthaccess
 
+        short_name = {
+            "final": SHORT_NAME,
+            "early": EARLY_SHORT_NAME,
+            "late": LATE_SHORT_NAME,
+        }.get(product, product)
+
+        ensure_earthdata_token()
         try:
             earthaccess.login(strategy="all")
             results = earthaccess.search_data(
-                short_name=SHORT_NAME,
+                short_name=short_name,
                 temporal=(start, end),
                 count=60,
             )
