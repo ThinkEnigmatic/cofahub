@@ -286,6 +286,32 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
     }
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_ghcnd_trends(geo_id: str) -> dict:
+    """Long-term rainfall + temperature trends from the GHCNd station record."""
+
+    from ..climate.trends import trend_summary
+    from ..ingestion.ghcnd import FAS_STATIONS, GhcndAdapter
+
+    if geo_id not in FAS_STATIONS:
+        return {"ok": False, "error": f"no GHCNd station for {geo_id}"}
+    station_id, wmo = FAS_STATIONS[geo_id]
+    r = GhcndAdapter(cache=make_cache()).get_daily(station_id)
+    if not r.get("ok"):
+        return {"ok": False, "error": r.get("error")}
+    df = r["series"]
+    # Annual totals/means from the daily record.
+    precip_annual = df["prcp_mm"].resample("YE").sum(min_count=300)
+    tmax_annual = df["tmax_c"].resample("YE").mean()
+    return {
+        "ok": True,
+        "station_id": station_id,
+        "wmo": wmo,
+        "rainfall": trend_summary(precip_annual, "annual rainfall", "mm"),
+        "tmax": trend_summary(tmax_annual, "annual mean Tmax", "°C"),
+    }
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_sea_level(geo_id: str) -> dict:
     """Recent UHSLC tide-gauge sea level (mm) for the FAS stations."""

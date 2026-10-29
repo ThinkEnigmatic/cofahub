@@ -10,6 +10,7 @@ from ...visualization.charts import rainfall_timeseries
 from ..components.common import page_header, render_plotly, sample_banner
 from ..state import (
     get_all_indicators,
+    get_ghcnd_trends,
     get_location_climatology,
     get_sample_forecast,
     get_sample_impacts,
@@ -136,6 +137,40 @@ def render() -> None:
                     if v is not None
                 )
             )
+
+    st.divider()
+
+    # ---- Climate trends (GHCNd station record) ---- #
+    st.subheader("Climate trends (station record)")
+    with st.spinner("Computing trends from the station record…"):
+        trends = get_ghcnd_trends(geo_id)
+    if trends.get("ok"):
+        st.caption(
+            f"Station {trends['station_id']} (WMO {trends['wmo']}), "
+            f"{trends['rainfall']['start']}–{trends['rainfall']['end']}."
+        )
+        for key, label in (("rainfall", "Annual rainfall"), ("tmax", "Annual mean Tmax")):
+            t = trends[key]
+            if t["slope_per_decade"] == t["slope_per_decade"]:
+                arrow = (
+                    "↗"
+                    if t["verdict"] == "increasing"
+                    else ("↘" if t["verdict"] == "decreasing" else "→")
+                )
+                st.write(
+                    f"{arrow} **{label}**: {t['slope_per_decade']:+.1f} {t['unit']}/decade "
+                    f"(Mann-Kendall {t['mann_kendall']['trend']}, "
+                    f"p={t['mann_kendall']['p_value']:.3f})."
+                )
+            else:
+                st.write(f"**{label}**: insufficient record for a trend.")
+        st.caption(
+            "Trend = ordinary least-squares slope per decade over the station record; "
+            "significance by Mann-Kendall. Gauge data only — not adjusted for instrument "
+            "or station moves."
+        )
+    else:
+        st.caption(f"Climate trends unavailable: {trends.get('error')}.")
 
     st.divider()
 
