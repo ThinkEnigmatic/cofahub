@@ -20,6 +20,7 @@ from ..components.common import page_header, render_plotly, sample_banner
 from ..state import (
     get_chirps_monthly,
     get_drought_monitor,
+    get_ghcnd_monthly,
     get_real_rainfall,
     get_sample_rainfall,
     load_config,
@@ -185,6 +186,47 @@ def render() -> None:
         )
     else:
         st.info(f"Drought monitor unavailable: {monitor.get('error')}", icon="ℹ️")
+
+    st.divider()
+
+    # ---- Station ground truth (GHCNd) ---- #
+    st.subheader("Station ground truth (in-situ gauge)")
+    with st.spinner("Fetching GHCNd station data…"):
+        gauge = get_ghcnd_monthly(geo_id)
+    if gauge.get("ok"):
+        g = gauge["series"].dropna()
+        last = g.index[-1]
+        latest_mm = float(g.iloc[-1])
+        median_mm = float(g[g.index.month == last.month].median())
+        st.success(
+            f"{entity.name} — {gauge['station_id']} (WMO {gauge['wmo']}): "
+            f"{latest_mm:.0f} mm in {last.strftime('%b %Y')} vs "
+            f"{median_mm:.0f} mm climatological median ({last.strftime('%b')}).",
+            icon="🛰️",
+        )
+        # Bias vs the selected satellite/reanalysis source.
+        if source != "Sample (synthetic)" and monthly is not None and not monthly.empty:
+            sat = monthly.dropna()
+            if not sat.empty:
+                sat_median = float(sat[sat.index.month == last.month].median())
+                if median_mm > 0:
+                    bias = (sat_median / median_mm - 1.0) * 100.0
+                    st.caption(
+                        f"Bias check: {source} climatological median for {last.strftime('%b')} "
+                        f"is {sat_median:.0f} mm vs gauge {median_mm:.0f} mm "
+                        f"({bias:+.1f}%)."
+                    )
+        st.caption(
+            f"Record {g.index[0].strftime('%Y')}–{last.strftime('%Y')} "
+            f"({gauge['n_months']} months, {gauge['n_missing']} missing). Source: NOAA GHCNd "
+            "(public domain). The gauge is the independent check on the satellite/reanalysis."
+        )
+    else:
+        st.info(
+            f"No in-situ station for {entity.name} ({gauge.get('error')}). "
+            "Only the seven FAS airport stations have GHCNd records.",
+            icon="ℹ️",
+        )
 
     st.divider()
 

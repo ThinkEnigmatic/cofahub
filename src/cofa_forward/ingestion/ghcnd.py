@@ -52,21 +52,23 @@ def parse_ghcnd(csv_text: str) -> pd.DataFrame:
     """
     import io
 
-    df = pd.read_csv(io.StringIO(csv_text), parse_dates=["DATE"], low_memory=False)
-    out = pd.DataFrame(index=df["DATE"])
-    for col, outcol, cap in (
-        ("PRCP", "prcp_mm", _PRCAP_MAX_MM),
-        ("TMAX", "tmax_c", None),
-        ("TMIN", "tmin_c", None),
+    df = pd.read_csv(io.StringIO(csv_text), parse_dates=["DATE"], low_memory=False).set_index(
+        "DATE"
+    )
+    out = pd.DataFrame(index=df.index)
+    # GHCNd `access` CSVs report PRCP in tenths of mm and TMAX/TMIN in tenths of °C.
+    for col, outcol, scale in (
+        ("PRCP", "prcp_mm", 0.1),
+        ("TMAX", "tmax_c", 0.1),
+        ("TMIN", "tmin_c", 0.1),
     ):
-        vals = pd.to_numeric(df[col], errors="coerce")
+        vals = pd.to_numeric(df[col], errors="coerce") * scale
         attrs = df[f"{col}_ATTRIBUTES"].astype(str)
         qflag = attrs.str.split(",").str[1].fillna("")
         bad = qflag.apply(lambda q: any(c in _QA_FLAGS for c in q))
-        if cap is not None:
-            bad = bad | (vals > cap)
-        vals = vals.where(~bad)
-        out[outcol] = vals
+        if col == "PRCP":
+            bad = bad | (vals > _PRCAP_MAX_MM)
+        out[outcol] = vals.where(~bad)
     out = out.sort_index()
     return out[~out.index.duplicated(keep="last")]
 
@@ -109,21 +111,18 @@ class GhcndAdapter(BaseAdapter):
 
     def get_monthly(self, station_id: str, min_days_frac: float = 0.8) -> dict:
         """Monthly precipitation totals from the daily record (guard against gaps)."""
+        from ..drought.rainfall_metrics import monthly_totals
+
         r = self.get_daily(station_id)
         if not r.get("ok"):
             return r
-        df = r["series"]
-        monthly = df["prcp_mm"].resample("ME").sum(min_count=1)
-        # completeness guard: drop months with too few days (mirrors rainfall_metrics).
-        n_days = df["prcp_mm"].resample("ME").size()
-        dim = df["prcp_mm"].resample("ME").apply(lambda s: s.index.days_in_month[0])
-        monthly = monthly.where(n_days / dim >= min_days_frac)
-        monthly.index = monthly.index.to_period("M").to_timestamp(how="end")
+        daily = r["series"]["prcp_mm"]
+        monthly = monthly_totals(daily, min_days_frac=min_days_frac).rename("precip_mm")
         return {
             "ok": True,
             "source": self.source_id,
             "station_id": station_id,
-            "series": monthly.rename("precip_mm"),
+            "series": monthly,
             "n_months": int(len(monthly)),
             "n_missing": int(monthly.isna().sum()),
             "provenance": r["provenance"],

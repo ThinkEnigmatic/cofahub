@@ -287,6 +287,25 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_ghcnd_monthly(geo_id: str) -> dict:
+    """In-situ station monthly precipitation (GHCNd) — the ground truth.
+
+    Maps the registry geo_id to the FAS airport WMO station. Returns the monthly
+    series (mm) plus provenance. Only the seven airport stations are covered.
+    """
+    from ..ingestion.ghcnd import FAS_STATIONS, GhcndAdapter
+
+    if geo_id not in FAS_STATIONS:
+        return {"ok": False, "error": f"no GHCNd station for {geo_id}"}
+    station_id, wmo = FAS_STATIONS[geo_id]
+    adapter = GhcndAdapter(cache=make_cache())
+    r = adapter.get_monthly(station_id)
+    if r.get("ok"):
+        r["wmo"] = wmo
+    return r
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_drought_monitor(geo_id: str, lat: float, lon: float) -> dict:
     """Live drought-monitor status (USGS quintile Rainfall Index + D0–D4 method).
 

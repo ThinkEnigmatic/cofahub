@@ -115,6 +115,18 @@ def test_live_nws_guam_advisory():
     assert r.get("agency") == "PGUM"
 
 
+def test_live_ghcnd_station():
+    from cofa_forward.ingestion.ghcnd import FAS_STATIONS, GhcndAdapter
+
+    r = GhcndAdapter().get_monthly(FAS_STATIONS["RMI-MAJ"][0])
+    assert r["ok"], f"live GHCNd failed: {r.get('error')}"
+    s = r["series"].dropna()
+    assert len(s) > 600  # ~50+ years of monthly data
+    # Majuro's climatological October median should be a plausible ~200-500 mm.
+    oct_median = float(s[s.index.month == 10].median())
+    assert 150.0 < oct_median < 600.0
+
+
 def test_live_peac_outlook():
     from cofa_forward.ingestion.peac import PeacRainfallOutlookAdapter
 
