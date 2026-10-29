@@ -141,6 +141,34 @@ def get_live_enso() -> dict:
     return adapter.get_oni()
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_enso_analogs() -> dict:
+    """Rank historical ENSO episodes by peak-ONI proximity to the current event."""
+    from ..climate.enso_analog import enso_analogs
+
+    live = get_live_enso()
+    if not live.get("ok"):
+        return {"ok": False, "error": live.get("error")}
+    oni = live["series"]
+    episodes = load_config().enso_episodes()
+    current_oni = live["latest"]["anom"]
+    # Directional phase from the latest ONI sign (not the >=5-season persistence
+    # criterion, which lags a newly-developing event).
+    if current_oni >= 0.5:
+        phase = "el_nino"
+    elif current_oni <= -0.5:
+        phase = "la_nina"
+    else:
+        phase = "neutral"
+    top = enso_analogs(phase, abs(current_oni), episodes, oni, top_n=3)
+    return {
+        "ok": True,
+        "phase": phase,
+        "current_oni": current_oni,
+        "analogs": top,
+    }
+
+
 @st.cache_data(ttl=21600, show_spinner=False)
 def get_enso_discussion() -> dict:
     """Fetch the official CPC ENSO Diagnostic Discussion (cached 6 hours)."""

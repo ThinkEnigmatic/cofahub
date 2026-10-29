@@ -11,6 +11,7 @@ from ...visualization.leaflet_maps import metric_map
 from ..components.common import page_header, render_folium, render_plotly, sample_banner
 from ..state import (
     get_all_indicators,
+    get_enso_analogs,
     get_enso_discussion,
     get_live_enso,
     get_nmme_multimodel,
@@ -214,6 +215,30 @@ def render() -> None:
         )
     else:
         st.info(f"No tide gauge for {names[sea_geo]} ({sea.get('error')}).", icon="🌊")
+
+    st.divider()
+
+    # ---- ENSO analog selection ---- #
+    st.subheader("Historical ENSO analogs")
+    with st.spinner("Ranking historical episodes…"):
+        analog = get_enso_analogs()
+    if analog.get("ok"):
+        st.caption(
+            f"Current ONI **{analog['current_oni']:+.2f} °C** (phase {analog['phase']}). "
+            "Nearest historical episodes by peak-ONI proximity."
+        )
+        for a in analog["analogs"]:
+            st.write(
+                f"- **{a['episode_id']}** ({a['intensity'] or 'n/a'}): peak ONI "
+                f"{a['peak_oni']:+.1f} °C, similarity {a['similarity']:.2f} "
+                f"({a['start']} → {a['end']})."
+            )
+        st.caption(
+            "A historical analog is contextual evidence, not a forecast — see the "
+            "El Niño Comparison page for what each episode did in the FAS."
+        )
+    else:
+        st.info(f"Analog selection unavailable: {analog.get('error')}", icon="🔬")
 
     st.divider()
 
