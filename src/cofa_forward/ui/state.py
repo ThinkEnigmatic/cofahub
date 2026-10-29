@@ -395,6 +395,28 @@ def get_forecast_verification(geo_id: str, lat: float, lon: float) -> dict:
     }
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_sst_bleaching(lat: float, lon: float) -> dict:
+    """Simplified coral-bleaching watch (Degree Heating Weeks) from daily SST."""
+    from ..climate.bleaching import bleaching_alert, degree_heating_weeks
+    from ..ingestion.marine import MarineAdapter
+
+    r = MarineAdapter(cache=make_cache()).get_sst_daily(lat, lon)
+    if not r.get("ok"):
+        return {"ok": False, "error": r.get("error")}
+    s = r["series"]
+    dhw = degree_heating_weeks(s)
+    return {
+        "ok": True,
+        "source": r["source"],
+        "dhw_c_weeks": dhw,
+        "alert": bleaching_alert(dhw),
+        "sst_latest_c": float(s.iloc[-1]) if s.notna().any() else None,
+        "sst_mean12w_c": float(s.iloc[-84:].mean()) if len(s) >= 84 else float(s.mean()),
+        "n_days": int(len(s)),
+    }
+
+
 @st.cache_data(ttl=1800, show_spinner=False)
 def get_marine(lat: float, lon: float) -> dict:
     """Current + daily-max wave/SST conditions (Open-Meteo marine)."""

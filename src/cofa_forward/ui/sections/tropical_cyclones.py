@@ -21,6 +21,7 @@ from ..state import (
     get_real_tracks,
     get_sample_tracks,
     get_sea_level,
+    get_sst_bleaching,
     get_storm_details,
     load_config,
     load_registry,
@@ -165,6 +166,17 @@ def render() -> None:
     if sea.get("ok"):
         st.caption(
             f"Tide gauge ({sea['station']}): {sea['latest_mm']:.0f} mm as of {sea['last_date']}."
+        )
+
+    # Coral bleaching watch (simplified Degree Heating Weeks).
+    with st.spinner("Computing bleaching watch…"):
+        bleach = get_sst_bleaching(c_entity.latitude, c_entity.longitude)
+    if bleach.get("ok") and bleach.get("dhw_c_weeks") is not None:
+        st.caption(
+            f"🌡️ Bleaching watch: DHW {bleach['dhw_c_weeks']:.1f} °C-weeks — "
+            f"{bleach['alert']} (12-week SST {bleach['sst_mean12w_c']:.1f} °C). "
+            "Simplified NOAA Coral Reef Watch method (fixed western-Pacific MMM); "
+            "not the official per-pixel DHW product."
         )
 
     # Compound risk (drought × waves × sea level × cyclones).

@@ -77,5 +77,34 @@ class MarineAdapter(BaseAdapter):
             },
         }
 
+    def get_sst_daily(self, lat: float, lon: float, past_days: int = 84) -> dict:
+        """Daily sea-surface temperature (°C) for the last ``past_days`` days (for DHW)."""
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "daily": "sea_surface_temperature_mean",
+            "past_days": past_days,
+            "forecast_days": 1,
+            "timezone": "UTC",
+        }
+        res = self.fetch_json(self.source_url, params)
+        if not res.ok:
+            return {"ok": False, "error": res.error, "source": self.source_id}
+        daily = res.data.get("daily", {}) or {}
+        if "time" not in daily:
+            return {"ok": False, "error": "no SST data", "source": self.source_id}
+        s = pd.Series(
+            pd.to_numeric(daily.get("sea_surface_temperature_mean", []), errors="coerce"),
+            index=pd.to_datetime(daily["time"], utc=True),
+            name="sst_c",
+        )
+        return {
+            "ok": True,
+            "source": self.source_id,
+            "series": s,
+            "n_days": int(len(s)),
+            "retrieved_at": res.retrieved_at,
+        }
+
     def check_availability(self) -> dict[str, Any]:
         return {"source_id": self.source_id, "available": True, "note": "live Open-Meteo marine"}
