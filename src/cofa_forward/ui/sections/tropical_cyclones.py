@@ -8,15 +8,19 @@ import streamlit as st
 from ...cyclones.climatology import seasonal_summary
 from ...cyclones.exposure import exposure_summary
 from ...cyclones.proximity import closest_approach
+from ...hazards.compound import compound_flags
 from ...visualization.leaflet_maps import track_map
 from ..components.common import page_header, render_folium, sample_banner
 from ..state import (
     get_active_storms,
+    get_drought_monitor,
     get_himawari_image,
     get_jtwc_warnings,
+    get_marine,
     get_nws_guam_advisory,
     get_real_tracks,
     get_sample_tracks,
+    get_sea_level,
     get_storm_details,
     load_config,
     load_registry,
@@ -126,6 +130,57 @@ def render() -> None:
         )
     else:
         st.info("Satellite imagery unavailable (offline?).", icon="🛰️")
+
+    st.divider()
+
+    # ---- Coastal & marine conditions (waves, SST, sea level, compound risk) ---- #
+    st.subheader("Coastal & marine conditions")
+    names = {e.geo_id: e.name for e in registry.all()}
+    c_geo = st.selectbox(
+        "Location",
+        options=list(names.keys()),
+        format_func=lambda g: f"{names[g]} ({g})",
+        key="coastal_loc",
+    )
+    c_entity = registry.by_id(c_geo)
+    with st.spinner("Fetching marine + sea-level data…"):
+        marine = get_marine(c_entity.latitude, c_entity.longitude)
+        sea = get_sea_level(c_geo)
+        monitor = get_drought_monitor(c_geo, c_entity.latitude, c_entity.longitude)
+    if marine.get("ok"):
+        cur = marine["current"]
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Wave height", f"{cur['wave_height_m']:.1f} m")
+        m2.metric("Wave period", f"{cur['wave_period_s']:.0f} s")
+        m3.metric("Wave direction", f"{cur['wave_direction_deg']:.0f}°")
+        m4.metric("Sea-surface temp", f"{cur['sst_c']:.1f} °C")
+        mx = marine["daily"]["wave_height_max_m"].max()
+        st.caption(
+            f"Significant wave height; daily max over the next {len(marine['daily'])} days is "
+            f"{mx:.1f} m. Open-Meteo marine (~11 km grid)."
+        )
+    else:
+        st.info(f"Marine data unavailable: {marine.get('error')}", icon="🌊")
+
+    if sea.get("ok"):
+        st.caption(
+            f"Tide gauge ({sea['station']}): {sea['latest_mm']:.0f} mm as of {sea['last_date']}."
+        )
+
+    # Compound risk (drought × waves × sea level × cyclones).
+    if marine.get("ok") and monitor.get("ok") and monitor.get("status"):
+        m = monitor["status"]
+        flags = compound_flags(
+            drought_quintile=m.get("quintile"),
+            peac_index=m.get("peac_index"),
+            wave_height_m=marine["current"].get("wave_height_m"),
+        )
+        if flags:
+            st.warning("**Compound-hazard flags**", icon="⚠️")
+            for f in flags:
+                st.markdown(f"- {f}")
+        else:
+            st.caption("No compound drought/marine hazard flags active.")
 
     st.divider()
 

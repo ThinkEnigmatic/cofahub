@@ -367,6 +367,14 @@ def get_forecast_verification(geo_id: str, lat: float, lon: float) -> dict:
     }
 
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def get_marine(lat: float, lon: float) -> dict:
+    """Current + daily-max wave/SST conditions (Open-Meteo marine)."""
+    from ..ingestion.marine import MarineAdapter
+
+    return MarineAdapter(cache=make_cache()).get_marine(lat, lon)
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_sea_level(geo_id: str) -> dict:
     """Recent UHSLC tide-gauge sea level (mm) for the FAS stations."""
