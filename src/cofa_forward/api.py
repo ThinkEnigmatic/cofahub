@@ -13,6 +13,7 @@ import secrets
 import threading
 import time
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Any
 
 import pandas as pd
@@ -123,9 +124,35 @@ def _station(geo_id: str) -> dict[str, Any]:
 # ------------------------------------------------------------------------- #
 # Data helpers (plain, no Streamlit)
 # ------------------------------------------------------------------------- #
+# The Open-Meteo archive API rate-limits (HTTP 429) when many stations are
+# fetched in parallel (the station rail fetches ~30). Two guards: a persistent
+# parquet cache per location (so the series is fetched once and read from disk
+# for 7 days) and a global minimum interval between archive requests.
+_ERA5_DIR = Path(__file__).resolve().parents[2] / "data" / "snapshot" / "era5"
+_ERA5_TTL = 7 * 86400  # seconds
+_ARCHIVE_LOCK = threading.Lock()
+_LAST_ARCHIVE = {"t": 0.0}
+_ARCHIVE_MIN_INTERVAL = 1.2  # seconds
+
+
+def _rate_limited_archive() -> None:
+    with _ARCHIVE_LOCK:
+        wait = _ARCHIVE_MIN_INTERVAL - (time.time() - _LAST_ARCHIVE["t"])
+        if wait > 0:
+            time.sleep(wait)
+        _LAST_ARCHIVE["t"] = time.time()
+
+
 def _long_era5(lat: float, lon: float) -> pd.DataFrame:
-    """ERA5 daily precip + tmax/tmin (1997→now), chunked."""
+    """ERA5 daily precip + tmax/tmin (1997→now), chunked + disk-cached."""
     from .ingestion.rainfall import OpenMeteoArchiveAdapter
+
+    cache_file = _ERA5_DIR / f"era5_{lat:.2f}_{lon:.2f}.parquet"
+    if cache_file.exists() and (time.time() - cache_file.stat().st_mtime) < _ERA5_TTL:
+        try:
+            return pd.read_parquet(cache_file)
+        except Exception:  # noqa: BLE001
+            pass
 
     adapter = OpenMeteoArchiveAdapter(config=get_config())
     today = pd.Timestamp.today(tz="UTC").strftime("%Y-%m-%d")
@@ -135,13 +162,17 @@ def _long_era5(lat: float, lon: float) -> pd.DataFrame:
         ("2007-01-01", "2016-12-31"),
         ("2017-01-01", today),
     ):
+        _rate_limited_archive()
         r = adapter.get_daily_climate(lat, lon, start, end)
         if r.get("ok"):
             parts.append(r["series"])
     if not parts:
         return pd.DataFrame()
     df = pd.concat(parts)
-    return df[~df.index.duplicated(keep="last")].sort_index()
+    df = df[~df.index.duplicated(keep="last")].sort_index()
+    _ERA5_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(cache_file)
+    return df
 
 
 def _drought_status(lat: float, lon: float) -> dict[str, Any]:
@@ -394,8 +425,6 @@ def login(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
 # ------------------------------------------------------------------------- #
 # Static frontend (serve the React build when present) — SPA fallback.
 # ------------------------------------------------------------------------- #
-from pathlib import Path  # noqa: E402
-
 from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
