@@ -15,6 +15,7 @@ from ..state import (
     get_live_enso,
     get_nmme_multimodel,
     get_peac_outlook,
+    get_sea_level,
     load_config,
     load_registry,
 )
@@ -187,6 +188,32 @@ def render() -> None:
         )
     else:
         st.info(f"PEAC outlook unavailable: {peac.get('error')}", icon="ℹ️")
+
+    st.divider()
+
+    # ---- Sea level (UHSLC tide gauges) ---- #
+    st.subheader("Sea level — tide gauges (UHSLC)")
+    sea_geo = st.selectbox(
+        "Tide-gauge location",
+        options=list(names.keys()),
+        format_func=lambda g: f"{names[g]} ({g})",
+        key="sealevel_loc",
+    )
+    sea = get_sea_level(sea_geo)
+    if sea.get("ok"):
+        c1, c2, c3 = st.columns(3)
+        c1.metric(
+            "Latest daily sea level", f"{sea['latest_mm']:.0f} mm", help="Above the station datum."
+        )
+        c2.metric("30-day mean", f"{sea['mean30_mm']:.0f} mm")
+        c3.metric("As of", sea["last_date"])
+        st.caption(
+            f"Station {sea['station']} — UHSLC Fast Delivery (hourly → daily mean). "
+            "El Niño raises western-Pacific sea level (the RMI/FSM king-tide flooding); "
+            "the PEAC seasonal sea-level outlook was discontinued January 2020."
+        )
+    else:
+        st.info(f"No tide gauge for {names[sea_geo]} ({sea.get('error')}).", icon="🌊")
 
     st.divider()
 

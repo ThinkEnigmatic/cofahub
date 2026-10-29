@@ -64,6 +64,22 @@ sources:
     verification_date: "2026-10-29"
     notes: "HTML scrape of the official experimental consensus outlook (7 seasonal models, tercile form). FAS stations carry a geo_id. FRESHNESS GUARD: last updated 2024-09-16 (SON 2024) — the Pacific ENSO Update newsletter is discontinued and the outlook has gone stale; the adapter flags is_stale so the app presents it as historical, never as current."
 
+  - id: uhslc-tide-gauge
+    name: "University of Hawaii Sea Level Center (UHSLC) tide gauges"
+    publisher: "University of Hawaii / NOAA"
+    url: "https://uhslc.soest.hawaii.edu/"
+    api: "https://uhslc.soest.hawaii.edu/erddap/tabledap/global_hourly_fast.csv"
+    license: "Public (UHSLC Fast Delivery)"
+    geographic_coverage: "6 FAS tide gauges: Malakal (Palau), Yap, Chuuk, Pohnpei, Kwajalein, Majuro (no Kosrae)"
+    spatial_resolution: "point (tide gauge)"
+    temporal_resolution: "hourly (Fast Delivery); daily mean"
+    update_frequency: "daily"
+    auth: "none"
+    variables: "sea level (mm above station datum)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "Authoritative current tide-gauge source. Replaces the PEAC seasonal sea-level outlook, which was DISCONTINUED January 2020. Sea level is the most ENSO-coupled atoll hazard (El Nino raises western-Pacific sea level -> king-tide/inundation flooding). Data availability varies by station."
+
   - id: noaa-cpc-enso-discussion
     name: "NOAA CPC ENSO Diagnostic Discussion"
     publisher: "NOAA Climate Prediction Center"

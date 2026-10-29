@@ -286,6 +286,16 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
     }
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_sea_level(geo_id: str) -> dict:
+    """Recent UHSLC tide-gauge sea level (mm) for the FAS stations."""
+    from ..ingestion.uhslc import FAS_GAUGES, UhslcAdapter
+
+    if geo_id not in FAS_GAUGES:
+        return {"ok": False, "error": f"no tide gauge for {geo_id}"}
+    return UhslcAdapter(cache=make_cache()).get_latest(FAS_GAUGES[geo_id])
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_water_balance(geo_id: str, lat: float, lon: float) -> dict:
     """Meteorological water balance (P − PET) from ERA5 daily climate.
