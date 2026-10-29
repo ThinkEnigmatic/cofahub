@@ -287,6 +287,25 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_drought_monitor(geo_id: str, lat: float, lon: float) -> dict:
+    """Live drought-monitor status (USGS quintile Rainfall Index + D0–D4 method).
+
+    Computed from the long ERA5 daily series (1997→now) using the same indicators
+    as the USGS western-Pacific drought-monitoring release (Senay et al. 2026):
+    monthly precipitation, climatological median, rolling 1/3/6-month totals,
+    quintile Rainfall Index, and D0–D4 severity. Not the USGS CSV — an independent
+    implementation of the published method on ERA5.
+    """
+    from ..drought.monitor import drought_monitor_status
+
+    r = get_el_nino_comparison_rainfall(geo_id, lat, lon)
+    if not r.get("ok"):
+        return {"ok": False, "error": r.get("error")}
+    status = drought_monitor_status(r["series"])
+    return {"ok": True, "source": "open-meteo-archive (ERA5)", "status": status}
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_chirps_monthly(geo_id: str, lat: float, lon: float) -> dict:
     """Fetch the CHIRPS v3 monthly rainfall series for a location (cached 24h).
 

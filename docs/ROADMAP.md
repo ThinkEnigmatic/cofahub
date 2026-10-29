@@ -73,10 +73,23 @@
   loopback tile server on :8502). Offline mode swaps the OSM basemap to the local
   server; the macOS app launches the tile server automatically.
 
+## v0.3.2 (2026-10-29) — drought monitor + quintile Rainfall Index
+
+* **Quintile Rainfall Index** (`drought/percentiles.quintile_index`) — the USGS
+  western-Pacific classification: Drier/Dry/Typical/Wet/Wetter (20th-percentile
+  steps), plus the corrected D0-D4 USDM bands.
+* **Drought monitor** (`drought/monitor.py`) — replicates USGS Senay et al. 2026
+  Component 1 (monthly precip, climatological median, rolling 1/3/6-month,
+  quintile + D0-D4) on ERA5/CHIRPS; wired into the Drought & Water page as a live
+  status. The USGS CSV itself remains Cloudflare-gated on ScienceBase (documented
+  honestly; the exact station-specific PEAC absolute thresholds live in its R
+  scripts).
+
 ## Next (prioritized)
 
-1. **USGS western-Pacific drought (P1RXUMV3)** — manual browser import
-   (ScienceBase bot-blocks); covers FSM/RMI (not Palau).
+1. **USGS P1RXUMV3 CSV** — import the actual 9-site CSV via browser automation
+   (Cloudflare-gated); methodology already replicated locally, this adds the
+   authoritative numbers for FSM/RMI/Nauru/Solomon.
 2. Himawari IR bands + region-zoom tiles (visible full-disk only today).
 3. Offline satellite tiles (Esri ToS / GIBS low zoom means OSM streets is the
    offline imagery; a proper open satellite source would remove this gap).

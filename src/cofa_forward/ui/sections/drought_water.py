@@ -7,13 +7,19 @@ import streamlit as st
 
 from ...climate.climatology import compute_location_climatology, compute_monthly_climatology
 from ...drought.alerts import evaluate_alerts
-from ...drought.percentiles import category_from_percentile, drought_level, empirical_percentile
+from ...drought.percentiles import (
+    category_from_percentile,
+    drought_level,
+    empirical_percentile,
+    quintile_index,
+)
 from ...drought.rainfall_metrics import rolling_totals
 from ...drought.spi import note as spi_note
 from ...visualization.charts import rainfall_timeseries, rolling_totals_chart
 from ..components.common import page_header, render_plotly, sample_banner
 from ..state import (
     get_chirps_monthly,
+    get_drought_monitor,
     get_real_rainfall,
     get_sample_rainfall,
     load_config,
@@ -131,13 +137,45 @@ def render() -> None:
     c4.metric(
         "Drought level (D0–D4)",
         d_level if d_level else ("none" if pct is not None else "n/a"),
-        help="Precipitation-percentile approximation of the USDM D0–D4 scale. "
-        "The official US Drought Monitor is US-only; this is an internal FAS scale.",
+        help="Precipitation-percentile approximation of the USDM D0–D4 scale.",
     )
+    q = quintile_index(pct)
     st.caption(
         f"Baseline: {d['baseline_start']}–{d['baseline_end']} (valid: {clim['baseline_valid']}). "
-        f"Category: {cat}."
+        f"Category: {cat}. "
+        f"**Quintile Rainfall Index: {q or 'n/a'}** "
+        "(Drier/Dry/Typical/Wet/Wetter — USGS western-Pacific method)."
     )
+
+    st.divider()
+
+    # ---- Live drought monitor (USGS western-Pacific method on ERA5) ---- #
+    st.subheader("Drought monitor — quintile Rainfall Index (live, ERA5)")
+    with st.spinner("Computing drought monitor from ERA5…"):
+        monitor = get_drought_monitor(geo_id, entity.latitude, entity.longitude)
+    if monitor.get("ok"):
+        m = monitor["status"]
+        m1, m2, m3, m4, m5 = st.columns(5)
+        m1.metric("Latest month", m.get("latest_month") or "n/a")
+        m2.metric("Monthly rainfall", f"{m['monthly_mm']:.0f} mm" if m["monthly_mm"] else "n/a")
+        m3.metric(
+            "Climatological median",
+            f"{m['clim_median_mm']:.0f} mm" if m["clim_median_mm"] else "n/a",
+        )
+        m4.metric("Quintile Rainfall Index", m.get("quintile") or "n/a")
+        m5.metric("D0–D4", m.get("d0_d4") or ("none" if m.get("percentile") is not None else "n/a"))
+        roll = " · ".join(
+            f"{w}m={m[f'rain_{w}m_mm']:.0f} mm" if m.get(f"rain_{w}m_mm") else f"{w}m=n/a"
+            for w in (1, 3, 6)
+        )
+        st.caption(
+            f"Rolling totals: {roll}. Computed from ERA5 ({monitor['source']}) using the "
+            "USGS western-Pacific method (Senay et al. 2026, DOI 10.5066/P1RXUMV3) — an "
+            "independent implementation, not the USGS CSV (which is Cloudflare-gated on "
+            "ScienceBase and covers FSM/RMI/Nauru/Solomon, not Palau)."
+        )
+    else:
+        st.info(f"Drought monitor unavailable: {monitor.get('error')}", icon="ℹ️")
 
     st.divider()
 

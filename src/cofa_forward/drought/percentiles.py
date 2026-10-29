@@ -74,11 +74,10 @@ def drought_level(p: float) -> str | None:
     """Map an empirical percentile (0..1) to a D0–D4 drought category.
 
     These thresholds mirror the US Drought Monitor's precipitation-percentile
-    bands (D0 abnormally dry … D4 exceptional). **This is a
-    precipitation-percentile approximation, NOT the official US Drought Monitor**
-    — which is US-only and blends many indicators (SPI, soil moisture,
-    streamflow). The FAS is outside the USDM; use this as an internal
-    precipitation-drought scale only.
+    bands (D0 20–30th … D4 0–2nd percentile). **This is a precipitation-percentile
+    approximation, NOT the official US Drought Monitor** — the USDM blends many
+    indicators (SPI, soil moisture, streamflow). The FAS is outside the USDM;
+    use this as an internal precipitation-drought scale only.
     """
     if pd.isna(p):
         return None
@@ -93,3 +92,27 @@ def drought_level(p: float) -> str | None:
     if p < 0.30:
         return "D0"
     return None
+
+
+QUINTILE_LABELS = ("Drier", "Dry", "Typical", "Wet", "Wetter")
+
+
+def quintile_index(p: float) -> str | None:
+    """Map an empirical percentile (0..1) to the quintile Rainfall Index.
+
+    Five equal quintiles of the climatological distribution, matching the USGS
+    western-Pacific drought-monitoring methodology (Senay et al. 2026, DOI
+    10.5066/P1RXUMV3): **Drier** (0–20th), **Dry** (20–40th), **Typical**
+    (40–60th), **Wet** (60–80th), **Wetter** (80–100th percentile).
+    """
+    if pd.isna(p):
+        return None
+    if p < 0.20:
+        return "Drier"
+    if p < 0.40:
+        return "Dry"
+    if p < 0.60:
+        return "Typical"
+    if p < 0.80:
+        return "Wet"
+    return "Wetter"

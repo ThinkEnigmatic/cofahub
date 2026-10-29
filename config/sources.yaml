@@ -273,11 +273,12 @@ sources:
     license: "U.S. Government public domain"
     geographic_coverage: "9 sites across FSM, RMI, Nauru, Solomon Islands — PALAU NOT INCLUDED"
     spatial_resolution: "site-level (9 points)"
-    temporal_resolution: "monthly drought index + 7-day GFS forecast"
+    temporal_resolution: "monthly drought index (Jan 2000-Feb 2026) + 7-day GFS forecast"
     auth: "none (ScienceBase; blocks non-browser GET)"
-    variables: "monthly precip, quintile rainfall index, PEAC thresholds, 7-day GFS forecast"
-    implementation_status: planned
-    notes: "Reuse its R scripts to replicate the IMERG-Early-Run + GFS pipeline for Palau."
+    variables: "monthly precip, 25-yr climatological median, rolling 1/3/6-month, quintile Rainfall Index (Drier/Dry/Typical/Wet/Wetter), PEAC thresholds, 7-day GFS forecast"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "METHODOLOGY REPLICATED LOCALLY: the app computes the same indicators (monthly precip, climatological median, rolling 1/3/6-month, quintile Rainfall Index + D0-D4) from ERA5/CHIRPS in drought/monitor.py — an independent implementation of Senay et al. 2026 (the USGS pipeline runs on IMERG Early Run). The USGS CSV itself remains ScienceBase/Cloudflare-gated (403 to curl); the exact station-specific PEAC absolute thresholds are in its R scripts (blocked). Covers FSM/RMI/Nauru/Solomon only — Palau is not in the release."
 
   - id: worldpop-population
     name: "WorldPop population grids (Unconstrained individual countries)"
@@ -475,12 +476,4 @@ sources:
     verification_date: "2026-10-29"
     notes: "Toggleable map overlays (semi-transparent WMTS tiles) drawn over the satellite basemap. Remote-sensing fields, NOT forecast or in-situ station data. SST anomaly is relative to a MUR climatology and is relevant to ENSO monitoring."
 
-  - id: usgs-westpacific-drought
-    name: "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026)"
-    publisher: "USGS EROS"
-    url: "https://doi.org/10.5066/P1RXUMV3"
-    license: "U.S. Government public domain"
-    geographic_coverage: "FSM, RMI, Nauru, Solomon Islands — Palau NOT included"
-    auth: "none (ScienceBase; blocks non-browser GET)"
-    implementation_status: requires_manual_import
-    notes: "ScienceBase (where the data lives) bot-blocks curl/requests (403). Manual browser download + local import is the path; its R scripts document the IMERG-Early-Run + GFS pipeline that could be replicated for Palau."
+

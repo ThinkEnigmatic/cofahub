@@ -11,6 +11,7 @@ from cofa_forward.drought.percentiles import (
     drought_level,
     empirical_percentile,
     monthly_percentiles,
+    quintile_index,
 )
 from cofa_forward.drought.spi import percentile_to_normal_score
 
@@ -67,3 +68,27 @@ def test_drought_level():
     assert drought_level(0.25) == "D0"
     assert drought_level(0.5) is None  # not in drought
     assert drought_level(float("nan")) is None
+
+
+def test_drought_level_bands():
+    assert drought_level(0.01) == "D4"
+    assert drought_level(0.03) == "D3"
+    assert drought_level(0.07) == "D2"
+    assert drought_level(0.15) == "D1"
+    assert drought_level(0.25) == "D0"
+    assert drought_level(0.5) is None
+    assert drought_level(float("nan")) is None
+
+
+def test_quintile_index_bands():
+    assert quintile_index(0.05) == "Drier"
+    assert quintile_index(0.20) == "Dry"
+    assert quintile_index(0.39) == "Dry"
+    assert quintile_index(0.40) == "Typical"
+    assert quintile_index(0.59) == "Typical"
+    assert quintile_index(0.60) == "Wet"
+    assert quintile_index(0.79) == "Wet"
+    assert quintile_index(0.80) == "Wetter"
+    assert quintile_index(0.99) == "Wetter"
+    assert quintile_index(1.0) == "Wetter"
+    assert quintile_index(float("nan")) is None
