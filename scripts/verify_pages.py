@@ -21,6 +21,7 @@ PAGES = [
     "Overview",
     "Weather Operations",
     "ENSO & Climate",
+    "El Niño Comparison",
     "Drought & Water",
     "Water Need Forecast",
     "Tropical Cyclones",

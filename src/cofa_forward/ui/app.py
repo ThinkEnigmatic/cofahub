@@ -22,6 +22,7 @@ from cofa_forward.logging_config import setup_logging  # noqa: E402
 from cofa_forward.ui.sections import (  # noqa: E402
     data_health,
     drought_water,
+    el_nino_compare,
     enso_climate,
     historical_impacts,
     island_profiles,
@@ -76,6 +77,7 @@ PAGES = {
     "Overview": overview.render,
     "Weather Operations": weather.render,
     "ENSO & Climate": enso_climate.render,
+    "El Niño Comparison": el_nino_compare.render,
     "Drought & Water": drought_water.render,
     "Water Need Forecast": water_need.render,
     "Tropical Cyclones": tropical_cyclones.render,

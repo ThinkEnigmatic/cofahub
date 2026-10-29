@@ -131,6 +131,46 @@ def get_real_rainfall(geo_id: str, lat: float, lon: float, start: str = "1991-01
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_el_nino_comparison_rainfall(geo_id: str, lat: float, lon: float) -> dict:
+    """Fetch a long ERA5 daily rainfall series (1997→now) for comparison.
+
+    The Open-Meteo archive rejects very long single requests, so it is fetched in
+    ~10-year chunks and concatenated.
+    """
+    import pandas as pd
+
+    from ..ingestion.rainfall import OpenMeteoArchiveAdapter
+
+    adapter = OpenMeteoArchiveAdapter(config=load_config(), cache=make_cache())
+    today = pd.Timestamp.today(tz="UTC").strftime("%Y-%m-%d")
+    chunks = [
+        ("1997-01-01", "2006-12-31"),
+        ("2007-01-01", "2016-12-31"),
+        ("2017-01-01", today),
+    ]
+    parts = []
+    errors = []
+    for start, end in chunks:
+        r = adapter.get_rainfall(lat, lon, start, end)
+        if r.get("ok"):
+            parts.append(r["series"])
+        else:
+            errors.append(f"{start}..{end}: {r.get('error')}")
+    if not parts:
+        return {"ok": False, "error": "; ".join(errors), "source": "open-meteo-archive"}
+    series = pd.concat(parts)
+    series = series[~series.index.duplicated(keep="last")].sort_index()
+    return {
+        "ok": True,
+        "source": "open-meteo-archive",
+        "series": series,
+        "n_days": int(len(series)),
+        "n_missing": int(series.isna().sum()),
+        "errors": errors,
+    }
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_real_tracks() -> dict:
     """Fetch real IBTrACS WP-basin tracks filtered to the FAS bounding box."""
     from ..ingestion.ibtracs import FAS_BBOX, IbtracsAdapter

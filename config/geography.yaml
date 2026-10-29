@@ -265,3 +265,253 @@ entities:
     population_source: "seed_approximate"
     data_coverage: "sparse"
     notes: "Atoll east of Majuro."
+
+  # ---- RMI northern atolls (most drought-vulnerable; from El Niño research) ----
+  - geo_id: RMI-UTR
+    name: "Utrik"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 11.2700
+    longitude: 169.8500
+    population: 430
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll; repeatedly hardest-hit in El Niño droughts."
+
+  - geo_id: RMI-AIL
+    name: "Ailuk"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.2100
+    longitude: 169.9800
+    population: 340
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-MEJ
+    name: "Mejit"
+    entity_type: island
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.2800
+    longitude: 170.8700
+    population: 300
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Raised coral island (not an atoll)."
+
+  - geo_id: RMI-LIK
+    name: "Likiep"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.8200
+    longitude: 169.3100
+    population: 400
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-MAL
+    name: "Maloelap"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.7800
+    longitude: 171.0700
+    population: 850
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-WTH
+    name: "Wotho"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.1700
+    longitude: 165.9800
+    population: 100
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-UJA
+    name: "Ujae"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.0500
+    longitude: 165.6500
+    population: 360
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-ENW
+    name: "Enewetak"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 11.5000
+    longitude: 162.2400
+    population: 850
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Far-northwestern atoll; includes Ebadon."
+
+  - geo_id: RMI-NAM
+    name: "Namu"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.9900
+    longitude: 168.1700
+    population: 800
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Atoll."
+
+  - geo_id: RMI-LAE
+    name: "Lae"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.9300
+    longitude: 166.2300
+    population: 350
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Atoll."
+
+  - geo_id: RMI-LIB
+    name: "Lib"
+    entity_type: island
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.3100
+    longitude: 167.3800
+    population: 150
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Small island."
+
+  - geo_id: RMI-AUR
+    name: "Aur"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.2000
+    longitude: 171.1600
+    population: 500
+    population_year: 2021
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Atoll."
+
+  # ---- FSM outer islands (drought-vulnerable) ----
+  - geo_id: FSM-YAP-ULI
+    name: "Ulithi"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 9.9700
+    longitude: 139.6700
+    population: 800
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Yap outer atoll; D4 exceptional drought in 2024."
+
+  - geo_id: FSM-YAP-WOL
+    name: "Woleai"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 7.3500
+    longitude: 143.9000
+    population: 900
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Yap outer atoll."
+
+  - geo_id: FSM-YAP-FAI
+    name: "Fais"
+    entity_type: island
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 9.7600
+    longitude: 140.5200
+    population: 300
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Raised coral island in Yap outer islands."
+
+  - geo_id: FSM-POH-KAP
+    name: "Kapingamarangi"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-POH
+    latitude: 1.0700
+    longitude: 154.8100
+    population: 350
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southernmost Pohnpei atoll; equatorial."
+
+  - geo_id: FSM-POH-NUK
+    name: "Nukuoro"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-POH
+    latitude: 3.8500
+    longitude: 154.9400
+    population: 200
+    population_year: 2020
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southern Pohnpei atoll."
+
+  # ---- Palau remote atolls (drought-vulnerable) ----
+  - geo_id: PAL-SON
+    name: "Sonsorol"
+    entity_type: atoll
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 5.3200
+    longitude: 132.2200
+    population: 100
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southwestern atoll; rainwater catchment only."
+
+  - geo_id: PAL-HAT
+    name: "Hatohobei"
+    entity_type: atoll
+    country_code: PW
+    parent_geo_id: PAL
+    latitude: 3.0000
+    longitude: 131.1200
+    population: 25
+    population_year: 2022
+    population_source: "seed_approximate"
+    data_coverage: "sparse"
+    notes: "Southernmost Palau atoll (Tobi)."
