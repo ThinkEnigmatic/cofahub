@@ -23,6 +23,7 @@ PAGES = [
     "ENSO & Climate",
     "El Niño Comparison",
     "Drought & Water",
+    "National Plans & Guidance",
     "Water Need Forecast",
     "Tropical Cyclones",
     "Historical Impacts",
