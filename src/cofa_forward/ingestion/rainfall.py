@@ -84,3 +84,45 @@ class OpenMeteoArchiveAdapter(BaseAdapter):
                 "notes": "ERA5 reanalysis; ~25 km grid is coarse for individual atolls.",
             },
         }
+
+    def get_daily_climate(self, lat: float, lon: float, start: str, end: str) -> dict[str, Any]:
+        """Fetch daily precipitation + Tmax/Tmin for the water balance (one request)."""
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "start_date": start,
+            "end_date": end,
+            "daily": "precipitation_sum,temperature_2m_max,temperature_2m_min",
+            "timezone": "UTC",
+        }
+        res: FetchResult = self.fetch_json(self.source_url, params)
+        if not res.ok:
+            return {"ok": False, "error": res.error, "source": self.source_id}
+        try:
+            daily = res.data["daily"]
+            idx = pd.to_datetime(daily["time"], utc=True)
+            df = pd.DataFrame(
+                {
+                    "precip_mm": pd.to_numeric(daily["precipitation_sum"], errors="coerce"),
+                    "tmax_c": pd.to_numeric(daily["temperature_2m_max"], errors="coerce"),
+                    "tmin_c": pd.to_numeric(daily["temperature_2m_min"], errors="coerce"),
+                },
+                index=idx,
+            )
+        except (KeyError, ValueError) as exc:
+            return {"ok": False, "error": f"normalization failed: {exc}", "source": self.source_id}
+        return {
+            "ok": True,
+            "source": self.source_id,
+            "source_url": self.source_url,
+            "retrieved_at": res.retrieved_at,
+            "from_cache": res.from_cache,
+            "series": df,
+            "n_days": int(len(df)),
+            "provenance": {
+                "dataset_id": self.source_id,
+                "source_url": self.source_url,
+                "calculation_method": "nearest_grid_cell_attribution",
+                "notes": "ERA5 reanalysis (precipitation + 2m max/min temperature).",
+            },
+        }

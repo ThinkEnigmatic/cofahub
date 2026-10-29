@@ -287,6 +287,61 @@ def get_forecast_daily_precip(geo_id: str, lat: float, lon: float, days: int = 1
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_water_balance(geo_id: str, lat: float, lon: float) -> dict:
+    """Meteorological water balance (P − PET) from ERA5 daily climate.
+
+    Fetches daily precipitation + 2m max/min temperature in ~10-year chunks,
+    computes monthly Hargreaves PET and the P − PET balance. Returns the balance
+    DataFrame + the latest month's balance and its climatological context.
+    """
+    import pandas as pd
+
+    from ..drought.pet import water_balance_monthly
+    from ..ingestion.rainfall import OpenMeteoArchiveAdapter
+
+    adapter = OpenMeteoArchiveAdapter(config=load_config(), cache=make_cache())
+    today = pd.Timestamp.today(tz="UTC").strftime("%Y-%m-%d")
+    parts = []
+    for start, end in (
+        ("1997-01-01", "2006-12-31"),
+        ("2007-01-01", "2016-12-31"),
+        ("2017-01-01", today),
+    ):
+        r = adapter.get_daily_climate(lat, lon, start, end)
+        if r.get("ok"):
+            parts.append(r["series"])
+    if not parts:
+        return {"ok": False, "error": "no ERA5 climate data", "source": "open-meteo-archive"}
+    df = pd.concat(parts)
+    df = df[~df.index.duplicated(keep="last")].sort_index()
+
+    balance = water_balance_monthly(df["precip_mm"], df["tmax_c"], df["tmin_c"], lat)
+    latest = balance.dropna(subset=["balance_mm"])
+    if latest.empty:
+        return {"ok": True, "source": "open-meteo-archive", "balance": balance, "latest": None}
+    lm = latest.index[-1]
+    latest_month = lm.strftime("%Y-%m")
+    latest_balance = float(latest.loc[lm, "balance_mm"])
+    # Climatological balance for that calendar month (1991-2020).
+    clim = balance.loc[(balance.index >= "1991-01-01") & (balance.index <= "2020-12-31")]
+    month_balances = clim[clim.index.month == lm.month]["balance_mm"].dropna()
+    median_balance = float(month_balances.median()) if len(month_balances) else None
+    return {
+        "ok": True,
+        "source": "open-meteo-archive",
+        "balance": balance,
+        "latest": {
+            "month": latest_month,
+            "precip_mm": float(latest.loc[lm, "precip_mm"]),
+            "pet_mm": float(latest.loc[lm, "pet_mm"]),
+            "balance_mm": latest_balance,
+            "median_balance_mm": median_balance,
+            "verdict": "surplus" if latest_balance > 0 else "deficit",
+        },
+    }
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_ghcnd_monthly(geo_id: str) -> dict:
     """In-situ station monthly precipitation (GHCNd) — the ground truth.
 

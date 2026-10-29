@@ -23,6 +23,7 @@ from ..state import (
     get_ghcnd_monthly,
     get_real_rainfall,
     get_sample_rainfall,
+    get_water_balance,
     load_config,
     load_registry,
 )
@@ -227,6 +228,39 @@ def render() -> None:
             "Only the seven FAS airport stations have GHCNd records.",
             icon="ℹ️",
         )
+
+    st.divider()
+
+    # ---- Water balance (P − PET) ---- #
+    st.subheader("Water balance — precipitation minus evapotranspiration")
+    with st.spinner("Computing water balance from ERA5…"):
+        wb = get_water_balance(geo_id, entity.latitude, entity.longitude)
+    if wb.get("ok") and wb.get("latest"):
+        L = wb["latest"]
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Latest month", L["month"])
+        c2.metric("Precipitation (P)", f"{L['precip_mm']:.0f} mm")
+        c3.metric("PET (Hargreaves)", f"{L['pet_mm']:.0f} mm")
+        c4.metric(
+            "P − PET",
+            f"{L['balance_mm']:+.0f} mm",
+            help="Positive = water surplus; negative = meteorological deficit.",
+        )
+        if L.get("median_balance_mm") is not None:
+            delta = L["balance_mm"] - L["median_balance_mm"]
+            st.caption(
+                f"Latest month {L['verdict']} of {L['balance_mm']:+.0f} mm vs the "
+                f"{L['month'][5:7]}-month climatological balance "
+                f"{L['median_balance_mm']:+.0f} mm (Δ {delta:+.0f} mm)."
+            )
+        st.caption(
+            "Hargreaves (1985) potential evapotranspiration from ERA5 2m temperature. "
+            "PET is atmospheric demand, not actual ET (the USGS SSEBop actual-ET product, "
+            "available 2003–2021, would refine this). A meteorological balance only — it "
+            "ignores soil/groundwater storage and human abstraction."
+        )
+    else:
+        st.info(f"Water balance unavailable: {wb.get('error')}", icon="ℹ️")
 
     st.divider()
 
