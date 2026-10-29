@@ -12,7 +12,13 @@ export interface Station {
   lat: number;
   lon: number;
   population: number | null;
+  populationYear: number | null;
+  populationSource: string | null;
+  airport: string | null;
+  port: string | null;
+  areaKm2: number | null;
   entityType: string;
+  notes: string | null;
 }
 
 export interface DroughtStatus {

@@ -70,6 +70,17 @@ export default function FASMap({ stations, levels }: FASMapProps) {
               {s.countryName} · {s.geoId}
               <br />
               {level ? `Drought level: ${level}` : "No drought"}
+              <br />
+              {s.population != null && (
+                <>
+                  Pop: {s.population.toLocaleString()}
+                  {s.populationYear ? ` (${s.populationYear})` : ""}
+                  <br />
+                </>
+              )}
+              <span style={{ color: "var(--nn-ink-2)" }}>
+                ✈ {s.airport ?? "no airport"} · ⚓ {s.port ?? "no port"}
+              </span>
             </Popup>
           </CircleMarker>
         );

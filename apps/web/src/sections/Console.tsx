@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import FASMap from "../components/FASMap";
 import RainChart from "../components/RainChart";
 import Readout from "../components/Readout";
-import { getEnso, getStations } from "../lib/data";
+import { getEnso } from "../lib/data";
 import { useSelection } from "../lib/selection";
 import { useStation } from "../lib/useStation";
 import { useStations } from "../lib/useStations";
-import type { EnsoState, Station } from "../lib/types";
+import type { EnsoState } from "../lib/types";
 
 const QUINTILE_TONE: Record<string, "default" | "key" | "pink" | "warn"> = {
   Drier: "warn",
@@ -21,14 +21,13 @@ export default function Console() {
   const { drought, marine, seaLevel, compound, rainfall } = useStation(geoId);
   const { stations, levels } = useStations();
   const [enso, setEnso] = useState<EnsoState | null>(null);
-  const [names, setNames] = useState<Station[]>([]);
 
   useEffect(() => {
     getEnso().then(setEnso).catch(() => {});
-    getStations().then(setNames).catch(() => {});
   }, []);
 
-  const name = names.find((s) => s.geoId === geoId)?.name ?? geoId;
+  const station = stations.find((s) => s.geoId === geoId);
+  const name = station?.name ?? geoId;
 
   return (
     <div className="section">
@@ -71,6 +70,40 @@ export default function Console() {
           <span><i style={{ background: "#ff2d78" }} /> D3</span>
           <span><i style={{ background: "#ff1a4d" }} /> D4</span>
         </div>
+      </div>
+
+      {/* People & access — socioeconomic profile (most recent census). */}
+      <div className="panel" style={{ marginTop: "1.25rem" }}>
+        <h2>People &amp; access</h2>
+        <div className="panel-sub">
+          population · airport · port — {station?.populationSource ?? "census"}
+        </div>
+        <div className="socio-grid">
+          <div className="socio-card">
+            <div className="readout-label">Population</div>
+            <div className="readout-value">
+              {station?.population != null ? station.population.toLocaleString() : "—"}
+            </div>
+            <div className="readout-prov">
+              {station?.populationYear
+                ? `${station.populationYear} census`
+                : "not enumerated as a single unit"}
+            </div>
+          </div>
+          <div className="socio-card">
+            <div className="readout-label">Airport</div>
+            <div className="socio-text">{station?.airport ?? <span className="na">none</span>}</div>
+          </div>
+          <div className="socio-card">
+            <div className="readout-label">Port</div>
+            <div className="socio-text">{station?.port ?? <span className="na">none</span>}</div>
+          </div>
+        </div>
+        {station?.notes && (
+          <p className="muted" style={{ marginTop: "0.6rem", fontSize: "0.8rem", maxWidth: "72ch" }}>
+            {station.notes}
+          </p>
+        )}
       </div>
 
       {/* Drought readouts */}

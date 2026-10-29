@@ -117,7 +117,13 @@ def _station(geo_id: str) -> dict[str, Any]:
         "lat": e.latitude,
         "lon": e.longitude,
         "population": e.population,
+        "populationYear": e.population_year,
+        "populationSource": e.population_source,
+        "airport": e.airport,
+        "port": e.port,
+        "areaKm2": e.area_km2,
         "entityType": e.entity_type,
+        "notes": e.notes,
     }
 
 

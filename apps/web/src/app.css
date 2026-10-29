@@ -246,6 +246,30 @@
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 
+/* ── Socioeconomic (people & access) ────────────────────────────────── */
+.socio-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 1rem;
+}
+.socio-card {
+  background: var(--nn-bg);
+  border: 1px solid var(--nn-line);
+  border-radius: 4px;
+  padding: 1.1rem 1.25rem;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.socio-card .readout-value { font-size: clamp(2rem, 4vw, 2.9rem); }
+.socio-text {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--nn-ink);
+}
+.socio-text .na { color: var(--nn-ink-3); }
+
 /* ── Panels ─────────────────────────────────────────────────────────── */
 .panel {
   background: var(--nn-panel);
@@ -472,4 +496,5 @@
   .rail .rail-group-title { display: none; }
   .rail-item { width: auto; white-space: nowrap; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .socio-grid { grid-template-columns: 1fr; }
 }

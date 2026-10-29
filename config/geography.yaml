@@ -1,16 +1,24 @@
-# COFA FORWARD — geographic registry (SEED DATA)
+# COFA FORWARD — geographic registry
 # ---------------------------------------------------------------------------
-# These coordinates are APPROXIMATE seed locations, drawn from public gazetteer
+# Coordinates are APPROXIMATE representative points drawn from public gazetteer
 # knowledge, NOT authoritative boundaries. They are sufficient to drive the map
 # and to attribute coarse-grid model data to representative points, but they do
 # NOT constitute a validated geographic inventory.
 #
-# NEVER treat these as precise atoll-scale boundaries or surveyed coordinates.
-# The registry is designed so a complete, validated FAS island/atoll inventory
-# can replace this file later WITHOUT changing core application code.
+# POPULATION figures are the MOST RECENT OFFICIAL CENSUSES — RMI 2021 (EPPSO),
+# FSM 2023 (national) / 2010 (municipality-level, the latest published for
+# outer islands), Palau 2020 — and are recorded with their year and source in
+# ``population_year`` / ``population_source`` so the app never overstates an
+# estimate. All three countries are shrinking through out-migration under the
+# Compact of Free Association (movement to the US/Guam/Hawaii), so figures move
+# DOWNWARD between censuses. Where an atoll/municipality figure was not
+# published in the latest census, ``population`` is null (never guessed).
+#
+# ``airport`` and ``port`` are the known transport infrastructure per entity
+# (international airports, commercial ports, outer-island airstrips and docks).
 # ---------------------------------------------------------------------------
 schema_version: 1
-status: "seed"   # distinguishes this from a complete, validated inventory
+status: "seed"   # coordinates remain seed; population is census-based
 entities:
   # ---- Countries ----
   - geo_id: PAL
@@ -20,12 +28,14 @@ entities:
     parent_geo_id: null
     latitude: 7.5149
     longitude: 134.5825
-    population: 18000
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 17614
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: "Roman Tmetuchl International Airport (ROR)"
+    port: "Koror / Malakal commercial port"
     area_km2: 459
     data_coverage: "moderate"
-    notes: "Country. Coordinates approximate centroid; area/ population approximate."
+    notes: "Country. Coordinates approximate centroid."
 
   - geo_id: FSM
     name: "Federated States of Micronesia"
@@ -34,12 +44,14 @@ entities:
     parent_geo_id: null
     latitude: 6.8874
     longitude: 158.2150
-    population: 105000
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 75817
+    population_year: 2023
+    population_source: "FSM 2023 Population & Housing Census"
+    airport: "Four international airports (Yap, Chuuk, Pohnpei, Kosrae)"
+    port: "Four state ports"
     area_km2: 702
     data_coverage: "moderate"
-    notes: "Country. Four states (Yap, Chuuk, Pohnpei, Kosrae)."
+    notes: "Country. Four states (Yap, Chuuk, Pohnpei, Kosrae). 2023 census: down from 102,843 (2010)."
 
   - geo_id: RMI
     name: "Republic of the Marshall Islands"
@@ -48,12 +60,14 @@ entities:
     parent_geo_id: null
     latitude: 7.1165
     longitude: 171.1850
-    population: 42000
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 42418
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Marshall Islands International Airport (Majuro)"
+    port: "Majuro + Kwajalein ports"
     area_km2: 181
     data_coverage: "moderate"
-    notes: "Country. Composed of atolls; low-lying coral islands."
+    notes: "Country. Composed of atolls; low-lying coral islands. 2021 census: down 20% from 53,158 (2011)."
 
   # ---- FSM states ----
   - geo_id: FSM-YAP
@@ -63,9 +77,11 @@ entities:
     parent_geo_id: FSM
     latitude: 9.5160
     longitude: 138.1300
-    population: 11000
-    population_year: 2020
-    population_source: "seed_approximate"
+    population: 10739
+    population_year: 2023
+    population_source: "FSM 2023 Population & Housing Census"
+    airport: "Yap International Airport"
+    port: "Colonia port"
     data_coverage: "moderate"
     notes: "FSM state."
 
@@ -76,11 +92,13 @@ entities:
     parent_geo_id: FSM
     latitude: 7.4470
     longitude: 151.8490
-    population: 48000
-    population_year: 2020
-    population_source: "seed_approximate"
+    population: 33885
+    population_year: 2023
+    population_source: "FSM 2023 Population & Housing Census"
+    airport: "Chuuk International Airport (Weno)"
+    port: "Weno commercial port"
     data_coverage: "moderate"
-    notes: "FSM state."
+    notes: "FSM state (largest by population)."
 
   - geo_id: FSM-POH
     name: "Pohnpei"
@@ -89,11 +107,13 @@ entities:
     parent_geo_id: FSM
     latitude: 6.9640
     longitude: 158.2080
-    population: 36000
-    population_year: 2020
-    population_source: "seed_approximate"
+    population: 26102
+    population_year: 2023
+    population_source: "FSM 2023 Population & Housing Census"
+    airport: "Pohnpei International Airport"
+    port: "Pohnpei (Kolonia) port"
     data_coverage: "moderate"
-    notes: "FSM state."
+    notes: "FSM state (capital Palikir)."
 
   - geo_id: FSM-KOS
     name: "Kosrae"
@@ -102,11 +122,13 @@ entities:
     parent_geo_id: FSM
     latitude: 5.3250
     longitude: 163.0000
-    population: 6600
-    population_year: 2020
-    population_source: "seed_approximate"
+    population: 5092
+    population_year: 2023
+    population_source: "FSM 2023 Population & Housing Census"
+    airport: "Kosrae International Airport"
+    port: "Kosrae (Okat/Lelu) port"
     data_coverage: "moderate"
-    notes: "FSM state."
+    notes: "FSM state (smallest by population)."
 
   # ---- Palau islands / monitoring locations ----
   - geo_id: PAL-KOR
@@ -116,11 +138,13 @@ entities:
     parent_geo_id: PAL
     latitude: 7.3420
     longitude: 134.4780
-    population: 11000
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 11400
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: "via Roman Tmetuchl Int'l (Airai, ~10 km by bridge)"
+    port: "Koror / Malakal commercial port"
     data_coverage: "moderate"
-    notes: "Largest population center."
+    notes: "Largest population center; 65% of Palau lives in Koror."
 
   - geo_id: PAL-BAB
     name: "Babeldaob"
@@ -129,11 +153,13 @@ entities:
     parent_geo_id: PAL
     latitude: 7.5000
     longitude: 134.5500
-    population: 6000
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: null
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: "Roman Tmetuchl International Airport (Airai state)"
+    port: null
     data_coverage: "moderate"
-    notes: "Largest island by area."
+    notes: "Largest island by area; a multi-state island (10 states) not enumerated as one unit — the international airport sits in Airai state (pop 2,529, 2020)."
 
   - geo_id: PAL-MEL
     name: "Melekeok"
@@ -142,9 +168,11 @@ entities:
     parent_geo_id: PAL
     latitude: 7.5000
     longitude: 134.6240
-    population: 300
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 318
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: null
+    port: null
     data_coverage: "moderate"
     notes: "Capital (Ngerulmud area)."
 
@@ -155,9 +183,11 @@ entities:
     parent_geo_id: PAL
     latitude: 7.0100
     longitude: 134.2500
-    population: 500
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 470
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: "Peleliu Airstrip"
+    port: "Peleliu dock"
     data_coverage: "sparse"
     notes: "Southern island."
 
@@ -168,9 +198,11 @@ entities:
     parent_geo_id: PAL
     latitude: 6.9000
     longitude: 134.1300
-    population: 100
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 114
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: "Angaur Airstrip"
+    port: "Angaur dock"
     data_coverage: "sparse"
     notes: "Southernmost state."
 
@@ -181,315 +213,14 @@ entities:
     parent_geo_id: PAL
     latitude: 8.0800
     longitude: 134.7200
-    population: 50
-    population_year: 2022
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  # ---- RMI atolls / monitoring locations ----
-  - geo_id: RMI-MAJ
-    name: "Majuro"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 7.1160
-    longitude: 171.1850
-    population: 28000
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "moderate"
-    notes: "Capital atoll."
-
-  - geo_id: RMI-KWA
-    name: "Kwajalein"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 8.7200
-    longitude: 167.7300
-    population: 11000
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "moderate"
-    notes: "Large atoll; includes Ebeye."
-
-  - geo_id: RMI-EBE
-    name: "Ebeye"
-    entity_type: monitoring_location
-    country_code: MH
-    parent_geo_id: RMI-KWA
-    latitude: 8.7800
-    longitude: 167.7400
-    population: 9500
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Densely populated islet within Kwajalein."
-
-  - geo_id: RMI-JAL
-    name: "Jaluit"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 5.9200
-    longitude: 169.6300
-    population: 1800
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Southern atoll."
-
-  - geo_id: RMI-WOT
-    name: "Wotje"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 9.4500
-    longitude: 170.0200
-    population: 900
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-ARN
-    name: "Arno"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 7.0700
-    longitude: 171.5500
-    population: 1700
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Atoll east of Majuro."
-
-  # ---- RMI northern atolls (most drought-vulnerable; from El Niño research) ----
-  - geo_id: RMI-UTR
-    name: "Utrik"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 11.2700
-    longitude: 169.8500
-    population: 430
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll; repeatedly hardest-hit in El Niño droughts."
-
-  - geo_id: RMI-AIL
-    name: "Ailuk"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 10.2100
-    longitude: 169.9800
-    population: 340
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-MEJ
-    name: "Mejit"
-    entity_type: island
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 10.2800
-    longitude: 170.8700
-    population: 300
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Raised coral island (not an atoll)."
-
-  - geo_id: RMI-LIK
-    name: "Likiep"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 9.8200
-    longitude: 169.3100
-    population: 400
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-MAL
-    name: "Maloelap"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 8.7800
-    longitude: 171.0700
-    population: 850
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-WTH
-    name: "Wotho"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 10.1700
-    longitude: 165.9800
-    population: 100
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-UJA
-    name: "Ujae"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 9.0500
-    longitude: 165.6500
-    population: 360
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Northern atoll."
-
-  - geo_id: RMI-ENW
-    name: "Enewetak"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 11.5000
-    longitude: 162.2400
-    population: 850
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Far-northwestern atoll; includes Ebadon."
-
-  - geo_id: RMI-NAM
-    name: "Namu"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 7.9900
-    longitude: 168.1700
-    population: 800
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Atoll."
-
-  - geo_id: RMI-LAE
-    name: "Lae"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 8.9300
-    longitude: 166.2300
-    population: 350
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Atoll."
-
-  - geo_id: RMI-LIB
-    name: "Lib"
-    entity_type: island
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 8.3100
-    longitude: 167.3800
-    population: 150
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Small island."
-
-  - geo_id: RMI-AUR
-    name: "Aur"
-    entity_type: atoll
-    country_code: MH
-    parent_geo_id: RMI
-    latitude: 8.2000
-    longitude: 171.1600
-    population: 500
-    population_year: 2021
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Atoll."
-
-  # ---- FSM outer islands (drought-vulnerable) ----
-  - geo_id: FSM-YAP-ULI
-    name: "Ulithi"
-    entity_type: atoll
-    country_code: FM
-    parent_geo_id: FSM-YAP
-    latitude: 9.9700
-    longitude: 139.6700
-    population: 800
+    population: 41
     population_year: 2020
-    population_source: "seed_approximate"
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: null
+    port: "Kayangel dock"
     data_coverage: "sparse"
-    notes: "Yap outer atoll; D4 exceptional drought in 2024."
+    notes: "Northern atoll; boat access only."
 
-  - geo_id: FSM-YAP-WOL
-    name: "Woleai"
-    entity_type: atoll
-    country_code: FM
-    parent_geo_id: FSM-YAP
-    latitude: 7.3500
-    longitude: 143.9000
-    population: 900
-    population_year: 2020
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Yap outer atoll."
-
-  - geo_id: FSM-YAP-FAI
-    name: "Fais"
-    entity_type: island
-    country_code: FM
-    parent_geo_id: FSM-YAP
-    latitude: 9.7600
-    longitude: 140.5200
-    population: 300
-    population_year: 2020
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Raised coral island in Yap outer islands."
-
-  - geo_id: FSM-POH-KAP
-    name: "Kapingamarangi"
-    entity_type: atoll
-    country_code: FM
-    parent_geo_id: FSM-POH
-    latitude: 1.0700
-    longitude: 154.8100
-    population: 350
-    population_year: 2020
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Southernmost Pohnpei atoll; equatorial."
-
-  - geo_id: FSM-POH-NUK
-    name: "Nukuoro"
-    entity_type: atoll
-    country_code: FM
-    parent_geo_id: FSM-POH
-    latitude: 3.8500
-    longitude: 154.9400
-    population: 200
-    population_year: 2020
-    population_source: "seed_approximate"
-    data_coverage: "sparse"
-    notes: "Southern Pohnpei atoll."
-
-  # ---- Palau remote atolls (drought-vulnerable) ----
   - geo_id: PAL-SON
     name: "Sonsorol"
     entity_type: atoll
@@ -497,9 +228,11 @@ entities:
     parent_geo_id: PAL
     latitude: 5.3200
     longitude: 132.2200
-    population: 100
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 40
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: null
+    port: "Sonsorol dock (ship access only)"
     data_coverage: "sparse"
     notes: "Southwestern atoll; rainwater catchment only."
 
@@ -510,8 +243,357 @@ entities:
     parent_geo_id: PAL
     latitude: 3.0000
     longitude: 131.1200
-    population: 25
-    population_year: 2022
-    population_source: "seed_approximate"
+    population: 39
+    population_year: 2020
+    population_source: "Palau 2020 Census (Office of Planning & Statistics)"
+    airport: null
+    port: "Tobi (Hatohobei) dock (ship access only)"
     data_coverage: "sparse"
     notes: "Southernmost Palau atoll (Tobi)."
+
+  # ---- RMI atolls / monitoring locations ----
+  - geo_id: RMI-MAJ
+    name: "Majuro"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.1160
+    longitude: 171.1850
+    population: 23156
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Marshall Islands International Airport (Amata Kabua)"
+    port: "Majuro (Delap/Uliga) commercial port"
+    data_coverage: "moderate"
+    notes: "Capital atoll; 54.6% of the national population."
+
+  - geo_id: RMI-KWA
+    name: "Kwajalein"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.7200
+    longitude: 167.7300
+    population: 9789
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Bucholz Army Airfield (US military)"
+    port: "Kwajalein port (US military)"
+    data_coverage: "moderate"
+    notes: "Large atoll; includes Ebeye and the US Army garrison."
+
+  - geo_id: RMI-EBE
+    name: "Ebeye"
+    entity_type: monitoring_location
+    country_code: MH
+    parent_geo_id: RMI-KWA
+    latitude: 8.7800
+    longitude: 167.7400
+    population: 8416
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Ebeye dock"
+    data_coverage: "sparse"
+    notes: "Densely populated islet within Kwajalein atoll (one of the most densely populated islands in the Pacific); no airfield of its own (uses Bucholz)."
+
+  - geo_id: RMI-JAL
+    name: "Jaluit"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 5.9200
+    longitude: 169.6300
+    population: 1409
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Jaluit airstrip"
+    port: "Jaluit dock"
+    data_coverage: "sparse"
+    notes: "Southern atoll."
+
+  - geo_id: RMI-WOT
+    name: "Wotje"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.4500
+    longitude: 170.0200
+    population: 816
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Wotje airstrip"
+    port: "Wotje dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-ARN
+    name: "Arno"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.0700
+    longitude: 171.5500
+    population: 1141
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Arno dock (boat from Majuro)"
+    data_coverage: "sparse"
+    notes: "Atoll east of Majuro; no airfield, boat access."
+
+  - geo_id: RMI-UTR
+    name: "Utrik"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 11.2700
+    longitude: 169.8500
+    population: 264
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Utrik airstrip"
+    port: "Utrik dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll; repeatedly hardest-hit in El Niño droughts."
+
+  - geo_id: RMI-AIL
+    name: "Ailuk"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.2100
+    longitude: 169.9800
+    population: 235
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Ailuk airstrip"
+    port: "Ailuk dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-MEJ
+    name: "Mejit"
+    entity_type: island
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.2800
+    longitude: 170.8700
+    population: 230
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Mejit airstrip"
+    port: "Mejit dock"
+    data_coverage: "sparse"
+    notes: "Raised coral island (not an atoll)."
+
+  - geo_id: RMI-LIK
+    name: "Likiep"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.8200
+    longitude: 169.3100
+    population: 228
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Likiep airstrip"
+    port: "Likiep dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-MAL
+    name: "Maloelap"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.7800
+    longitude: 171.0700
+    population: 395
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Maloelap airstrip"
+    port: "Maloelap dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-WTH
+    name: "Wotho"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 10.1700
+    longitude: 165.9800
+    population: 88
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Wotho airstrip"
+    port: "Wotho dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll."
+
+  - geo_id: RMI-UJA
+    name: "Ujae"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 9.0500
+    longitude: 165.6500
+    population: 310
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Ujae dock"
+    data_coverage: "sparse"
+    notes: "Northern atoll; boat access only."
+
+  - geo_id: RMI-ENW
+    name: "Enewetak"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 11.5000
+    longitude: 162.2400
+    population: 296
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Enewetak Auxiliary Airfield (US military)"
+    port: "Enewetak dock"
+    data_coverage: "sparse"
+    notes: "Far-northwestern atoll; includes Ebadon."
+
+  - geo_id: RMI-NAM
+    name: "Namu"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 7.9900
+    longitude: 168.1700
+    population: 525
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Namu dock"
+    data_coverage: "sparse"
+    notes: "Atoll; boat access only."
+
+  - geo_id: RMI-LAE
+    name: "Lae"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.9300
+    longitude: 166.2300
+    population: 133
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Lae dock"
+    data_coverage: "sparse"
+    notes: "Atoll; boat access only."
+
+  - geo_id: RMI-LIB
+    name: "Lib"
+    entity_type: island
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.3100
+    longitude: 167.3800
+    population: 156
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: null
+    port: "Lib dock"
+    data_coverage: "sparse"
+    notes: "Small island; boat access only."
+
+  - geo_id: RMI-AUR
+    name: "Aur"
+    entity_type: atoll
+    country_code: MH
+    parent_geo_id: RMI
+    latitude: 8.2000
+    longitude: 171.1600
+    population: 317
+    population_year: 2021
+    population_source: "RMI 2021 Census (EPPSO)"
+    airport: "Aur airstrip"
+    port: "Aur dock"
+    data_coverage: "sparse"
+    notes: "Atoll."
+
+  # ---- FSM outer islands (drought-vulnerable; 2010 = latest municipality-level) ----
+  - geo_id: FSM-YAP-ULI
+    name: "Ulithi"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 9.9700
+    longitude: 139.6700
+    population: 847
+    population_year: 2010
+    population_source: "2010 FSM Census (latest municipality-level; 2023 census is state-level only)"
+    airport: "Ulithi airstrip (Falalop)"
+    port: "Falalop dock"
+    data_coverage: "sparse"
+    notes: "Yap outer atoll; D4 exceptional drought in 2024. Four inhabited islets."
+
+  - geo_id: FSM-YAP-WOL
+    name: "Woleai"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 7.3500
+    longitude: 143.9000
+    population: 1039
+    population_year: 2010
+    population_source: "2010 FSM Census (latest municipality-level; 2023 census is state-level only)"
+    airport: "Woleai airstrip"
+    port: "Woleai dock"
+    data_coverage: "sparse"
+    notes: "Yap outer atoll."
+
+  - geo_id: FSM-YAP-FAI
+    name: "Fais"
+    entity_type: island
+    country_code: FM
+    parent_geo_id: FSM-YAP
+    latitude: 9.7600
+    longitude: 140.5200
+    population: 294
+    population_year: 2010
+    population_source: "2010 FSM Census (latest municipality-level; 2023 census is state-level only)"
+    airport: null
+    port: "Fais dock"
+    data_coverage: "sparse"
+    notes: "Raised coral island in Yap outer islands; boat access only."
+
+  - geo_id: FSM-POH-KAP
+    name: "Kapingamarangi"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-POH
+    latitude: 1.0700
+    longitude: 154.8100
+    population: 350
+    population_year: 2010
+    population_source: "2010 FSM Census (latest municipality-level; 2023 census is state-level only)"
+    airport: null
+    port: "Kapingamarangi dock"
+    data_coverage: "sparse"
+    notes: "Southernmost Pohnpei atoll; equatorial; boat access only."
+
+  - geo_id: FSM-POH-NUK
+    name: "Nukuoro"
+    entity_type: atoll
+    country_code: FM
+    parent_geo_id: FSM-POH
+    latitude: 3.8500
+    longitude: 154.9400
+    population: 210
+    population_year: 2010
+    population_source: "2010 FSM Census (latest municipality-level; 2023 census is state-level only)"
+    airport: null
+    port: "Nukuoro dock"
+    data_coverage: "sparse"
+    notes: "Southern Pohnpei atoll; boat access only."

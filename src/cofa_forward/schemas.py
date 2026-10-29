@@ -26,6 +26,8 @@ class GeoEntity(BaseModel):
     population: int | None = None
     population_year: int | None = None
     population_source: str | None = None
+    airport: str | None = None
+    port: str | None = None
     elevation_source: str | None = None
     data_coverage: str | None = None
     spatial_resolution_notes: str | None = None

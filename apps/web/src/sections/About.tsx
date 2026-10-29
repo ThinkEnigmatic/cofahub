@@ -11,7 +11,8 @@ const SOURCES = [
   ["Open-Meteo marine", "waves + sea-surface temperature"],
   ["USGS SSEBop", "actual evapotranspiration (2003–2021)"],
   ["NMME", "multi-model seasonal outlook"],
-  ["WorldPop / HDX / geoBoundaries", "population + boundaries"],
+  ["RMI 2021 · FSM 2023 · Palau 2020 censuses", "atoll/state population + infrastructure (airports, ports)"],
+  ["WorldPop / HDX / geoBoundaries", "population grid + boundaries"],
 ];
 
 export default function About() {
