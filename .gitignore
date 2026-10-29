@@ -31,6 +31,10 @@ apps/macos/.build/
 apps/macos/.swiftpm/
 apps/macos/"COFA Forward.app"/
 
+# web app build artifacts
+apps/web/node_modules/
+apps/web/dist/
+
 # Runtime logs
 logs/
 
