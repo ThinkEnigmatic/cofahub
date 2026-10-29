@@ -25,9 +25,13 @@ def test_drought_monitor_status_fields():
     assert status["percentile"] is not None
     assert status["quintile"] in ("Drier", "Dry", "Typical", "Wet", "Wetter")
     assert status["d0_d4"] in ("D0", "D1", "D2", "D3", "D4", None)
-    # Rolling totals present.
+    assert status["peac_index"] in ("Red", "Yellow", "Dark Green")
+    assert status["rain_index_1m"] in ("Drier", "Dry", "Typical", "Wet", "Wetter")
+    # Rolling totals + 3-/6-month Rainfall Indices present.
     for w in (1, 3, 6):
         assert status.get(f"rain_{w}m_mm") is not None
+    for w in (3, 6):
+        assert status.get(f"rain_index_{w}m") in ("Drier", "Dry", "Typical", "Wet", "Wetter")
 
 
 def test_drought_monitor_empty_series():

@@ -92,3 +92,15 @@ def test_quintile_index_bands():
     assert quintile_index(0.99) == "Wetter"
     assert quintile_index(1.0) == "Wetter"
     assert quintile_index(float("nan")) is None
+
+
+def test_peac_index_thresholds():
+    from cofa_forward.drought.percentiles import peac_index
+
+    assert peac_index(50.0) == "Red"  # < 101.6 mm (4 in)
+    assert peac_index(101.5) == "Red"
+    assert peac_index(101.6) == "Yellow"  # 101.6-203.2 (4-8 in)
+    assert peac_index(150.0) == "Yellow"
+    assert peac_index(203.2) == "Yellow"  # <= 203.2
+    assert peac_index(203.3) == "Dark Green"  # > 203.2 mm (8 in)
+    assert peac_index(float("nan")) is None

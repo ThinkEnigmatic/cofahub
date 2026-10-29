@@ -150,7 +150,7 @@ def render() -> None:
     st.divider()
 
     # ---- Live drought monitor (USGS western-Pacific method on ERA5) ---- #
-    st.subheader("Drought monitor — quintile Rainfall Index (live, ERA5)")
+    st.subheader("Drought monitor — Rainfall Indices + PEAC (live, ERA5)")
     with st.spinner("Computing drought monitor from ERA5…"):
         monitor = get_drought_monitor(geo_id, entity.latitude, entity.longitude)
     if monitor.get("ok"):
@@ -162,17 +162,26 @@ def render() -> None:
             "Climatological median",
             f"{m['clim_median_mm']:.0f} mm" if m["clim_median_mm"] else "n/a",
         )
-        m4.metric("Quintile Rainfall Index", m.get("quintile") or "n/a")
-        m5.metric("D0–D4", m.get("d0_d4") or ("none" if m.get("percentile") is not None else "n/a"))
-        roll = " · ".join(
-            f"{w}m={m[f'rain_{w}m_mm']:.0f} mm" if m.get(f"rain_{w}m_mm") else f"{w}m=n/a"
-            for w in (1, 3, 6)
+        m4.metric("Rainfall Index (1-mo)", m.get("quintile") or "n/a")
+        m5.metric("PEAC 4/8-in Index", m.get("peac_index") or "n/a")
+        st.caption(
+            "Rainfall Indices: "
+            f"1-mo **{m.get('rain_index_1m') or 'n/a'}** · "
+            f"3-mo **{m.get('rain_index_3m') or 'n/a'}** · "
+            f"6-mo **{m.get('rain_index_6m') or 'n/a'}**. "
+            "Rolling totals: "
+            + " · ".join(
+                f"{w}m={m[f'rain_{w}m_mm']:.0f} mm" if m.get(f"rain_{w}m_mm") else f"{w}m=n/a"
+                for w in (1, 3, 6)
+            )
+            + "."
         )
         st.caption(
-            f"Rolling totals: {roll}. Computed from ERA5 ({monitor['source']}) using the "
-            "USGS western-Pacific method (Senay et al. 2026, DOI 10.5066/P1RXUMV3) — an "
-            "independent implementation, not the USGS CSV (which is Cloudflare-gated on "
-            "ScienceBase and covers FSM/RMI/Nauru/Solomon, not Palau)."
+            "PEAC 4/8-inch Index (traffic light on the latest month): **Red** <101.6 mm, "
+            "**Yellow** 101.6–203.2 mm, **Dark Green** >203.2 mm. Computed from ERA5 using "
+            "the USGS western-Pacific method (Senay et al. 2026, DOI 10.5066/P1RXUMV3), "
+            "verified against the release's R scripts — an independent implementation "
+            "(USGS baseline 2000–2024; here 1991–2020)."
         )
     else:
         st.info(f"Drought monitor unavailable: {monitor.get('error')}", icon="ℹ️")

@@ -116,3 +116,23 @@ def quintile_index(p: float) -> str | None:
     if p < 0.80:
         return "Wet"
     return "Wetter"
+
+
+def peac_index(monthly_mm: float) -> str | None:
+    """The PEAC 4/8-inch Index — an absolute-threshold drought traffic light.
+
+    Adapted from the Pacific ENSO Applications Climate Center, applied to the
+    latest month's precipitation (baseline-independent). Exact thresholds from
+    the USGS R scripts (Senay et al. 2026, ``3_IMERG_Monthly_Drought_Monitor.R``):
+
+    * < 101.6 mm (< 4 in) → **Red** (drought concern)
+    * 101.6–203.2 mm (4–8 in) → **Yellow** (adequate)
+    * > 203.2 mm (> 8 in) → **Dark Green** (sufficient)
+    """
+    if pd.isna(monthly_mm):
+        return None
+    if monthly_mm < 101.6:
+        return "Red"
+    if monthly_mm <= 203.2:
+        return "Yellow"
+    return "Dark Green"

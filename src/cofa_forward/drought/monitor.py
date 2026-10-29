@@ -1,18 +1,23 @@
 """Drought monitor — the USGS western-Pacific drought-monitoring methodology.
 
-Replicates Component 1 of the USGS data release "Drought Monitoring and 7-Day
-Precipitation Forecasting for western Pacific Nations from 2000–2026" (Senay,
-Kagone, Dwomoh & Andersen 2026, DOI 10.5066/P1RXUMV3): for each location and
-month it reports observed monthly precipitation, the climatological median,
-rolling 1-/3-/6-month totals, the **quintile Rainfall Index** (Drier/Dry/Typical/
-Wet/Wetter) and the D0–D4 severity level.
+Replicates the monthly drought monitor of the USGS data release "Hydro-climatic
+datasets … western Pacific Island nations" (Senay, Kagone, Dwomoh & Andersen
+2026, DOI 10.5066/P1RXUMV3), verified against the release's R scripts
+(``3_IMERG_Monthly_Drought_Monitor.R``, downloaded 2026-10-29). For each location
+and the latest month it reports four drought indices:
 
-The USGS pipeline runs on NASA IMERG Early Run. This module is source-agnostic:
-it computes the same indicators from any daily/monthly rainfall series. The app
-feeds it ERA5 or CHIRPS, both of which cover ocean-adjacent atolls more reliably
-than IMERG's land-masked grids. This is an independent implementation of the
-published method — **not** the USGS CSV (which is Cloudflare-gated on
-ScienceBase).
+* **1-/3-/6-Month Rainfall Index** — the quintile class (Drier/Dry/Typical/Wet/
+  Wetter) of the current month's precipitation and its rolling 3- and 6-month
+  sums, each compared against the same-calendar-month distribution over a
+  ``baseline_start``–``baseline_end`` baseline.
+* **PEAC 4/8-inch Index** — an absolute traffic light on the latest month's
+  precipitation: Red (<101.6 mm), Yellow (101.6–203.2 mm), Dark Green (>203.2 mm).
+
+The USGS pipeline runs on NASA IMERG Early Run with a 2000–2024 baseline. This
+module is source-agnostic: the app feeds it ERA5 or CHIRPS (both of which cover
+ocean-adjacent atolls more reliably than IMERG's land-masked grids) with a
+1991–2020 baseline. It is an independent implementation of the published,
+verified method — not the USGS CSV.
 """
 
 from __future__ import annotations
@@ -23,6 +28,7 @@ from .percentiles import (
     drought_level,
     empirical_percentile,
     monthly_distributions,
+    peac_index,
     quintile_index,
 )
 from .rainfall_metrics import monthly_totals, rolling_totals
@@ -36,7 +42,10 @@ def drought_monitor_status(
 ) -> dict:
     """Compute the drought-monitor status for the latest month of a daily series.
 
-    Every value is ``None``/NaN where the data is missing — nothing is fabricated.
+    Returns the latest month, monthly precipitation, climatological median,
+    percentile, and all four drought indices (1-/3-/6-month Rainfall Index +
+    PEAC 4/8-inch Index), plus rolling totals. Every value is ``None``/NaN where
+    data is missing — nothing is fabricated.
     """
     monthly = monthly_totals(daily, min_days_frac=0.8)
     valid = monthly.dropna()
@@ -52,11 +61,24 @@ def drought_monitor_status(
     median = float(dist.median()) if len(dist) else float("nan")
 
     rolling = rolling_totals(daily, windows=windows, min_days_frac=0.8)
+
     roll: dict[str, float | None] = {}
+    indices: dict[str, str | None] = {"rain_index_1m": quintile_index(percentile)}
     for w in windows:
         col = f"rain_{w}m_mm"
         s = rolling[col].dropna()
         roll[f"rain_{w}m_mm"] = float(s.iloc[-1]) if len(s) else None
+        if w > 1:
+            # Quintile of the rolling sum vs the same-calendar-month rolling sums
+            # within the baseline (matches the USGS 3-/6-month Rainfall Index).
+            rdist = monthly_distributions(rolling[col], baseline_start, baseline_end).get(
+                latest_month.month, pd.Series(dtype=float)
+            )
+            if len(rdist) and roll[f"rain_{w}m_mm"] is not None:
+                rp = empirical_percentile(roll[f"rain_{w}m_mm"], rdist)
+                indices[f"rain_index_{w}m"] = quintile_index(rp)
+            else:
+                indices[f"rain_index_{w}m"] = None
 
     return {
         "latest_month": latest_month.strftime("%Y-%m"),
@@ -65,12 +87,15 @@ def drought_monitor_status(
         "percentile": float(percentile) if pd.notna(percentile) else None,
         "quintile": quintile_index(percentile),
         "d0_d4": drought_level(percentile),
+        "peac_index": peac_index(latest),
+        **indices,
         **roll,
     }
 
 
 def _empty_status(windows: tuple[int, ...]) -> dict:
     roll = {f"rain_{w}m_mm": None for w in windows}
+    indices = {f"rain_index_{w}m": None for w in windows if w > 1}
     return {
         "latest_month": None,
         "monthly_mm": None,
@@ -78,5 +103,7 @@ def _empty_status(windows: tuple[int, ...]) -> dict:
         "percentile": None,
         "quintile": None,
         "d0_d4": None,
+        "peac_index": None,
+        **indices,
         **roll,
     }
