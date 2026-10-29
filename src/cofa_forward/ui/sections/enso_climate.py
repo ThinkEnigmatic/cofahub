@@ -14,6 +14,7 @@ from ..state import (
     get_enso_discussion,
     get_live_enso,
     get_nmme_multimodel,
+    get_peac_outlook,
     load_config,
     load_registry,
 )
@@ -146,6 +147,46 @@ def render() -> None:
         )
     else:
         st.info(f"NMME forecast unavailable: {mm.get('error')}", icon="ℹ️")
+
+    st.divider()
+
+    # ---- PEAC seasonal rainfall outlook (official, tercile) ---- #
+    st.subheader("PEAC seasonal rainfall outlook (official consensus)")
+    if st.button("Refresh (PEAC)", key="peac_refresh"):
+        get_peac_outlook.clear()
+    peac = get_peac_outlook()
+    if peac.get("ok"):
+        if peac.get("is_stale"):
+            st.warning(
+                f"⚠️ This outlook is for **{peac.get('season', '?')}** and was last updated "
+                f"**{peac.get('last_updated', 'unknown')}** "
+                f"(~{peac.get('stale_days', '?')} days ago). PEAC's seasonal rainfall outlook "
+                "has not been updated recently — treat it as historical context, not a current "
+                "forecast.",
+                icon="🕰️",
+            )
+        else:
+            st.success(
+                f"PEAC outlook for {peac.get('season', '?')} (updated {peac.get('last_updated')})."
+            )
+        fas = [s for s in peac["stations"] if s["geo_id"]]
+        rows = [
+            {
+                "Station": s["name"],
+                "Region": s["region"],
+                "Final outlook": s["final_outlook"],
+                "Below / Near / Above": s["probabilities"],
+            }
+            for s in fas
+        ]
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+        st.caption(
+            "Tercile probabilities (below-average : near-average : above-average rainfall), "
+            "an experimental consensus of 7 seasonal models. Tercile cut-offs use the CPC "
+            "1991–2020 climatology. Source: weather.gov/peac."
+        )
+    else:
+        st.info(f"PEAC outlook unavailable: {peac.get('error')}", icon="ℹ️")
 
     st.divider()
 

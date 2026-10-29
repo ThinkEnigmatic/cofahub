@@ -121,6 +121,15 @@ def get_enso_discussion() -> dict:
     return adapter.get_discussion()
 
 
+@st.cache_data(ttl=21600, show_spinner=False)
+def get_peac_outlook() -> dict:
+    """Fetch the PEAC seasonal rainfall outlook (cached 6 hours; freshness-flagged)."""
+    from ..ingestion.peac import PeacRainfallOutlookAdapter
+
+    adapter = PeacRainfallOutlookAdapter(cache=make_cache())
+    return adapter.get_outlook()
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_real_rainfall(geo_id: str, lat: float, lon: float, start: str = "1991-01-01") -> dict:
     """Fetch real daily rainfall (ERA5 via Open-Meteo) for a location, cached 24h."""

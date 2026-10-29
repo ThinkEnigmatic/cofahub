@@ -113,3 +113,18 @@ def test_live_nws_guam_advisory():
     r = NwsGuamAdapter().get_advisory()
     assert r["ok"], f"live NWS Guam failed: {r.get('error')}"
     assert r.get("agency") == "PGUM"
+
+
+def test_live_peac_outlook():
+    from cofa_forward.ingestion.peac import PeacRainfallOutlookAdapter
+
+    r = PeacRainfallOutlookAdapter().get_outlook()
+    assert r["ok"], f"live PEAC failed: {r.get('error')}"
+    assert r.get("season_label")
+    assert r.get("last_updated")
+    assert r.get("is_stale") is True  # known-stale product (last updated 2024-09-16)
+    fas = [s for s in r["stations"] if s["geo_id"]]
+    assert len(fas) == 7  # Koror, Yap, Chuuk, Pohnpei, Kosrae, Kwajalein, Majuro
+    for s in fas:
+        assert s["final_outlook"]
+        assert s["probabilities"].count(":") == 2

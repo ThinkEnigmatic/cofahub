@@ -48,6 +48,22 @@ sources:
     verification_date: "2026-10-28"
     notes: "Authoritative machine-readable ENSO index. Phase label is derived via the CPC >=5-season criterion; the official status statement is the Diagnostic Discussion."
 
+  - id: noaa-peac-rainfall-outlook
+    name: "PEAC seasonal rainfall outlook (tercile consensus)"
+    publisher: "NOAA NWS Pacific ENSO Applications Climate Services"
+    url: "https://www.weather.gov/peac/rainfall_new"
+    api: "https://www.weather.gov/peac/rainfall_new"
+    license: "U.S. Government public domain"
+    geographic_coverage: "14 stations: Hawaii, USAPI (Palau/FSM/RMI), Guam/CNMI, American Samoa"
+    spatial_resolution: "station-level (14 points)"
+    temporal_resolution: "seasonal (3-month), monthly issuance"
+    update_frequency: "monthly (historical; see freshness note)"
+    auth: "none"
+    variables: "tercile rainfall probabilities (below:near:above), final outlook per station"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "HTML scrape of the official experimental consensus outlook (7 seasonal models, tercile form). FAS stations carry a geo_id. FRESHNESS GUARD: last updated 2024-09-16 (SON 2024) — the Pacific ENSO Update newsletter is discontinued and the outlook has gone stale; the adapter flags is_stale so the app presents it as historical, never as current."
+
   - id: noaa-cpc-enso-discussion
     name: "NOAA CPC ENSO Diagnostic Discussion"
     publisher: "NOAA Climate Prediction Center"
