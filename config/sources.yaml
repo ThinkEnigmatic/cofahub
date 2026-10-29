@@ -56,9 +56,10 @@ sources:
     geographic_coverage: "Global ENSO state + official probabilistic outlook"
     temporal_resolution: "Monthly (2nd Thursday)"
     auth: "none"
-    variables: "ENSO Alert System status, Niño indices, synopsis, outlook probabilities"
-    implementation_status: planned
-    notes: "Narrative/HTML (no structured file); scrape alert status + synopsis. Not yet implemented."
+    variables: "ENSO Alert System status, synopsis, outlook summary"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "HTML scrape of the official status statement: issue date, alert status (e.g. El Niño Advisory), synopsis, outlook summary. Authoritative (not a derived phase)."
 
   - id: noaa-ibtracs
     name: "IBTrACS v04r01 (International Best Track Archive)"
@@ -173,12 +174,14 @@ sources:
     publisher: "NOAA NCEI / UC Irvine CHRS"
     url: "https://www.ncei.noaa.gov/products/climate-data-records/precipitation-persiann"
     license: "U.S. Government open data"
-    geographic_coverage: "60S-60N (covers FAS)"
+    geographic_coverage: "60S-60N (covers FAS, over ocean + land)"
     spatial_resolution: "0.25 deg daily (CDR); 0.04 deg 3-hourly (CCS-CDR)"
     temporal_resolution: "1983-present"
-    auth: "none (NCEI); registration for CHRS bulk"
-    variables: "precipitation"
-    implementation_status: planned
+    auth: "none (NCEI HTTP)"
+    variables: "precipitation (mm)"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "Daily point extraction via NCEI HTTP (per-file download + xarray). Satellite-gauge blend; covers ocean-adjacent atolls (CHIRPS is land-masked). Lags ~3-6 months (CDR)."
 
   - id: gpcc-monthly
     name: "GPCC monthly gauge precipitation"

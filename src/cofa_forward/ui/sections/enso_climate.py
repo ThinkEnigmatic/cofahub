@@ -11,6 +11,7 @@ from ...visualization.leaflet_maps import metric_map
 from ..components.common import page_header, render_folium, render_plotly, sample_banner
 from ..state import (
     get_all_indicators,
+    get_enso_discussion,
     get_live_enso,
     get_nmme_multimodel,
     load_config,
@@ -59,14 +60,20 @@ def render() -> None:
             f"La Niña ≤ {thresholds.get('la_nina')} °C (3-month running mean of Niño-3.4 "
             f"anomaly, {thresholds.get('base_period')} baseline)."
         )
-        st.caption(
-            "Official outlook timestamp: from the CPC Diagnostic Discussion (not parsed here)."
-        )
 
     with col2:
-        st.subheader("Seasonal outlook")
-        st.info("Multi-model seasonal forecast (NMME) is available below.", icon="ℹ️")
-        st.caption("Official probabilistic outlook: CPC Diagnostic Discussion (not parsed here).")
+        st.subheader("Official status statement")
+        if st.button("Refresh (CPC Diagnostic Discussion)", use_container_width=True):
+            get_enso_discussion.clear()
+        disc = get_enso_discussion()
+        if disc.get("ok"):
+            st.markdown(f"**ENSO Alert System Status: {disc['alert_status']}**")
+            st.caption(f"Issued {disc.get('issue_date')} · retrieved {disc.get('retrieved_at')}.")
+            if disc.get("synopsis"):
+                st.write(disc["synopsis"])
+        else:
+            st.info("Diagnostic Discussion unavailable (offline?).", icon="ℹ️")
+        st.caption("Authoritative CPC status statement — not a derived phase.")
 
     st.divider()
 

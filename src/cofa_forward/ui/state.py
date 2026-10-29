@@ -112,6 +112,15 @@ def get_live_enso() -> dict:
     return adapter.get_oni()
 
 
+@st.cache_data(ttl=21600, show_spinner=False)
+def get_enso_discussion() -> dict:
+    """Fetch the official CPC ENSO Diagnostic Discussion (cached 6 hours)."""
+    from ..ingestion.enso_discussion import CpcEnsoDiscussionAdapter
+
+    adapter = CpcEnsoDiscussionAdapter(cache=make_cache())
+    return adapter.get_discussion()
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def get_real_rainfall(geo_id: str, lat: float, lon: float, start: str = "1991-01-01") -> dict:
     """Fetch real daily rainfall (ERA5 via Open-Meteo) for a location, cached 24h."""
