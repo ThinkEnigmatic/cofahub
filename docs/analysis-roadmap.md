@@ -108,6 +108,17 @@ The tool's three structural weaknesses are, in order:
 3. **Sea-level anomaly + PEAC sea-level outlook** (the biggest un-modeled atoll
    hazard, and directly ENSO-coupled).
 
+## Built (2026-10-29)
+
+* GHCNd in-situ ground truth + bias check · Hargreaves PET water balance ·
+  UHSLC tide gauges · national drought plans/declarations guidance page ·
+  climate trends (linear/Theil-Sen/Mann-Kendall) · live forecast verification ·
+  marine waves/SST · compound-hazard flags · ENSO analogs · coral-bleaching
+  watch (DHW) · deterministic live situation brief.
+
+Still open: precise atoll storm-surge (hi-res bathymetry), groundwater-lens depth,
+SSEBop *actual* ET current years (ScienceBase-gated), Palau-specific USGS data.
+
 ## Honest non-starters (kept out)
 
 * **Groundwater / freshwater-lens depth** — not satellite-observable; needs local

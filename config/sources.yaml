@@ -18,6 +18,21 @@ sources:
     implementation_status: implemented_and_tested
     verification_date: "2026-10-28"
 
+  - id: open-meteo-marine
+    name: "Open-Meteo Marine API (waves + sea-surface temperature)"
+    publisher: "Open-Meteo"
+    url: "https://open-meteo.com/en/docs/marine-weather-api"
+    api: "https://marine-api.open-meteo.com/v1/marine"
+    license: "Data CC BY 4.0"
+    geographic_coverage: "Global ocean (covers FAS points)"
+    spatial_resolution: "~11 km marine grid"
+    temporal_resolution: "current + daily; ~16-day horizon; past_days for history"
+    auth: "none"
+    variables: "significant wave height/period/direction, sea-surface temperature"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "Feeds the coastal/marine conditions + the simplified coral-bleaching watch (Degree Heating Weeks)."
+
   - id: open-meteo-archive
     name: "Open-Meteo Historical Weather API (ERA5-based)"
     publisher: "Open-Meteo / ECMWF ERA5"
