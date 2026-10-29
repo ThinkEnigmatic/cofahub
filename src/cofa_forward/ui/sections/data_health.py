@@ -9,7 +9,7 @@ import streamlit as st
 
 from ... import __version__
 from ..components.common import page_header
-from ..state import load_config, make_db
+from ..state import get_snapshot_status, load_config, make_db
 
 _STATUS_ICON = {
     "implemented_and_tested": "✅",
@@ -49,6 +49,33 @@ def render() -> None:
     st.write(f"- Version: **{__version__}**")
     st.write(f"- Geographic registry status: **{cfg.geography_status}** (seed, approximate)")
     st.write(f"- Default units: **{cfg.default_units}** (imperial optional)")
+
+    st.divider()
+
+    # ---- Offline snapshot status ---- #
+    snap = get_snapshot_status()
+    if snap["offline"]:
+        st.subheader("📴 Offline mode (snapshot)")
+        st.write(
+            f"Snapshot captured **{snap['snapshot_at']}** — "
+            f"**{snap['ok_sources']}/{snap['n_sources']}** sources available."
+        )
+        if snap["missing"]:
+            st.warning(f"Missing from snapshot: {', '.join(snap['missing'])}", icon="⚠️")
+        st.caption(
+            "Set COFA_OFFLINE=1 to serve the pre-fetched snapshot; unset it to fetch live "
+            "data. Refresh the snapshot with `scripts/prefetch_snapshot.py` (or the macOS app's "
+            '"Refresh snapshot" button).'
+        )
+    else:
+        st.subheader("📡 Online mode")
+        if snap["snapshot_at"]:
+            st.write(
+                f"A snapshot from **{snap['snapshot_at']}** is present on disk "
+                f"({snap['ok_sources']}/{snap['n_sources']} sources) for offline fallback."
+            )
+        else:
+            st.write("No offline snapshot has been captured yet.")
 
     st.divider()
 

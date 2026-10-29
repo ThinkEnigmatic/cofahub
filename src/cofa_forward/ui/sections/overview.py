@@ -13,6 +13,7 @@ from ..state import (
     get_all_indicators,
     get_boundaries,
     get_live_enso,
+    get_snapshot_status,
     load_config,
     load_registry,
 )
@@ -22,6 +23,14 @@ def render() -> None:
     cfg = load_config()
     registry = load_registry()
     page_header(cfg.name, cfg.subtitle)
+
+    snap = get_snapshot_status()
+    if snap["offline"]:
+        st.info(
+            f"📴 Offline mode — serving the snapshot captured {snap['snapshot_at']}. "
+            "Live sources are not being fetched.",
+            icon="📴",
+        )
 
     sample_banner()
 

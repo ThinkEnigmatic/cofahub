@@ -12,18 +12,22 @@ geospatial foundation. Repo: `~/cofa-forward`.
 
 ## Where things stand
 
-- **20 commits**; latest `10e9372`. Git repo is local (no remote).
-- **Tests:** 184 offline + 14 live-network pass. Lint/format clean (ruff).
-- **App:** 10 pages, all render (AppTest).
+- **35 commits**; latest `8c9b1de` (local git, no remote).
+- **Tests:** 228 offline + live-network pass. Lint/format clean (ruff).
+- **App:** 12 pages, all render (AppTest).
 - **Deployed** at https://cofaforward.benigmatic.com (Cloudflare Tunnel → `127.0.0.1:8501`),
   protected by **Cloudflare Access** (allow `bhemingway@gmail.com`, team
   `bold-field-37ad`, 24h session). See the *Deployment* section below.
-- All 14 data-source adapters are live-tested, including IMERG (Earthdata token).
-  Two more (WeatherNext, NVIDIA Earth-2) are credential-gated and wired in honestly.
-  Remaining: PEAC outlook (HTML) + boundary-polygon rendering on the map.
-- **Maps:** replaced Plotly `scattergeo` with Leaflet (folium) satellite basemaps
-  (Esri World Imagery + NASA GIBS MODIS/VIIRS/BlueMarble, keyless). See
+- All live data-source adapters are implemented + tested (IMERG via Earthdata token).
+  WeatherNext + NVIDIA Earth-2 are credential-gated and wired honestly.
+- **Maps:** folium Leaflet satellite basemaps (Esri World Imagery + NASA GIBS) with
+  administrative boundary polygons + MUR SST / PACE chlorophyll-a overlays. See
   `src/cofa_forward/visualization/leaflet_maps.py`.
+- **PEAC seasonal rainfall outlook** (`ingestion/peac.py`) scraped with a freshness
+  guard (product is stale: last updated 2024-09-16).
+- **macOS app + offline cache (v0.3.0):** SwiftUI shell in `apps/macos/`, offline
+  snapshot via `COFA_OFFLINE=1` + `scripts/prefetch_snapshot.py`. See
+  `docs/MACOS_APP.md`.
 - **WeatherNext access requested (2026-10-29):** submitted the Google DeepMind
   access form for `hemingwayglobal77@gmail.com` (name "Ben Hemingway", residence
   Philippines, org N/A, sector Other/General/Research/Weather, use case Weather
@@ -69,6 +73,8 @@ uv run python scripts/ingest_chirps.py --geo PAL-KOR
 uv run python scripts/monitor_bulletins.py
 uv run python scripts/check_sources.py
 uv run python scripts/generate_report.py
+uv run python scripts/prefetch_snapshot.py [--skip-ibtracs]   # offline snapshot
+scripts/deploy_macos_app.sh --host bens-macbook-pro.local      # macOS app (MBP)
 ```
 
 ## Deployment (cofaforward.benigmatic.com)
@@ -141,6 +147,8 @@ reference:
 | geoboundaries | boundaries.py | Palau ADM1 (16 states, ODbL/OSM) via GeoJSON |
 | noaa-nmme | nmme.py | 6-model seasonal ENSMEAN (xarray + netCDF4) |
 | nasa-gpm-imerg | imerg.py | daily point extraction (earthaccess; needs token + EULA) |
+| noaa-peac-rainfall-outlook | peac.py | tercile rainfall outlook (HTML scrape; freshness guard) |
+| nasa-gibs-overlays | leaflet_maps.py | MUR SST / SST anomaly / PACE chlorophyll (keyless WMTS) |
 
 `planned` (researched, not wired): PEAC seasonal outlook, CPC ENSO Diagnostic
 Discussion (partly via bulletin monitor), JTWC/NWS-Guam advisories (partly via
@@ -165,10 +173,12 @@ src/cofa_forward/
   impacts/         event_catalog, evidence
   intelligence/    indicators, synthesis, confidence, report_builder, verification
   visualization/   leaflet_maps (folium satellite basemaps), charts, legends, layers
-  ui/              app.py + sections/ (10 page modules) + components + state.py
-scripts/           12 CLI scripts
+  ui/              app.py + sections/ (12 page modules) + components + state.py
+  storage/         FileCache (serve_stale), Database, ParquetStore, snapshot, provenance
+apps/macos/        SwiftUI shell (Package.swift + Sources/ + package_app.sh)
+scripts/           CLI scripts (incl. prefetch_snapshot.py, deploy_macos_app.sh)
 tests/             unit/ + integration/ (network-marked) + fixtures/
-data/              raw/ (worldpop, boundaries, bulletins) · processed/ · samples/ · cache/ · catalog.db
+data/              raw/ (worldpop, boundaries, bulletins, nmme) · processed/ · samples/ · cache/ · snapshot/ · catalog.db
 ```
 
 ## Key scientific/engineering decisions (do not regress)
@@ -203,14 +213,12 @@ data/              raw/ (worldpop, boundaries, bulletins) · processed/ · sampl
 
 ## Roadmap (next iteration)
 
-1. **PEAC seasonal outlook** — HTML scrape (weather.gov/peac); the rainfall
-   outlook appeared stale (SON-2024) in research, so add a freshness guard.
-2. **SST / ocean-colour overlays** — Sentinel-3 / VIIRS (Earthdata token already
-   present); heavy raster, STAC/LANCE access documented in sources.yaml.
-3. **USGS western-Pacific drought (P1RXUMV3)** — requires manual browser import
-   (ScienceBase bot-blocks); covers FSM/RMI (not Palau).
-4. Polish: render boundary polygons on the map; area-weighted aggregation;
-   Himawari IR bands + region-zoom tiles.
+1. **IMERG live-verify** — supply Earthdata creds to complete `implemented_and_tested`.
+2. **USGS western-Pacific drought (P1RXUMV3)** — manual browser import (ScienceBase
+   bot-blocks); covers FSM/RMI (not Palau).
+3. **Offline basemap-tile caching** — the map *data* works offline, but the Esri/GIBS
+   imagery tiles still need a connection (Leaflet fetches them client-side).
+4. Polish: Himawari IR bands + region-zoom tiles; Palau ADM2 geometry.
 
 ## Gotchas
 

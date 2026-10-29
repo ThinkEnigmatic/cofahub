@@ -112,10 +112,12 @@ def render() -> None:
     hima = get_himawari_image()
     if hima.get("ok"):
         st.image(
-            hima["image_url"],
-            caption=f"Himawari-9 full disk (composite), {hima['time']} UTC. "
-            "The Freely Associated States are in the western-Pacific portion "
-            "(upper-left of the disk).",
+            hima.get("image_url") or hima.get("image_path"),
+            caption=(
+                f"Himawari-9 full disk (composite), {hima['time']} UTC. "
+                "The Freely Associated States are in the western-Pacific portion "
+                "(upper-left of the disk)." + (" (offline snapshot)" if hima.get("offline") else "")
+            ),
             width=700,
         )
         st.caption(

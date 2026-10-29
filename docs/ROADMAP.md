@@ -34,15 +34,42 @@
   the ENSO & Climate page as a multi-model precipitation outlook.
 * **Model comparison** — Open-Meteo multi-model API (ECMWF IFS/AIFS, GFS, ICON,
   GEM, …) wired into Weather Operations; no GRIB/eccodes needed.
+* **El Niño Comparison page** — long ERA5 series (1997→now) per location vs the
+  2015-16 / 1997-98 / 2023-24 emergencies; sourced crisis facts + media links.
+* **AI Analysis (sandboxed)** — LLM chat grounded in a deterministic data snapshot;
+  read-only text pipe (no tools/code execution), bounded input/output.
+* **Satellite basemaps** — folium Leaflet maps over Esri World Imagery + NASA GIBS
+  (replaces Plotly `scattergeo`).
+* **WeatherNext 3 + NVIDIA Earth-2** — credential-gated adapters wired honestly
+  (`requires_credentials`); WeatherNext access form submitted (monitor running).
+
+## v0.3.0 (2026-10-29) — polygons, PEAC, remote-sensing, macOS app
+
+1. **Map polygon rendering + area-weighted aggregation** — administrative boundary
+   polygons (FSM/RMI HDX COD-AB + Palau geoBoundaries) rendered on the folium map;
+   `polygon_area_km2()` (spherical, hole-aware) and `aggregate_by_area()` correct
+   the simple mean where island sizes differ. 27 entities matched to polygons
+   (countries = ADM0, outer islands = not ADM1 — documented).
+2. **PEAC seasonal rainfall outlook** — scraped weather.gov/peac into per-station
+   tercile outlooks (7 FAS stations carry geo_ids), with a **freshness guard**
+   (product is stale: last updated 2024-09-16, SON 2024; the PEU newsletter is
+   discontinued) so it is shown as historical, never current.
+3. **SST + chlorophyll-a overlays** — MUR SST, MUR SST anomaly, and PACE OCI
+   chlorophyll-a as keyless GIBS WMTS overlays (layer IDs/TMS verified live).
+4. **macOS app + offline cache (final phase)** — SwiftUI shell (`apps/macos/`)
+   hosting the Streamlit app in a WKWebView, with `COFA_OFFLINE` snapshot mode:
+   `FileCache(serve_stale=True)`, `data/raw/` persistence, and a structured
+   `data/snapshot/` store + `scripts/prefetch_snapshot.py` + `deploy_macos_app.sh`.
 
 ## Next (prioritized)
 
 1. **Verify IMERG live** — supply Earthdata credentials (`.netrc` or
    `earthaccess.login`) to complete `implemented_and_tested` for the IMERG adapter.
-2. Palau geometry refinement / area-weighted aggregation / map polygon rendering.
+2. USGS western-Pacific drought (P1RXUMV3) manual import; Himawari IR bands.
+3. Offline basemap-tile caching (imagery tiles currently need a connection).
 
 ## Deferred / not attempted
 
-* Palau geometry (no COD-AB); area-weighted aggregation; full map polygon rendering.
+* Palau ADM2 / municipality geometry; area-weighted aggregation is ADM1-only for now.
 * Dynamical/statistical downscaling — not implemented (never claimed).
 * WeatherNext 3 (allowlist-gated; keep optional). Remote deployment hardening.

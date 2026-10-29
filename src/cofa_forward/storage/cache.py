@@ -22,12 +22,17 @@ def cache_key(url: str, params: dict[str, Any] | None = None) -> str:
 
 
 class FileCache:
-    """TTL cache writing raw bytes under a cache directory."""
+    """TTL cache writing raw bytes under a cache directory.
 
-    def __init__(self, cache_dir: Path | str, ttl_seconds: int = 900):
+    ``serve_stale`` makes the cache return entries past their TTL — used in
+    offline mode so a pre-fetched snapshot keeps serving data without a network.
+    """
+
+    def __init__(self, cache_dir: Path | str, ttl_seconds: int = 900, serve_stale: bool = False):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.ttl_seconds = int(ttl_seconds)
+        self.serve_stale = bool(serve_stale)
 
     def _path(self, key: str) -> Path:
         return self.cache_dir / f"{key}.json"
@@ -37,7 +42,7 @@ class FileCache:
         if not p.exists():
             return None
         age = time.time() - p.stat().st_mtime
-        if age > self.ttl_seconds:
+        if age > self.ttl_seconds and not self.serve_stale:
             return None
         return p.read_bytes()
 

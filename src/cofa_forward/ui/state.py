@@ -88,15 +88,44 @@ def get_location_climatology(geo_id: str) -> dict:
 
 
 def make_cache() -> FileCache:
+    from ..storage.snapshot import is_offline
+
     cfg = load_config()
     cfg.ensure_data_dirs()
-    return FileCache(cfg.data_dir("cache"), cfg.cache_ttl_seconds)
+    # In offline mode the cache serves stale entries so a pre-fetched snapshot
+    # keeps working without a network connection.
+    return FileCache(cfg.data_dir("cache"), cfg.cache_ttl_seconds, serve_stale=is_offline())
 
 
 def make_db() -> Database:
     cfg = load_config()
     cfg.ensure_data_dirs()
     return Database(cfg.data_root / "catalog.db")
+
+
+@st.cache_resource(show_spinner=False)
+def snapshot_store():
+    """The offline snapshot store (per-source JSON/Parquet + manifest)."""
+    from ..storage.snapshot import SnapshotStore, snapshot_dir
+
+    return SnapshotStore(snapshot_dir(load_config()))
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def get_snapshot_status() -> dict:
+    """Summarize the offline snapshot (age, coverage) for the UI."""
+    from ..storage.snapshot import is_offline
+
+    store = snapshot_store()
+    m = store.manifest()
+    sources = m.get("sources", {})
+    return {
+        "offline": is_offline(),
+        "snapshot_at": m.get("snapshot_at"),
+        "n_sources": len(sources),
+        "ok_sources": sum(1 for v in sources.values() if v.get("ok")),
+        "missing": sorted(s for s, v in sources.items() if not v.get("ok")),
+    }
 
 
 def units_imperial() -> bool:
@@ -208,9 +237,19 @@ def get_jtwc_warnings() -> dict:
 
 @st.cache_data(ttl=600, show_spinner=False)
 def get_himawari_image(width: int = 550) -> dict:
-    """Latest Himawari-9 full-disk satellite image (cached 10 min)."""
-    from ..ingestion.himawari import HimawariAdapter
+    """Latest Himawari-9 full-disk satellite image (cached 10 min).
 
+    In offline mode, returns the pre-fetched snapshot image (a local file path
+    ``st.image`` can render directly) instead of a remote URL.
+    """
+    from ..ingestion.himawari import HimawariAdapter
+    from ..storage.snapshot import is_offline
+
+    if is_offline():
+        snap = snapshot_store().read("himawari_latest")
+        if snap and snap.get("image_path"):
+            return {**snap, "ok": True, "offline": True}
+        return {"ok": False, "error": "offline and no Himawari snapshot", "offline": True}
     return HimawariAdapter().latest_full_disk(width=width)
 
 
@@ -252,9 +291,25 @@ def get_chirps_monthly(geo_id: str, lat: float, lon: float) -> dict:
     """Fetch the CHIRPS v3 monthly rainfall series for a location (cached 24h).
 
     Issues one HTTP range request per month — slow on first call (~1-2 min for a
-    full baseline). Land-masked product; see the adapter docs.
+    full baseline). Land-masked product; see the adapter docs. In offline mode it
+    reads the pre-fetched Parquet snapshot instead.
     """
     from ..ingestion.chirps import ChirpsAdapter
+    from ..storage.snapshot import is_offline
+
+    if is_offline():
+        df = snapshot_store().read_df(f"chirps_monthly_{geo_id}")
+        if df is not None and not df.empty:
+            series = df.set_index("date")["precip_mm"]
+            return {
+                "ok": True,
+                "source": "chirps-v3",
+                "series": series,
+                "n_months": int(len(series)),
+                "n_missing": int(series.isna().sum()),
+                "offline": True,
+            }
+        return {"ok": False, "error": "offline and no CHIRPS snapshot", "offline": True}
 
     adapter = ChirpsAdapter()
     return adapter.get_monthly_series(lat, lon, "1991-01-01", "2024-12-31")
