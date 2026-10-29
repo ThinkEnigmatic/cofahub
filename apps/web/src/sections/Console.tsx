@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import FASMap from "../components/FASMap";
 import RainChart from "../components/RainChart";
 import Readout from "../components/Readout";
 import { getEnso, getStations } from "../lib/data";
 import { useSelection } from "../lib/selection";
 import { useStation } from "../lib/useStation";
+import { useStations } from "../lib/useStations";
 import type { EnsoState, Station } from "../lib/types";
 
 const QUINTILE_TONE: Record<string, "default" | "key" | "pink" | "warn"> = {
@@ -17,15 +19,16 @@ const QUINTILE_TONE: Record<string, "default" | "key" | "pink" | "warn"> = {
 export default function Console() {
   const { geoId } = useSelection();
   const { drought, marine, seaLevel, compound, rainfall } = useStation(geoId);
+  const { stations, levels } = useStations();
   const [enso, setEnso] = useState<EnsoState | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
+  const [names, setNames] = useState<Station[]>([]);
 
   useEffect(() => {
     getEnso().then(setEnso).catch(() => {});
-    getStations().then(setStations).catch(() => {});
+    getStations().then(setNames).catch(() => {});
   }, []);
 
-  const name = stations.find((s) => s.geoId === geoId)?.name ?? geoId;
+  const name = names.find((s) => s.geoId === geoId)?.name ?? geoId;
 
   return (
     <div className="section">
@@ -38,7 +41,7 @@ export default function Console() {
       </div>
 
       {/* ENSO strip */}
-      <div className="row" style={{ gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="row" style={{ gap: "1rem", marginBottom: "1.25rem" }}>
         {enso?.available ? (
           <>
             <span className="enso-chip">
@@ -56,8 +59,22 @@ export default function Console() {
         )}
       </div>
 
+      {/* Satellite map — the regional situation. */}
+      <div className="map-panel">
+        <FASMap stations={stations} levels={levels} />
+        <div className="map-legend">
+          <span className="mono-label">Drought level</span>
+          <span><i style={{ background: "#00a2c8" }} /> none</span>
+          <span><i style={{ background: "#c87600" }} /> D0</span>
+          <span><i style={{ background: "#e0604e" }} /> D1</span>
+          <span><i style={{ background: "#ff4fa3" }} /> D2</span>
+          <span><i style={{ background: "#ff2d78" }} /> D3</span>
+          <span><i style={{ background: "#ff1a4d" }} /> D4</span>
+        </div>
+      </div>
+
       {/* Drought readouts */}
-      <div className="readout-grid">
+      <div className="readout-grid" style={{ marginTop: "1.25rem" }}>
         <Readout
           label="Monthly rainfall"
           value={drought?.monthlyMm != null ? drought.monthlyMm.toFixed(0) : "—"}
