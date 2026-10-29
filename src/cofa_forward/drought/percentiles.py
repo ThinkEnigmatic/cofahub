@@ -136,3 +136,34 @@ def peac_index(monthly_mm: float) -> str | None:
     if monthly_mm <= 203.2:
         return "Yellow"
     return "Dark Green"
+
+
+def classify_quintile(value: float, dist: pd.Series) -> str | None:
+    """Classify a value against the quintile thresholds of a distribution.
+
+    Faithfully mirrors the USGS R script (``3_IMERG_Monthly_Drought_Monitor.R``):
+    the thresholds are ``quantile(dist, c(0.2, 0.4, 0.6, 0.8))`` using R's
+    default type-7 (Hyndman–Fan) interpolation — which equals pandas
+    ``interpolation="linear"`` — and the value is classified with the R if/else
+    chain (``< Q20 → Drier, < Q40 → Dry, < Q60 → Typical, < Q80 → Wet, else
+    Wetter``).
+
+    This differs subtly from :func:`quintile_index` (which takes an already-
+    computed *rank*); use this where the goal is to reproduce the USGS index from
+    raw values.
+    """
+    if pd.isna(value) or dist is None:
+        return None
+    d = dist.dropna()
+    if d.empty:
+        return None
+    q = d.quantile([0.2, 0.4, 0.6, 0.8], interpolation="linear")
+    if value < q.iloc[0]:
+        return "Drier"
+    if value < q.iloc[1]:
+        return "Dry"
+    if value < q.iloc[2]:
+        return "Typical"
+    if value < q.iloc[3]:
+        return "Wet"
+    return "Wetter"

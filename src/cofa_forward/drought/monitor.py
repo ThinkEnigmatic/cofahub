@@ -25,11 +25,11 @@ from __future__ import annotations
 import pandas as pd
 
 from .percentiles import (
+    classify_quintile,
     drought_level,
     empirical_percentile,
     monthly_distributions,
     peac_index,
-    quintile_index,
 )
 from .rainfall_metrics import monthly_totals, rolling_totals
 
@@ -63,29 +63,27 @@ def drought_monitor_status(
     rolling = rolling_totals(daily, windows=windows, min_days_frac=0.8)
 
     roll: dict[str, float | None] = {}
-    indices: dict[str, str | None] = {"rain_index_1m": quintile_index(percentile)}
+    # 1-month Rainfall Index: classify the latest month against the per-month
+    # distribution's quintile thresholds (R type-7 quantile — matches USGS).
+    indices: dict[str, str | None] = {"rain_index_1m": classify_quintile(latest, dist)}
     for w in windows:
         col = f"rain_{w}m_mm"
         s = rolling[col].dropna()
         roll[f"rain_{w}m_mm"] = float(s.iloc[-1]) if len(s) else None
         if w > 1:
-            # Quintile of the rolling sum vs the same-calendar-month rolling sums
-            # within the baseline (matches the USGS 3-/6-month Rainfall Index).
+            # 3-/6-month Rainfall Index: classify the rolling sum against the
+            # same-calendar-month rolling sums within the baseline (matches USGS).
             rdist = monthly_distributions(rolling[col], baseline_start, baseline_end).get(
                 latest_month.month, pd.Series(dtype=float)
             )
-            if len(rdist) and roll[f"rain_{w}m_mm"] is not None:
-                rp = empirical_percentile(roll[f"rain_{w}m_mm"], rdist)
-                indices[f"rain_index_{w}m"] = quintile_index(rp)
-            else:
-                indices[f"rain_index_{w}m"] = None
+            indices[f"rain_index_{w}m"] = classify_quintile(roll[f"rain_{w}m_mm"], rdist)
 
     return {
         "latest_month": latest_month.strftime("%Y-%m"),
         "monthly_mm": latest,
         "clim_median_mm": median,
         "percentile": float(percentile) if pd.notna(percentile) else None,
-        "quintile": quintile_index(percentile),
+        "quintile": classify_quintile(latest, dist),
         "d0_d4": drought_level(percentile),
         "peac_index": peac_index(latest),
         **indices,

@@ -20,8 +20,8 @@ import numpy as np
 from .base import BaseAdapter
 
 SHORT_NAME = "GPM_3IMERGDF"  # IMERG Final Run, daily (historical; ~3.5-month lag)
-EARLY_SHORT_NAME = "GPM_3IMERGHHE"  # IMERG Early Run (near-real-time; ~4-hour lag)
-LATE_SHORT_NAME = "GPM_3IMERGHHL"  # IMERG Late Run (near-real-time; ~14-hour lag)
+EARLY_SHORT_NAME = "GPM_3IMERGDE"  # IMERG Early Run, daily (near-real-time; ~4-hour lag)
+LATE_SHORT_NAME = "GPM_3IMERGDL"  # IMERG Late Run, daily (near-real-time; ~14-hour lag)
 
 _TOKEN_FILE = Path.home() / ".config" / "cofa-forward" / "earthdata_token"
 
@@ -87,9 +87,9 @@ class ImergAdapter(BaseAdapter):
     ) -> dict:
         """Fetch daily IMERG precipitation at a point over [start, end].
 
-        ``product`` selects the run: ``"final"`` (GPM_3IMERGDF, ~3.5-month lag,
-        default), ``"early"`` (GPM_3IMERGHHE, ~4-hour lag), or ``"late"``
-        (GPM_3IMERGHHL, ~14-hour lag). For near-real-time use ``"early"``/``"late"``;
+        ``product`` selects the daily run: ``"final"`` (GPM_3IMERGDF, ~3.5-month
+        lag, default), ``"early"`` (GPM_3IMERGDE, ~4-hour lag), or ``"late"``
+        (GPM_3IMERGDL, ~14-hour lag). For near-real-time use ``"early"``/``"late"``;
         ``"final"`` only extends to a few months ago.
 
         Requires authentication (``EARTHDATA_TOKEN`` or ``~/.netrc``) AND a one-time
