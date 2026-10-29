@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DroughtLevel from "../components/DroughtLevel";
 import FASMap from "../components/FASMap";
 import RainChart from "../components/RainChart";
 import Readout from "../components/Readout";
@@ -7,14 +8,6 @@ import { useSelection } from "../lib/selection";
 import { useStation } from "../lib/useStation";
 import { useStations } from "../lib/useStations";
 import type { EnsoState } from "../lib/types";
-
-const QUINTILE_TONE: Record<string, "default" | "key" | "pink" | "warn"> = {
-  Drier: "warn",
-  Dry: "warn",
-  Typical: "key",
-  Wet: "key",
-  Wetter: "key",
-};
 
 export default function Console() {
   const { geoId } = useSelection();
@@ -31,12 +24,17 @@ export default function Console() {
 
   return (
     <div className="section">
-      <div className="section-head">
-        <h1>FAS situation</h1>
-        <p className="deck">
-          Drought, ENSO, sea level and marine conditions for {name} — with provenance on
-          every number. This is the operations console, not a forecast.
-        </p>
+      <div className="section-head head-row">
+        <div>
+          <h1>FAS situation</h1>
+          <p className="deck">
+            Drought, ENSO, sea level and marine conditions for {name} — with provenance on
+            every number. This is the operations console, not a forecast.
+          </p>
+        </div>
+        <button className="btn print-btn" onClick={() => window.print()}>
+          Print report
+        </button>
       </div>
 
       {/* ENSO strip */}
@@ -106,8 +104,17 @@ export default function Console() {
         )}
       </div>
 
+      {/* Drought level — the hero indicator for this atoll. */}
+      <div style={{ marginTop: "1.25rem" }}>
+        <DroughtLevel
+          level={drought?.d0D4 ?? null}
+          percentile={drought?.percentile ?? null}
+          latestMonth={drought?.latestMonth ?? null}
+        />
+      </div>
+
       {/* Drought readouts */}
-      <div className="readout-grid" style={{ marginTop: "1.25rem" }}>
+      <div className="readout-grid" style={{ marginTop: "1rem" }}>
         <Readout
           label="Monthly rainfall"
           value={drought?.monthlyMm != null ? drought.monthlyMm.toFixed(0) : "—"}
@@ -118,14 +125,8 @@ export default function Console() {
           label="Rainfall percentile"
           value={drought?.percentile != null ? (drought.percentile * 100).toFixed(0) : "—"}
           unit="%"
-          tone={drought?.quintile ? QUINTILE_TONE[drought.quintile] : "default"}
-          provenance={drought ? `quintile ${drought.quintile}` : undefined}
-        />
-        <Readout
-          label="Drought level"
-          value={drought?.d0D4 ?? "—"}
-          tone={drought?.d0D4 ? "pink" : "default"}
-          provenance={drought ? "precipitation percentile" : undefined}
+          tone={drought?.d0D4 ? "pink" : "key"}
+          provenance="vs 1991–2020 climatology"
         />
         <Readout
           label="PEAC 4/8-in index"

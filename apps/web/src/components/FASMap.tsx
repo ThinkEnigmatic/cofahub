@@ -1,25 +1,18 @@
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { DROUGHT_HEX, DROUGHT_SEVERITY } from "../lib/drought";
 import { useSelection } from "../lib/selection";
-import type { Station } from "../lib/types";
+import type { DroughtLevel, Station } from "../lib/types";
 
 interface FASMapProps {
   stations: Station[];
   levels: Record<string, string | null>;
 }
 
-// Drought-level marker colors (the dark-theme ramp, bright enough over imagery).
-const LEVEL_COLOR: Record<string, string> = {
-  D0: "#c87600",
-  D1: "#e0604e",
-  D2: "#ff4fa3",
-  D3: "#ff2d78",
-  D4: "#ff1a4d",
-};
 const NORMAL_COLOR = "#00a2c8";
 
 function colorFor(level: string | null): string {
-  return level ? LEVEL_COLOR[level] ?? NORMAL_COLOR : NORMAL_COLOR;
+  return level ? DROUGHT_HEX[level as DroughtLevel] ?? NORMAL_COLOR : NORMAL_COLOR;
 }
 
 const ESRI_IMAGERY =
@@ -63,9 +56,18 @@ export default function FASMap({ stations, levels }: FASMapProps) {
           >
             <Tooltip direction="top" offset={[0, -6]} opacity={1}>
               {s.name}
+              {level ? ` · ${level}` : ""}
             </Tooltip>
             <Popup>
               <strong>{s.name}</strong>
+              {level && (
+                <>
+                  <span className="map-d-level" data-level={level}>
+                    {level}
+                  </span>{" "}
+                  <span className="map-d-label">{DROUGHT_SEVERITY[level as DroughtLevel]}</span>
+                </>
+              )}
               <br />
               {s.countryName} · {s.geoId}
               <br />

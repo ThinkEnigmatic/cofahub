@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./components/Login";
+import PrintReport from "./components/PrintReport";
 import StationRail from "./components/StationRail";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./lib/auth";
@@ -79,6 +80,9 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+
+        {/* Print-only situation report for the selected atoll (hidden on screen). */}
+        <PrintReport />
       </div>
     </SelectionProvider>
   );

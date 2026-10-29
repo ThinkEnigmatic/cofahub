@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DroughtLevel from "../components/DroughtLevel";
 import Readout from "../components/Readout";
 import { getTrends, getVerification } from "../lib/data";
 import { useSelection } from "../lib/selection";
@@ -29,7 +30,14 @@ export default function Drought() {
         </p>
       </div>
 
-      <div className="readout-grid">
+      {/* Drought level — the hero indicator. */}
+      <DroughtLevel
+        level={drought?.d0D4 ?? null}
+        percentile={drought?.percentile ?? null}
+        latestMonth={drought?.latestMonth ?? null}
+      />
+
+      <div className="readout-grid" style={{ marginTop: "1rem" }}>
         <Readout
           label="Rainfall Index · 1-mo"
           value={drought?.rainIndex1m ?? "—"}
