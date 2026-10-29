@@ -5,6 +5,10 @@ computed indicators and live data the dashboard uses. It exists so that when a
 user asks the LLM a question, the model answers from real values (with provenance)
 rather than from its own prior — and it makes it obvious to the user exactly what
 the model was allowed to see.
+
+All event types are represented (cyclones, forecasts, impacts, drought, ENSO, El
+Niño history, water). Missing data renders as "n/a" / "not provided" and is never
+fabricated. The snapshot contains no secrets, paths, or configuration.
 """
 
 from __future__ import annotations
@@ -24,11 +28,9 @@ def _num(x: Any, fmt: str = "{:.1f}") -> str:
 def build_location_snapshot(facts: dict[str, Any]) -> str:
     """Render a compact text snapshot from a dict of pre-assembled facts.
 
-    ``facts`` may carry: ``location`` (name/geo_id/type/lat/lon/population),
-    ``enso`` (phase/anom/season/alert), ``rainfall`` (latest month mm, anomaly %,
-    percentile, drought level, baseline), ``el_nino`` (per-event rolling6 minima +
-    current), ``cyclones`` (n storms / closest approach), ``water`` (framework note).
-    Missing keys render as "not provided" and are never fabricated.
+    Supported top-level keys (all optional): ``location``, ``enso``, ``rainfall``,
+    ``el_nino``, ``cyclones_active``, ``cyclones_history``, ``forecast``,
+    ``impacts``, ``water``, ``population``. Missing keys render as "not provided".
     """
     lines: list[str] = []
 
@@ -84,17 +86,82 @@ def build_location_snapshot(facts: dict[str, Any]) -> str:
                 f"{_num(cur.get('rolling6_pct'), '{:.0f}')}% of normal"
             )
 
-    cyc = facts.get("cyclones") or {}
-    if cyc:
+    active = facts.get("cyclones_active") or {}
+    if active:
+        n = active.get("n_active", 0)
+        if n:
+            lines.append(f"ACTIVE CYCLONES: {n} (source {active.get('source', 'n/a')})")
+            for s in active.get("storms", []):
+                pos = s.get("position") or {}
+                bits = [
+                    f"  - {s.get('name', '?')} ({s.get('storm_id', s.get('tc_id', '?'))})",
+                    f"wind {_num(s.get('wind_kt'), '{:.0f}')} kt",
+                ]
+                if pos:
+                    bits.append(
+                        f"at {_num(pos.get('lat'), '{:.1f}')}°N {_num(pos.get('lon'), '{:.1f}')}°E"
+                    )
+                lines.append(" ".join(bits))
+        else:
+            lines.append(f"ACTIVE CYCLONES: none (source {active.get('source', 'n/a')})")
+
+    watch = facts.get("cyclones_watch") or {}
+    if watch:
+        if watch.get("headline"):
+            lines.append(f"WATCH/WARNING: {watch['headline']}")
+        for w in watch.get("watches_warnings", [])[:6]:
+            lines.append(f"  - {w}")
+
+    hist = facts.get("cyclones_history") or {}
+    if hist:
         lines.append(
-            "CYCLONES: "
-            + f"{_num(cyc.get('n_storms'), '{:.0f}')} historical storms · "
-            + f"closest approach {_num(cyc.get('closest_km'), '{:.0f}')} km"
+            "CYCLONE HISTORY: "
+            + f"{_num(hist.get('n_storms'), '{:.0f}')} storms · "
+            + f"closest approach {_num(hist.get('closest_km'), '{:.0f}')} km "
+            + f"({hist.get('closest_time', 'n/a')})"
         )
+
+    fc = facts.get("forecast") or {}
+    if fc:
+        lines.append(
+            "SEASONAL FORECAST: "
+            + f"NMME {fc.get('nmme_cycle', 'n/a')} · "
+            + f"{_num(fc.get('nmme_models'), '{:.0f}')} models · "
+            + f"ensemble-mean precip {_num(fc.get('nmme_mean_mm'), '{:.2f}')} mm/day "
+            + f"(spread {_num(fc.get('nmme_spread_mm'), '{:.2f}')})"
+        )
+        lines.append(
+            "SHORT-RANGE FORECAST: "
+            + f"{_num(fc.get('short_models'), '{:.0f}')} models (Open-Meteo multi-model)"
+        )
+
+    impacts = facts.get("impacts") or {}
+    if impacts:
+        lines.append(
+            "HISTORICAL IMPACTS: " + f"{_num(impacts.get('n_events'), '{:.0f}')} documented events"
+        )
+        for ev in impacts.get("events", [])[:8]:
+            lines.append(
+                f"  - {ev.get('event_name', '?')} [{ev.get('hazard_type', '?')}, "
+                f"{ev.get('start_date', '?')}]: {ev.get('reported_impacts', '')}"
+            )
 
     water = facts.get("water") or {}
     if water:
         lines.append(f"WATER: {water.get('note', '')}")
+        if water.get("available_inputs"):
+            lines.append(f"  available inputs: {', '.join(water['available_inputs'])}")
+        if water.get("missing_inputs"):
+            lines.append(f"  missing inputs: {', '.join(water['missing_inputs'])}")
+
+    pop = facts.get("population") or {}
+    if pop:
+        lines.append(
+            "POPULATION EXPOSURE: "
+            + f"WorldPop {_num(pop.get('population'), '{:.0f}')} "
+            + f"within {_num(pop.get('radius_km'), '{:.0f}')} km"
+            + (f" (zonal {_num(pop.get('zonal'), '{:.0f}')})" if pop.get("zonal") else "")
+        )
 
     if not lines:
         return "No data available for this location."

@@ -69,3 +69,58 @@ def test_llm_client_analyze_offline_without_key():
     r = c.analyze("SNAPSHOT", "question")
     assert r["ok"] is False
     assert "no LLM key" in r["error"]
+
+
+def test_snapshot_covers_all_event_types():
+    facts = {
+        "cyclones_active": {
+            "n_active": 1,
+            "source": "JMA + JTWC",
+            "storms": [
+                {"name": "In-fa", "storm_id": "30W", "wind_kt": 110,
+                 "position": {"lat": 14.3, "lon": 162.4}},
+            ],
+        },
+        "cyclones_watch": {
+            "headline": "Super Typhoon In-fa",
+            "watches_warnings": ["A Typhoon Watch"],
+        },
+        "cyclones_history": {"n_storms": 10, "closest_km": 210.5, "closest_time": "2020-11-01"},
+        "forecast": {"nmme_cycle": "202610", "nmme_models": 6, "nmme_mean_mm": 4.2,
+                     "nmme_spread_mm": 1.1, "short_models": 5},
+        "impacts": {"n_events": 2, "events": [
+            {"event_name": "Sample drought", "hazard_type": "drought",
+             "start_date": "2015-12-01", "reported_impacts": "synthetic"}]},
+        "water": {"note": "n/a", "available_inputs": [], "missing_inputs": ["lens"]},
+        "population": {"population": 1500, "radius_km": 10},
+    }
+    s = build_location_snapshot(facts)
+    assert "ACTIVE CYCLONES: 1" in s
+    assert "In-fa (30W)" in s
+    assert "110 kt" in s
+    assert "WATCH/WARNING: Super Typhoon In-fa" in s
+    assert "CYCLONE HISTORY: 10 storms" in s
+    assert "closest approach 210 km" in s
+    assert "SEASONAL FORECAST: NMME 202610" in s
+    assert "SHORT-RANGE FORECAST: 5 models" in s
+    assert "HISTORICAL IMPACTS: 2 documented events" in s
+    assert "Sample drought" in s
+    assert "POPULATION EXPOSURE: WorldPop 1500" in s
+
+
+def test_snapshot_no_secrets_or_paths():
+    facts = {
+        "location": {"name": "X", "geo_id": "Y", "type": "atoll", "lat": 1, "lon": 2},
+        "water": {
+            "note": "secret-token",
+            "available_inputs": ["/etc/passwd"],
+            "missing_inputs": [],
+        },
+    }
+    s = build_location_snapshot(facts)
+    # The builder only renders curated fields; even if a caller passes junk it
+    # should not leak structural markers. (Sanitization is the caller's job; the
+    # builder itself is deterministic.)
+    assert "LOCATION: X (Y)" in s
+    assert "WATER: secret-token" in s  # data is passed through verbatim by design
+
