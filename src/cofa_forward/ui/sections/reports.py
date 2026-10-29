@@ -4,11 +4,21 @@ from __future__ import annotations
 
 import streamlit as st
 
+from ...hazards.compound import compound_flags
 from ...intelligence.report_builder import build_markdown_report
+from ...intelligence.situation import build_live_sections
 from ...intelligence.synthesis import build_statements
 from ...timeutil import format_iso, now_utc
 from ..components.common import page_header, sample_banner
-from ..state import get_all_indicators, load_config
+from ..state import (
+    get_active_storms,
+    get_all_indicators,
+    get_drought_monitor,
+    get_live_enso,
+    get_marine,
+    get_sea_level,
+    load_config,
+)
 
 
 def assemble_brief() -> str:
@@ -107,6 +117,60 @@ def render() -> None:
         "analyst interpretation."
     )
 
+    # ---- Live situation brief (regional indicators) ---- #
+    st.subheader("Live situation summary")
+    with st.spinner("Assembling live indicators…"):
+        enso = get_live_enso()
+        active = get_active_storms()
+        sea = get_sea_level("RMI-MAJ")  # representative tide gauge
+        marine = get_marine(7.116, 171.185)
+        monitor = get_drought_monitor("RMI-MAJ", 7.116, 171.185)
+    compound = (
+        compound_flags(
+            drought_quintile=monitor.get("status", {}).get("quintile")
+            if monitor.get("ok")
+            else None,
+            peac_index=monitor.get("status", {}).get("peac_index") if monitor.get("ok") else None,
+            wave_height_m=marine.get("current", {}).get("wave_height_m")
+            if marine.get("ok")
+            else None,
+        )
+        if marine.get("ok") and monitor.get("ok")
+        else []
+    )
+    live_sections = build_live_sections(
+        enso=enso if enso.get("ok") else None,
+        active_storms=active if active.get("ok") else None,
+        drought=monitor if monitor.get("ok") else None,
+        sea_level=sea if sea.get("ok") else None,
+        marine=marine if marine.get("ok") else None,
+        compound=compound,
+    )
+    live_brief = build_markdown_report(
+        {
+            "report_date": format_iso(now_utc())[:10],
+            "data_cutoff": format_iso(now_utc()),
+            "mode": "live indicators",
+        },
+        live_sections,
+        [{"source_id": "live", "retrieved_at": format_iso(now_utc()), "status": "live"}],
+        gaps=[
+            "Drought/sea-level/marine shown for Majuro as representative; full "
+            "per-location detail is on the respective pages."
+        ],
+    )
+    st.download_button(
+        "Download live brief",
+        data=live_brief,
+        file_name=f"cofa-forward-live-brief-{format_iso(now_utc())[:10]}.md",
+        mime="text/markdown",
+    )
+    st.markdown(live_brief)
+
+    st.divider()
+
+    # ---- Sample full brief (synthetic) ---- #
+    st.subheader("Full brief (sample data)")
     brief = assemble_brief()
 
     st.download_button(
