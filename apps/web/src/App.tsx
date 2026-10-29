@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import Login from "./components/Login";
 import StationRail from "./components/StationRail";
+import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./lib/auth";
 import { SelectionProvider } from "./lib/selection";
 import About from "./sections/About";
@@ -52,6 +53,7 @@ export default function App() {
             ))}
           </nav>
           <div className="spacer" />
+          <ThemeToggle />
           <button
             className="rail-item"
             onClick={logout}

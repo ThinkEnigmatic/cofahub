@@ -22,7 +22,7 @@ export default function RainChart({ data }: { data: RainfallSeries }) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 4, left: -12 }}>
-        <CartesianGrid stroke="rgba(120,200,255,0.08)" strokeDasharray="3 3" />
+        <CartesianGrid stroke="var(--nn-line)" strokeDasharray="3 3" />
         <XAxis
           dataKey="month"
           stroke="var(--nn-ink-3)"

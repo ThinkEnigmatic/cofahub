@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../lib/auth";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Login() {
   const { login } = useAuth();
@@ -20,6 +21,9 @@ export default function Login() {
           COFAHUB<span className="brand-dot">.</span>
         </div>
         <div className="login-sub">FAS climate intelligence — analysis &amp; action</div>
+        <div style={{ position: "absolute", top: "0.9rem", right: "0.9rem" }}>
+          <ThemeToggle />
+        </div>
         <form onSubmit={submit}>
           <input
             aria-label="Username"

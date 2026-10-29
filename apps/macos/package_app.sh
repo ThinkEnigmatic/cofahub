@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 swift build -c release
 
 BIN=".build/release/COFAForward"
-APP="COFA Forward.app"
+APP="COFAHUB.app"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
@@ -18,8 +18,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>COFA Forward</string>
-  <key>CFBundleDisplayName</key><string>COFA Forward</string>
+  <key>CFBundleName</key><string>COFAHUB</string>
+  <key>CFBundleDisplayName</key><string>COFAHUB</string>
   <key>CFBundleIdentifier</key><string>com.thinkenigmatic.cofaforward</string>
   <key>CFBundleExecutable</key><string>COFAForward</string>
   <key>CFBundlePackageType</key><string>APPL</string>

@@ -31,13 +31,15 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REMOTE="$REMOTE_USER@$HOST"
 
 echo "==> rsync repo → $REMOTE:~/cofa-forward"
-rsync -az --delete \
+rsync -az --delete -e "ssh -o ConnectTimeout=15 -o ServerAliveInterval=15" \
   --exclude '.git' \
   --exclude '.build' \
   --exclude '.venv' \
+  --exclude 'apps/web/node_modules' \
   --exclude 'data/cache' \
   --exclude 'data/raw' \
   --exclude 'data/snapshot' \
+  --exclude 'data/tiles' \
   --exclude '__pycache__' \
   "$ROOT/" "$REMOTE:~/cofa-forward/"
 
@@ -60,6 +62,6 @@ echo "==> build SwiftUI shell on $HOST"
 ssh "$REMOTE" 'cd ~/cofa-forward/apps/macos && ./package_app.sh'
 
 echo "==> copy app to /Applications on $HOST"
-ssh "$REMOTE" 'rm -rf "/Applications/COFA Forward.app"; cp -R ~/cofa-forward/apps/macos/"COFA Forward.app" /Applications/'
+ssh "$REMOTE" 'rm -rf "/Applications/COFAHUB.app"; cp -R ~/cofa-forward/apps/macos/"COFAHUB.app" /Applications/'
 
-echo "✅ Done. Launch \"COFA Forward\" on $HOST."
+echo "✅ Done. Launch \"COFAHUB\" on $HOST (serves the React app + API on 127.0.0.1:8700)."

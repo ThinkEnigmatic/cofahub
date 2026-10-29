@@ -1,18 +1,15 @@
 import Foundation
 
-/// Launches and supervises the local Streamlit server that hosts COFA FORWARD,
-/// and (optionally) the offline-snapshot prefetch.
+/// Launches and supervises the local FastAPI server that hosts COFAHUB.
 ///
-/// The server runs the Python app via a ``uv``-managed virtualenv (or an already
-/// built ``.venv``) so the whole UI is served from ``127.0.0.1:8501`` and
-/// displayed in the app's WKWebView.
+/// The server runs the Python app via the ``uv``-managed virtualenv so the React
+/// frontend + JSON API are both served from ``127.0.0.1:8700`` and displayed in
+/// the app's WKWebView.
 struct ServerManager {
-    let port = 8501
-    let tilePort = 8502
+    let port = 8700
     var serverURL: URL { URL(string: "http://127.0.0.1:\(port)")! }
 
     private var process: Process?
-    private var tileProcess: Process?
 
     /// Resolve the cofa-forward app directory (env override or ~/cofa-forward).
     private static var appDir: URL {
@@ -38,37 +35,24 @@ struct ServerManager {
         return "/usr/bin/env"
     }
 
-    /// Build the argv for the Streamlit server, preferring a pre-built venv.
-    private static func streamlitCommand(offline: Bool) -> (String, [String]) {
+    /// Build the argv for the FastAPI (uvicorn) server, preferring a pre-built venv.
+    private static func uvicornCommand() -> (String, [String]) {
         let appDir = self.appDir
-        let venvStreamlit = appDir.appendingPathComponent(".venv/bin/streamlit")
+        let venvUvicorn = appDir.appendingPathComponent(".venv/bin/uvicorn")
         let commonArgs = [
-            "run", "src/cofa_forward/ui/app.py",
-            "--server.headless", "true",
-            "--server.address", "127.0.0.1",
-            "--server.port", "8501",
-            "--browser.gatherUsageStats", "false",
+            "cofa_forward.api:app",
+            "--host", "127.0.0.1",
+            "--port", "8700",
         ]
-        if FileManager.default.fileExists(atPath: venvStreamlit.path) {
-            return (venvStreamlit.path, commonArgs)
+        if FileManager.default.fileExists(atPath: venvUvicorn.path) {
+            return (venvUvicorn.path, commonArgs)
         }
-        return (resolveUv(), ["run", "streamlit"] + commonArgs)
-    }
-
-    /// Build the argv for the offline tile server (always started so offline
-    /// mode works seamlessly; it serves local tiles from data/tiles).
-    private static func tileServerCommand() -> (String, [String]) {
-        let appDir = self.appDir
-        let venvPython = appDir.appendingPathComponent(".venv/bin/python")
-        if FileManager.default.fileExists(atPath: venvPython.path) {
-            return (venvPython.path, ["-m", "cofa_forward.tileserver"])
-        }
-        return (resolveUv(), ["run", "python", "-m", "cofa_forward.tileserver"])
+        return (resolveUv(), ["run", "uvicorn"] + commonArgs)
     }
 
     mutating func start(offline: Bool, onStatus: @escaping (AppState.ServerStatus) -> Void) {
         stop()
-        let (exe, args) = Self.streamlitCommand(offline: offline)
+        let (exe, args) = Self.uvicornCommand()
         let p = Process()
         p.executableURL = URL(fileURLWithPath: exe)
         p.arguments = args
@@ -91,8 +75,7 @@ struct ServerManager {
         do {
             try p.run()
             process = p
-            startTileServer()
-            // Give Streamlit a moment to bind; then report running.
+            // Give uvicorn a moment to bind; then report running.
             DispatchQueue.global().asyncAfter(deadline: .now() + 2.0) {
                 if p.isRunning {
                     onStatus(.running)
@@ -105,27 +88,9 @@ struct ServerManager {
         }
     }
 
-    private mutating func startTileServer() {
-        guard tileProcess == nil else { return }
-        let (exe, args) = Self.tileServerCommand()
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: exe)
-        p.arguments = args
-        p.currentDirectoryURL = Self.appDir
-        do {
-            try p.run()
-            tileProcess = p
-        } catch {
-            // Tile server is optional; the map falls back to online basemaps.
-            tileProcess = nil
-        }
-    }
-
     mutating func stop() {
         process?.terminate()
         process = nil
-        tileProcess?.terminate()
-        tileProcess = nil
     }
 
     /// Run the offline-snapshot prefetch and return its stdout.

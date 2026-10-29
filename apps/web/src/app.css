@@ -22,7 +22,7 @@
   gap: 1rem;
   padding: 0 var(--gutter);
   border-bottom: 1px solid var(--nn-line);
-  background: rgba(8, 8, 14, 0.92);
+  background: color-mix(in srgb, var(--nn-bg) 92%, transparent);
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
@@ -102,11 +102,11 @@
 }
 .rail-item:hover {
   color: var(--nn-ink);
-  background: rgba(120, 200, 255, 0.04);
+  background: color-mix(in srgb, var(--nn-key) 6%, transparent);
 }
 .rail-item[aria-selected="true"] {
   color: var(--nn-ink);
-  background: rgba(0, 162, 200, 0.1);
+  background: color-mix(in srgb, var(--nn-key) 12%, transparent);
 }
 /* the gliding indicator */
 .rail-item[aria-selected="true"]::before {
@@ -315,7 +315,7 @@
 .login input:focus {
   outline: none;
   border-color: var(--nn-key-glow);
-  box-shadow: 0 0 0 2px rgba(95, 227, 255, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nn-key-glow) 22%, transparent);
 }
 .login .btn {
   background: var(--nn-key);

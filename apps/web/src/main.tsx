@@ -5,13 +5,16 @@ import "./tokens.css";
 import "./app.css";
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
+import { ThemeProvider } from "./lib/theme";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
 );

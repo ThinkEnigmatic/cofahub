@@ -92,6 +92,47 @@
   }
 }
 
+/* ── Light theme ─────────────────────────────────────────────────────────
+   The same token set repainted for daylight (from Meridian Neon Night light):
+   a cool paper page, white panels, deeper key/accent/categorical steps so
+   marks and figures keep their contrast on white. */
+:root[data-theme="light"] {
+  --nn-abyss: #e7e9f0;
+  --nn-bg: #f2f3f7;
+  --nn-panel: #ffffff;
+  --nn-raised: #ffffff;
+  --nn-line: rgba(18, 24, 48, 0.11);
+  --nn-ink: #11131c;
+  --nn-ink-2: #3f4558;
+  --nn-ink-3: #5e6578;
+  --nn-key: #00809f;
+  --nn-key-glow: #00809f; /* daylight: no glow, the tube is the key */
+  --nn-pink: #c2186b;
+  --nn-pink-ink: #ffffff;
+
+  --cat-1: #00809f;
+  --cat-2: #c2457e;
+  --cat-3: #a35f00;
+  --cat-4: #6f58c9;
+  --cat-5: #6e7585;
+  --cat-6: #2d7f45;
+  --cat-7: #2f68c8;
+  --cat-8: #c24533;
+  --cat-1-glow: #00809f;
+  --cat-2-glow: #c2457e;
+  --cat-3-glow: #a35f00;
+  --cat-4-glow: #6f58c9;
+
+  /* Drought severity ramp (D0–D4) — sodium→red, darkened for white. */
+  --d0: #a35f00;
+  --d1: #c24533;
+  --d2: #c2186b;
+  --d3: #a50f5a;
+  --d4: #8a0b49;
+
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

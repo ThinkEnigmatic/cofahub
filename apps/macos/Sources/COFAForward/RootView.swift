@@ -63,10 +63,10 @@ struct RootView: View {
             placeholder(
                 icon: "hourglass",
                 title: "Starting server…",
-                message: "Booting the local Streamlit app (first launch installs dependencies)."
+                message: "Booting the local COFAHUB app (first launch installs dependencies)."
             )
         case .running:
-            WebView(url: URL(string: "http://127.0.0.1:8501")!)
+            WebView(url: URL(string: "http://127.0.0.1:8700")!)
         case .failed(let message):
             placeholder(
                 icon: "exclamationmark.triangle",
