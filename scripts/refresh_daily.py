@@ -31,12 +31,14 @@ from cofa_forward.geography.registry import GeographyRegistry  # noqa: E402
 def _refresh_era5(registry: GeographyRegistry) -> None:
     from cofa_forward.api import _long_era5
 
-    print("==> refreshing ERA5 climate for all stations…")
+    print("==> refreshing ERA5 climate (stale stations only, 7-day cache)…")
     for e in registry.all():
         if e.entity_type == "country":
             continue
         try:
-            df = _long_era5(e.latitude, e.longitude, force=True)
+            # No force: only re-fetch stations whose parquet cache has expired,
+            # so the daily run stays well inside the Open-Meteo archive quota.
+            df = _long_era5(e.latitude, e.longitude)
             print(f"  {e.geo_id}: {len(df)} days")
         except Exception as exc:  # noqa: BLE001
             print(f"  {e.geo_id}: FAILED ({exc})")

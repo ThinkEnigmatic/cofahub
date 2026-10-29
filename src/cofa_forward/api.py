@@ -132,7 +132,7 @@ _ERA5_DIR = Path(__file__).resolve().parents[2] / "data" / "snapshot" / "era5"
 _ERA5_TTL = 7 * 86400  # seconds
 _ARCHIVE_LOCK = threading.Lock()
 _LAST_ARCHIVE = {"t": 0.0}
-_ARCHIVE_MIN_INTERVAL = 1.2  # seconds
+_ARCHIVE_MIN_INTERVAL = 1.5  # seconds
 
 
 def _rate_limited_archive() -> None:
