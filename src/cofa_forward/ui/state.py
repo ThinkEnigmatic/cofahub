@@ -312,6 +312,61 @@ def get_ghcnd_trends(geo_id: str) -> dict:
     }
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def get_forecast_verification(geo_id: str, lat: float, lon: float) -> dict:
+    """Score the Open-Meteo forecast against the GHCNd gauge over the last ~30 days."""
+    import pandas as pd
+
+    from ..ingestion.ghcnd import FAS_STATIONS, GhcndAdapter
+    from ..ingestion.weather import OpenMeteoForecastAdapter
+    from ..intelligence.verification import bias, mae, pearson, rmse
+
+    fc = OpenMeteoForecastAdapter(config=load_config(), cache=make_cache()).get_past_forecast(
+        lat, lon, past_days=30
+    )
+    if not fc.get("ok"):
+        return {"ok": False, "error": fc.get("error")}
+
+    if geo_id in FAS_STATIONS:
+        station_id = FAS_STATIONS[geo_id][0]
+        obs = GhcndAdapter(cache=make_cache()).get_daily(station_id)
+        if not obs.get("ok"):
+            return {"ok": False, "error": obs.get("error")}
+        observed = obs["series"]["prcp_mm"]
+        obs_label = f"GHCNd {station_id}"
+    else:
+        # Fall back to ERA5 archive (via the long series) for non-station locations.
+        r = get_el_nino_comparison_rainfall(geo_id, lat, lon)
+        if not r.get("ok"):
+            return {"ok": False, "error": r.get("error")}
+        observed = r["series"]
+        obs_label = "ERA5 (archive)"
+
+    # Align on common dates (daily totals are calendar-day based; drop timezone).
+    obs_idx = observed.index.tz_localize(None)
+    fc_idx = fc["series"].index.tz_localize(None)
+    observed = pd.Series(observed.to_numpy(), index=obs_idx)
+    forecast = pd.Series(fc["series"].to_numpy(), index=fc_idx)
+    common = obs_idx.intersection(fc_idx)
+    if len(common) < 5:
+        return {"ok": False, "error": f"too few overlapping days ({len(common)})"}
+    o = observed.loc[common]
+    f = forecast.loc[common]
+    return {
+        "ok": True,
+        "observed_source": obs_label,
+        "n_days": int(len(common)),
+        "bias_mm": bias(o, f),
+        "mae_mm": mae(o, f),
+        "rmse_mm": rmse(o, f),
+        "correlation": pearson(o, f),
+        "obs_total_mm": float(o.sum()),
+        "fc_total_mm": float(f.sum()),
+        "period_start": common.min().strftime("%Y-%m-%d"),
+        "period_end": common.max().strftime("%Y-%m-%d"),
+    }
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_sea_level(geo_id: str) -> dict:
     """Recent UHSLC tide-gauge sea level (mm) for the FAS stations."""

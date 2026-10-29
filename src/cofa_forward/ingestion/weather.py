@@ -145,6 +145,40 @@ class OpenMeteoForecastAdapter(BaseAdapter):
             **norm,
         }
 
+    def get_past_forecast(self, lat: float, lon: float, past_days: int = 30) -> dict:
+        """Daily precipitation forecast for the last ``past_days`` days (for verification).
+
+        Open-Meteo's ``past_days`` returns the model's estimate for days already
+        elapsed — the basis for scoring the forecast against observed rainfall.
+        """
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "daily": "precipitation_sum",
+            "past_days": past_days,
+            "forecast_days": 1,
+            "timezone": "UTC",
+        }
+        res = self.fetch_json(self.source_url, params)
+        if not res.ok:
+            return {"ok": False, "error": res.error, "source": self.source_id}
+        daily = res.data.get("daily", {}) or {}
+        if "time" not in daily:
+            return {"ok": False, "error": "no daily data", "source": self.source_id}
+        s = pd.Series(
+            pd.to_numeric(daily.get("precipitation_sum", []), errors="coerce"),
+            index=pd.to_datetime(daily["time"], utc=True),
+            name="forecast_mm",
+        )
+        return {
+            "ok": True,
+            "source": self.source_id,
+            "retrieved_at": res.retrieved_at,
+            "from_cache": res.from_cache,
+            "series": s,
+            "n_days": int(len(s)),
+        }
+
     def get_model_comparison(
         self,
         lat: float,

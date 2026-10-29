@@ -21,6 +21,7 @@ from ..components.common import (
 from ..state import (
     get_ai_model_status,
     get_boundaries,
+    get_forecast_verification,
     get_model_comparison,
     get_sample_forecast,
     load_config,
@@ -169,6 +170,26 @@ def render() -> None:
         }
     ).set_index("time")
     render_plotly(forecast_chart(fc_df, title="Hourly forecast (sample)"), key="wx_sample_chart")
+
+    st.divider()
+
+    # ---- Forecast verification ---- #
+    st.subheader("Forecast verification")
+    with st.spinner("Scoring the forecast against observations…"):
+        ver = get_forecast_verification(geo_id, entity.latitude, entity.longitude)
+    if ver.get("ok"):
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Bias (forecast − obs)", f"{ver['bias_mm']:+.1f} mm")
+        c2.metric("MAE", f"{ver['mae_mm']:.1f} mm")
+        c3.metric("RMSE", f"{ver['rmse_mm']:.1f} mm")
+        c4.metric("Correlation", f"{ver['correlation']:.2f}")
+        st.caption(
+            f"Last {ver['n_days']} days ({ver['period_start']} → {ver['period_end']}): "
+            f"forecast {ver['fc_total_mm']:.0f} mm vs observed {ver['obs_total_mm']:.0f} mm "
+            f"({ver['observed_source']}). Daily precipitation, time-matched."
+        )
+    else:
+        st.info(f"Forecast verification unavailable: {ver.get('error')}", icon="📏")
 
     st.divider()
 
