@@ -8,10 +8,12 @@ use free, keyless satellite basemaps so the islands are actually visible:
   the best free choice for seeing individual atolls.
 * **NASA GIBS** BlueMarble / MODIS Terra / MODIS Aqua / VIIRS — the official
   NASA EOSDIS Global Imagery Browse Services, keyless, ~250 m daily true-colour.
+* **Remote-sensing overlays** (toggleable) — MUR sea-surface temperature, MUR
+  SST anomaly, and PACE chlorophyll-a, also served keyless by NASA GIBS.
 
-Basemaps are chosen client-side via a Leaflet layer control (no API key, no
-backend tile proxy). Tiles load from the user's browser directly against the
-public GIBS/Esri endpoints, so nothing here adds server load or credentials.
+Basemaps and overlays are chosen client-side via a Leaflet layer control (no API
+key, no backend tile proxy). Tiles load from the user's browser directly against
+the public GIBS/Esri endpoints, so nothing here adds server load or credentials.
 """
 
 from __future__ import annotations
@@ -100,12 +102,47 @@ BASEMAPS: dict[str, dict] = {
 
 _DEFAULT_BASEMAP = "Esri satellite (hi-res)"
 
+# Keyless remote-sensing overlays (toggleable, semi-transparent, drawn on top of
+# the basemap). SST and chlorophyll-a come from NASA GIBS WMTS tiles (the same
+# mechanism as the satellite basemaps) — these are *remote-sensing* fields, not
+# forecast or in-situ station data.
+OVERLAYS: dict[str, dict] = {
+    "SST — MUR 1 km (daily)": {
+        "layer": "GHRSST_L4_MUR_Sea_Surface_Temperature",
+        "tms": "GoogleMapsCompatible_Level7",
+        "attr": "NASA JPL MUR GHRSST L4 / GIBS",
+        "max_native_zoom": 7,
+        "max_zoom": 9,
+        "opacity": 0.7,
+        "dated": True,
+    },
+    "SST anomaly — MUR (daily)": {
+        "layer": "GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies",
+        "tms": "GoogleMapsCompatible_Level7",
+        "attr": "NASA JPL MUR GHRSST L4 / GIBS",
+        "max_native_zoom": 7,
+        "max_zoom": 9,
+        "opacity": 0.7,
+        "dated": True,
+    },
+    "Chlorophyll-a — PACE OCI (daily)": {
+        "layer": "OCI_PACE_Chlorophyll_a",
+        "tms": "GoogleMapsCompatible_Level7",
+        "attr": "NASA PACE OCI / GIBS",
+        "max_native_zoom": 7,
+        "max_zoom": 9,
+        "opacity": 0.7,
+        "dated": True,
+    },
+}
+
 
 def _gibs_date(offset_days: int = 2) -> str:
-    """Latest plausible GIBS true-colour date.
+    """Latest plausible GIBS daily-product date.
 
-    Daily true-colour composites are published with a ~1-2 day latency; using a
-    recent date keeps tiles valid without a server-side availability probe.
+    Daily composites (true-colour, SST, chlorophyll) are published with a ~1-2
+    day latency; using a recent date keeps tiles valid without a server-side
+    availability probe.
     """
     d = datetime.now(UTC) - timedelta(days=offset_days)
     return d.strftime("%Y-%m-%d")
@@ -136,7 +173,27 @@ def _add_basemaps(m: folium.Map) -> None:
             control=True,
             show=(name == _DEFAULT_BASEMAP),
         ).add_to(m)
+    _add_overlays(m)
     folium.LayerControl(collapsed=False, position="topright").add_to(m)
+
+
+def _add_overlays(m: folium.Map) -> None:
+    """Attach toggleable remote-sensing overlays (SST / chlorophyll) above the basemap."""
+    for name in OVERLAYS:
+        spec = OVERLAYS[name]
+        date = _gibs_date()
+        url = f"{_GIBS_BASE}/{spec['layer']}/default/{date}/{spec['tms']}/{{z}}/{{y}}/{{x}}.jpg"
+        folium.TileLayer(
+            tiles=url,
+            name=name,
+            attr=spec["attr"],
+            max_native_zoom=spec.get("max_native_zoom", 7),
+            max_zoom=spec.get("max_zoom", 9),
+            opacity=spec.get("opacity", 0.7),
+            overlay=True,
+            control=True,
+            show=False,
+        ).add_to(m)
 
 
 _BOUNDARY_STYLE = {

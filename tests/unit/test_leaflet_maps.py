@@ -8,6 +8,7 @@ from cofa_forward.config import get_config
 from cofa_forward.geography.registry import GeographyRegistry
 from cofa_forward.visualization.leaflet_maps import (
     BASEMAPS,
+    OVERLAYS,
     _gibs_date,
     _resolved_basemap,
     metric_map,
@@ -43,6 +44,23 @@ def test_region_map_builds_folium_map():
     html = m.get_root().render()
     assert "arcgisonline" in html  # Esri satellite basemap present
     assert "gibs.earthdata.nasa.gov" in html  # NASA GIBS basemap present
+
+
+def test_overlays_include_sst_and_chlorophyll():
+    names = list(OVERLAYS)
+    assert any("SST" in n for n in names)
+    assert any("Chlorophyll" in n for n in names)
+    # Every overlay is a dated GIBS WMTS layer with a Level TMS.
+    for spec in OVERLAYS.values():
+        assert spec["layer"]
+        assert spec["tms"].startswith("GoogleMapsCompatible_Level")
+
+
+def test_region_map_includes_sst_overlay():
+    m = region_map(_registry(), center=(6.5, 152.0))
+    html = m.get_root().render()
+    assert "MUR_Sea_Surface_Temperature" in html
+    assert "OCI_PACE_Chlorophyll_a" in html
 
 
 def test_region_map_renders_boundaries():

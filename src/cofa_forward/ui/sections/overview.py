@@ -38,6 +38,10 @@ def render() -> None:
             region_map(registry, center=cfg.map_center, boundaries=get_boundaries()),
             key="overview_map",
         )
+        st.caption(
+            "Layer control (top-right) toggles satellite basemaps plus SST / "
+            "chlorophyll-a overlays. Remote-sensing fields, not in-situ readings."
+        )
 
     with right:
         st.subheader("ENSO status")

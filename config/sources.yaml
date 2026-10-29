@@ -459,6 +459,22 @@ sources:
     implementation_status: planned
     notes: "SST/ocean-colour/vegetation remote sensing via Earthdata (LANCE/LAADS). Heavy raster; a follow-up if SST monitoring is wanted."
 
+  - id: nasa-gibs-overlays
+    name: "NASA GIBS remote-sensing overlays (MUR SST, SST anomaly, PACE chlorophyll-a)"
+    publisher: "NASA EOSDIS / JPL"
+    url: "https://gibs.earthdata.nasa.gov/"
+    api: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/{layer}/default/{date}/{tms}/{z}/{y}/{x}.jpg"
+    license: "NASA open data"
+    geographic_coverage: "Global ocean (FAS included)"
+    spatial_resolution: "MUR SST 1 km; PACE OCI chlorophyll ~1 km (GIBS Level7 tiles)"
+    temporal_resolution: "daily (rolling window)"
+    update_frequency: "daily"
+    auth: "none (keyless WMTS tiles)"
+    variables: "sea-surface temperature, SST anomaly, chlorophyll-a concentration"
+    implementation_status: implemented_and_tested
+    verification_date: "2026-10-29"
+    notes: "Toggleable map overlays (semi-transparent WMTS tiles) drawn over the satellite basemap. Remote-sensing fields, NOT forecast or in-situ station data. SST anomaly is relative to a MUR climatology and is relevant to ENSO monitoring."
+
   - id: usgs-westpacific-drought
     name: "USGS Drought Monitoring & 7-Day Precip Forecasting, Western Pacific (2000-2026)"
     publisher: "USGS EROS"
