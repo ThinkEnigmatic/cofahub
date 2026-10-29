@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from cofa_forward.geography.aggregation import aggregate_by
+from cofa_forward.geography.aggregation import aggregate_by, aggregate_by_area
 from cofa_forward.geography.spatial_attribution import (
     haversine_distance,
     nearest_grid_cell,
@@ -99,3 +99,54 @@ def test_aggregation(tmp_path):
     # country PAL aggregates its child leaf
     pal = out[out["geo_id"] == "PAL"].iloc[0]
     assert pal["value"] == 10.0
+
+
+def test_aggregate_by_area_weighted():
+    import pandas as pd
+
+    from cofa_forward.geography.registry import GeographyRegistry
+
+    # Two islands under one country with very different areas: the area-weighted
+    # mean must tilt toward the larger island, unlike the simple mean.
+    ents = [
+        GeoEntity(
+            geo_id="C",
+            name="Country",
+            entity_type="country",
+            country_code="PW",
+            latitude=7.0,
+            longitude=134.0,
+        ),
+        GeoEntity(
+            geo_id="C-BIG",
+            name="Big",
+            entity_type="island",
+            country_code="PW",
+            parent_geo_id="C",
+            latitude=7.0,
+            longitude=134.0,
+        ),
+        GeoEntity(
+            geo_id="C-SML",
+            name="Small",
+            entity_type="island",
+            country_code="PW",
+            parent_geo_id="C",
+            latitude=7.0,
+            longitude=134.0,
+        ),
+    ]
+    reg = GeographyRegistry(ents)
+    values = pd.DataFrame([{"geo_id": "C-BIG", "value": 100.0}, {"geo_id": "C-SML", "value": 0.0}])
+    areas = {"C-BIG": 900.0, "C-SML": 100.0}
+    out = aggregate_by_area(reg, values, areas, value_col="value")
+    country = out[out["geo_id"] == "C"].iloc[0]
+    # Weighted mean = (100*900 + 0*100) / 1000 = 90.0 (simple mean would be 50).
+    assert math.isclose(country["value"], 90.0)
+    assert country["n_leaves"] == 2
+
+    # A leaf without an area is excluded from the parent's weighted mean.
+    out2 = aggregate_by_area(reg, values, {"C-BIG": 900.0}, value_col="value")
+    country2 = out2[out2["geo_id"] == "C"].iloc[0]
+    assert math.isclose(country2["value"], 100.0)
+    assert country2["n_leaves"] == 1

@@ -77,8 +77,12 @@ def test_snapshot_covers_all_event_types():
             "n_active": 1,
             "source": "JMA + JTWC",
             "storms": [
-                {"name": "In-fa", "storm_id": "30W", "wind_kt": 110,
-                 "position": {"lat": 14.3, "lon": 162.4}},
+                {
+                    "name": "In-fa",
+                    "storm_id": "30W",
+                    "wind_kt": 110,
+                    "position": {"lat": 14.3, "lon": 162.4},
+                },
             ],
         },
         "cyclones_watch": {
@@ -86,11 +90,24 @@ def test_snapshot_covers_all_event_types():
             "watches_warnings": ["A Typhoon Watch"],
         },
         "cyclones_history": {"n_storms": 10, "closest_km": 210.5, "closest_time": "2020-11-01"},
-        "forecast": {"nmme_cycle": "202610", "nmme_models": 6, "nmme_mean_mm": 4.2,
-                     "nmme_spread_mm": 1.1, "short_models": 5},
-        "impacts": {"n_events": 2, "events": [
-            {"event_name": "Sample drought", "hazard_type": "drought",
-             "start_date": "2015-12-01", "reported_impacts": "synthetic"}]},
+        "forecast": {
+            "nmme_cycle": "202610",
+            "nmme_models": 6,
+            "nmme_mean_mm": 4.2,
+            "nmme_spread_mm": 1.1,
+            "short_models": 5,
+        },
+        "impacts": {
+            "n_events": 2,
+            "events": [
+                {
+                    "event_name": "Sample drought",
+                    "hazard_type": "drought",
+                    "start_date": "2015-12-01",
+                    "reported_impacts": "synthetic",
+                }
+            ],
+        },
         "water": {"note": "n/a", "available_inputs": [], "missing_inputs": ["lens"]},
         "population": {"population": 1500, "radius_km": 10},
     }
@@ -123,4 +140,3 @@ def test_snapshot_no_secrets_or_paths():
     # builder itself is deterministic.)
     assert "LOCATION: X (Y)" in s
     assert "WATER: secret-token" in s  # data is passed through verbatim by design
-

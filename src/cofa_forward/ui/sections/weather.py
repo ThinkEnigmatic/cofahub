@@ -20,6 +20,7 @@ from ..components.common import (
 )
 from ..state import (
     get_ai_model_status,
+    get_boundaries,
     get_model_comparison,
     get_sample_forecast,
     load_config,
@@ -100,7 +101,12 @@ def render() -> None:
     left, right = st.columns([3, 2], gap="large")
 
     with left:
-        render_folium(region_map(registry, center=cfg.map_center, title="FAS region"), key="wx_map")
+        render_folium(
+            region_map(
+                registry, center=cfg.map_center, title="FAS region", boundaries=get_boundaries()
+            ),
+            key="wx_map",
+        )
 
     with right:
         st.subheader("Forecast for " + entity.name)

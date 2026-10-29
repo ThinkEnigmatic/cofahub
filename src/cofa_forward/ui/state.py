@@ -267,6 +267,50 @@ def get_worldpop_population(
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def get_boundaries() -> list[dict]:
+    """Load administrative boundary polygons (FSM/RMI/PW) matched to registry entities.
+
+    Returns one record per registry entity whose name matches an ADM1 boundary,
+    each carrying ``geo_id``, ``name``, ``country_code``, ``geometry``, and the
+    computed ``area_km2``. Used for polygon map rendering and area-weighted
+    aggregation. Boundary downloads are one-time (cached under ``data/raw/boundaries``).
+    """
+    from ..ingestion.boundaries import (
+        BoundariesAdapter,
+        match_by_name,
+        polygon_area_km2,
+    )
+    from ..ingestion.population import WorldPopAdapter
+
+    registry = load_registry()
+    ba = BoundariesAdapter(config=load_config())
+    out = []
+    for code in ("FM", "MH", "PW"):
+        iso3 = WorldPopAdapter.iso3(code)
+        try:
+            records = ba.get_admin(iso3, level=1)
+        except Exception:  # noqa: BLE001 - boundary download failure is non-fatal
+            continue
+        for e in registry.all():
+            if e.country_code.upper() != code:
+                continue
+            rec = match_by_name(e.name, records)
+            if rec is None or not rec.get("geometry"):
+                continue
+            geom = rec["geometry"]
+            out.append(
+                {
+                    "geo_id": e.geo_id,
+                    "name": e.name,
+                    "country_code": code,
+                    "geometry": geom,
+                    "area_km2": polygon_area_km2(geom),
+                }
+            )
+    return out
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def get_zonal_population(geo_id: str, name: str, country_code: str) -> dict:
     """WorldPop population within the actual administrative boundary (FSM/RMI/PW)."""
     from ..ingestion.boundaries import BoundariesAdapter, match_by_name, zonal_population

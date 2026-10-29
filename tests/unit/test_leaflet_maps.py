@@ -45,6 +45,29 @@ def test_region_map_builds_folium_map():
     assert "gibs.earthdata.nasa.gov" in html  # NASA GIBS basemap present
 
 
+def test_region_map_renders_boundaries():
+    boundaries = [
+        {
+            "geo_id": "RMI-MAJ",
+            "name": "Majuro",
+            "country_code": "MH",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[171.0, 7.0], [171.3, 7.0], [171.3, 7.2], [171.0, 7.0]]],
+            },
+        }
+    ]
+    m = region_map(_registry(), center=(6.5, 152.0), boundaries=boundaries)
+    html = m.get_root().render()
+    assert "Majuro" in html
+    assert "Administrative boundaries" in html
+
+
+def test_region_map_empty_boundaries_ok():
+    m = region_map(_registry(), center=(6.5, 152.0), boundaries=[])
+    assert m.get_root().render()  # no exception
+
+
 def test_track_map_adds_polylines():
     tracks = pd.DataFrame(
         {

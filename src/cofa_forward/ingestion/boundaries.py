@@ -18,6 +18,7 @@ simplification is documented.
 from __future__ import annotations
 
 import json
+import math
 import zipfile
 from pathlib import Path
 
@@ -103,6 +104,60 @@ def parse_admin_shp(shp_path: str, level: int) -> list[dict]:
     return out
 
 
+_KM_PER_DEG_LAT = 111.320  # km per degree of latitude (equirectangular approximation)
+
+
+def _ring_area_km2(ring: list[list[float]]) -> float:
+    """Signed shoelace area of a single ring (``[lon, lat]`` pairs) in km².
+
+    Uses an equirectangular projection scaled by the cosine of the ring's mean
+    latitude — accurate to well under 1% at the low latitudes of the FAS. Returns
+    the absolute value so both winding directions are handled.
+    """
+    if not ring or len(ring) < 3:
+        return 0.0
+    lats = [p[1] for p in ring]
+    coslat = math.cos(math.radians(sum(lats) / len(lats)))
+    xs = [p[0] * _KM_PER_DEG_LAT * coslat for p in ring]
+    ys = [p[1] * _KM_PER_DEG_LAT for p in ring]
+    s = 0.0
+    n = len(ring)
+    for i in range(n):
+        x1, y1 = xs[i], ys[i]
+        x2, y2 = xs[(i + 1) % n], ys[(i + 1) % n]
+        s += x1 * y2 - x2 * y1
+    return abs(s) / 2.0
+
+
+def polygon_area_km2(geometry: dict | None) -> float:
+    """Area of a GeoJSON Polygon/MultiPolygon in km² (spherical approximation).
+
+    Handles interior holes (exterior minus holes) and multi-part geometries. The
+    approximation is documented: equirectangular, cosine-latitude scaling — fine
+    for the near-equatorial FAS, not for high-latitude areas.
+    """
+    if not geometry:
+        return 0.0
+    gtype = geometry.get("type")
+    coords = geometry.get("coordinates") or []
+    if gtype == "Polygon":
+        if not coords:
+            return 0.0
+        exterior = _ring_area_km2(coords[0])
+        holes = sum(_ring_area_km2(r) for r in coords[1:])
+        return max(exterior - holes, 0.0)
+    if gtype == "MultiPolygon":
+        total = 0.0
+        for poly in coords:
+            if not poly:
+                continue
+            exterior = _ring_area_km2(poly[0])
+            holes = sum(_ring_area_km2(r) for r in poly[1:])
+            total += max(exterior - holes, 0.0)
+        return total
+    return 0.0
+
+
 def zonal_population(geometry: dict, worldpop_path: str) -> float:
     """Sum WorldPop population (UN-adjusted) within a GeoJSON geometry."""
     with rasterio.open(worldpop_path) as ds:
@@ -119,11 +174,25 @@ def zonal_population(geometry: dict, worldpop_path: str) -> float:
         return float(data[sel].sum())
 
 
+# Known spelling variants between the seed registry and authoritative COD-AB /
+# geoBoundaries names (case-insensitive keys). Kept explicit and reviewed rather
+# than fuzzy, so no false positives are introduced.
+_BOUNDARY_NAME_ALIASES = {
+    "utrik": "utirik",  # common spelling vs COD-AB official "Utirik"
+}
+
+
+def _canonical(name: str) -> str:
+    key = (name or "").strip().lower()
+    return _BOUNDARY_NAME_ALIASES.get(key, key)
+
+
 def match_by_name(name: str, records: list[dict]) -> dict | None:
-    """Return the admin record whose name matches (case-insensitive, exact)."""
-    target = (name or "").strip().lower()
+    """Return the admin record whose name matches (case-insensitive, exact, with
+    reviewed spelling aliases)."""
+    target = _canonical(name)
     for r in records:
-        if r.get("name") and r["name"].strip().lower() == target:
+        if r.get("name") and _canonical(r["name"]) == target:
             return r
     return None
 

@@ -12,6 +12,7 @@ from rasterio.transform import from_origin
 from cofa_forward.ingestion.boundaries import (
     parse_admin_shp,
     parse_geojson,
+    polygon_area_km2,
     zonal_population,
 )
 
@@ -88,6 +89,43 @@ def test_zonal_population_ignores_nodata(tmp_path):
     val = zonal_population(center, p)
     assert val > 0
     assert val <= 45.0
+
+
+def test_polygon_area_km2_square():
+    # 1 deg x 1 deg square at the equator ≈ 111.32 km x 111.32 km ≈ 12,392 km².
+    geom = {
+        "type": "Polygon",
+        "coordinates": [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]],
+    }
+    area = polygon_area_km2(geom)
+    assert math.isclose(area, 111.32 * 111.32, rel_tol=0.02)
+
+
+def test_polygon_area_km2_hole_subtracted():
+    # Outer 1x1 deg square, inner 0.5x0.5 deg hole.
+    outer = [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]]
+    inner = [[[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75], [0.25, 0.25]]]
+    full = polygon_area_km2({"type": "Polygon", "coordinates": outer})
+    holed = polygon_area_km2({"type": "Polygon", "coordinates": outer + inner})
+    assert holed < full
+    # The hole is exactly 0.5 x 0.5 deg.
+    assert math.isclose(
+        full - holed, polygon_area_km2({"type": "Polygon", "coordinates": inner}), rel_tol=0.02
+    )
+
+
+def test_polygon_area_km2_multipolygon_and_empty():
+    two = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]]],
+            [[[2.0, 0.0], [3.0, 0.0], [3.0, 1.0], [2.0, 0.0]]],
+        ],
+    }
+    area = polygon_area_km2(two)
+    assert area > 0
+    assert polygon_area_km2(None) == 0.0
+    assert polygon_area_km2({"type": "LineString", "coordinates": []}) == 0.0
 
 
 def test_parse_geojson():

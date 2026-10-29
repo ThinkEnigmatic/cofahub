@@ -139,6 +139,49 @@ def _add_basemaps(m: folium.Map) -> None:
     folium.LayerControl(collapsed=False, position="topright").add_to(m)
 
 
+_BOUNDARY_STYLE = {
+    "color": "#0ea5e9",
+    "weight": 1.4,
+    "fillColor": "#0ea5e9",
+    "fillOpacity": 0.06,
+}
+
+
+def _add_boundaries(m: folium.Map, boundaries: list[dict] | None) -> None:
+    """Render administrative boundary polygons as a single GeoJSON overlay.
+
+    ``boundaries`` is a list of ``{geo_id, name, country_code, geometry}`` records
+    (see ``ui.state.get_boundaries``). Point markers for the same entities remain
+    the primary interactive layer; polygons are the spatial context.
+    """
+    if not boundaries:
+        return
+    features = []
+    for b in boundaries:
+        if not b.get("geometry"):
+            continue
+        features.append(
+            {
+                "type": "Feature",
+                "properties": {
+                    "name": b.get("name", ""),
+                    "country": b.get("country_code", ""),
+                },
+                "geometry": b["geometry"],
+            }
+        )
+    if not features:
+        return
+    folium.GeoJson(
+        {"type": "FeatureCollection", "features": features},
+        name="Administrative boundaries",
+        style_function=lambda _f: _BOUNDARY_STYLE,
+        popup=folium.GeoJsonPopup(fields=["name", "country"], labels=True, aliases=["", "Country"]),
+        tooltip=folium.GeoJsonTooltip(fields=["name"], labels=False),
+        show=True,
+    ).add_to(m)
+
+
 def _add_entities(m: folium.Map, registry: GeographyRegistry) -> None:
     """Layer registry entities onto the map, styled by type, with popups."""
     for etype, style in ENTITY_STYLE.items():
@@ -191,8 +234,13 @@ def region_map(
     center: tuple[float, float] = (6.5, 152.0),
     zoom: float = 5.0,
     title: str | None = None,
+    boundaries: list[dict] | None = None,
 ) -> folium.Map:
-    """Regional map of FAS entities over a satellite basemap (layer-switchable)."""
+    """Regional map of FAS entities over a satellite basemap (layer-switchable).
+
+    ``boundaries``, when provided, adds an administrative-boundary polygon overlay
+    beneath the point markers.
+    """
     m = folium.Map(
         location=list(center),
         zoom_start=int(zoom),
@@ -200,6 +248,7 @@ def region_map(
         tiles=None,
     )
     _add_basemaps(m)
+    _add_boundaries(m, boundaries)
     _add_entities(m, registry)
     return m
 
