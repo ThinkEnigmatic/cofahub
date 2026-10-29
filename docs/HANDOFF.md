@@ -29,6 +29,13 @@ geospatial foundation. Repo: `~/cofa-forward`.
   Philippines, org N/A, sector Other/General/Research/Weather, use case Weather
   Prediction & Forecasting, WeatherNext 3 GCS Zarr selected, both license terms
   accepted). Approval expected ~5–7 business days at Google's discretion.
+- **WeatherNext approval monitor (2026-10-29):** launchd
+  `com.ben.cofaforward-weathernext-monitor` polls the household Gmail over IMAP
+  (app password `~/.config/benigmatic/gmail_household_app_password`) hourly via
+  `scripts/monitor_weathernext_approval.py --notify`. Writes
+  `data/weathernext_status.json` (pending/approved/rejected) and notifies the
+  owner over Telegram on a state change. The Data Sources page + the WeatherNext
+  adapter both read that state file to surface the live approval status.
 - **Google Cloud account:** `hemingwayglobal77@gmail.com` has an active GCP
   account (default project `project-2d5cb632-e1b6-46b7-b98`, free trial pending
   prepayment — not required for the allowlist). Once WeatherNext approves, read

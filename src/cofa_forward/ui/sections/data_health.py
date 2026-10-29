@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
@@ -18,6 +20,20 @@ _STATUS_ICON = {
     "unavailable": "🚫",
 }
 
+_STATE_FILE = Path(__file__).resolve().parents[4] / "data" / "weathernext_status.json"
+
+
+def _weathernext_status() -> dict:
+    """Read the WeatherNext approval monitor's state file (best-effort)."""
+    try:
+        if _STATE_FILE.is_file():
+            import json
+
+            return json.loads(_STATE_FILE.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        pass
+    return {}
+
 
 def render() -> None:
     cfg = load_config()
@@ -33,6 +49,29 @@ def render() -> None:
     st.write(f"- Version: **{__version__}**")
     st.write(f"- Geographic registry status: **{cfg.geography_status}** (seed, approximate)")
     st.write(f"- Default units: **{cfg.default_units}** (imperial optional)")
+
+    st.divider()
+
+    # ---- WeatherNext access request status (read from the monitor's state file) ---- #
+    _wn = _weathernext_status()
+    if _wn:
+        icon = {"pending": "🕓", "approved": "✅", "rejected": "🚫"}.get(_wn.get("status"), "❓")
+        st.subheader(f"{icon} WeatherNext 3 access request")
+        st.write(
+            f"Status: **{_wn.get('status', 'unknown').upper()}** (checked {_wn.get('checked_at')})"
+        )
+        st.write(
+            f"Account: `{_wn.get('account')}` · Form submitted {_wn.get('form_submitted')} · "
+            f"approval {_wn.get('approval_window')}."
+        )
+        if _wn.get("latest_message"):
+            lm = _wn["latest_message"]
+            st.write(f"Latest message: **{lm.get('from')}** — {lm.get('subject')}")
+        st.caption(
+            "Monitored by launchd (com.ben.cofaforward-weathernext-monitor, hourly). "
+            "Once approved, read Zarr via gcsfs with GOOGLE_APPLICATION_CREDENTIALS or "
+            "`gcloud auth application-default login` for hemingwayglobal77@gmail.com."
+        )
 
     st.divider()
 

@@ -267,14 +267,20 @@ def get_ai_model_status() -> list[dict]:
 
     wn = WeatherNextAdapter(config=cfg)
     wn_avail = wn.check_availability()
+    wn_approval = wn.access_status().get("status", "pending")
+    _wn_status = {
+        "pending": "request submitted — awaiting Google's decision (5–7 business days)",
+        "approved": "allowlist approved",
+        "rejected": "request not approved",
+    }.get(wn_approval, f"unknown ({wn_approval})")
     results.append(
         {
             "name": "Google WeatherNext 3",
             "access": "Google Cloud allowlist (form)",
             "status": (
-                "available (credentials present)"
+                f"available — {wn_approval if wn_approval != 'pending' else 'pending'}"
                 if wn_avail.get("available")
-                else "requires allowlist approval"
+                else _wn_status
             ),
             "resolution": "0.05°/0.1°/0.25°, hourly, 64 members, 15-day",
         }

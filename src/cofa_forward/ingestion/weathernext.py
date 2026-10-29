@@ -21,8 +21,10 @@ severe-weather warning (see Google's disclaimers).
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 from .base import BaseAdapter
@@ -53,6 +55,10 @@ class WeatherNextAdapter(BaseAdapter):
     source_url = "https://developers.google.com/weathernext/guides/access-forecast"
     implementation_status = "requires_credentials"
 
+    # Where the approval monitor (scripts/monitor_weathernext_approval.py) writes
+    # its state; read here so the app can report the live approval status.
+    STATUS_FILE = Path.home() / "cofa-forward" / "data" / "weathernext_status.json"
+
     def __init__(self, config=None, cache=None, db=None, timeout: float = 30.0):
         self._project = None
         self._creds = None
@@ -65,17 +71,45 @@ class WeatherNextAdapter(BaseAdapter):
     def _configured(self) -> bool:
         return bool(self._creds) or bool(self._project)
 
+    def access_status(self) -> dict[str, Any]:
+        """Read the approval-monitor state file (best-effort)."""
+        try:
+            if self.STATUS_FILE.is_file():
+                return json.loads(self.STATUS_FILE.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            pass
+        return {}
+
     def check_availability(self) -> dict[str, Any]:
+        approval = self.access_status().get("status", "pending")
+        if approval == "approved":
+            if self._configured():
+                return {
+                    "source_id": self.source_id,
+                    "available": True,
+                    "note": "allowlist approved + credentials present; Zarr read available",
+                }
+            return {
+                "source_id": self.source_id,
+                "available": False,
+                "note": "allowlist APPROVED; set GOOGLE_APPLICATION_CREDENTIALS to read Zarr",
+            }
+        if approval == "rejected":
+            return {
+                "source_id": self.source_id,
+                "available": False,
+                "note": "access request was not approved",
+            }
         if self._configured():
             return {
                 "source_id": self.source_id,
                 "available": True,
-                "note": "credentials present; Zarr read available if account is allowlisted",
+                "note": "credentials present; awaiting allowlist approval",
             }
         return {
             "source_id": self.source_id,
             "available": False,
-            "note": "requires Google Cloud allowlist (see quick-start form)",
+            "note": "requires Google Cloud allowlist (request submitted, decision pending)",
         }
 
     def get_point_forecast(
